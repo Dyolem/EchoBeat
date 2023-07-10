@@ -1,0 +1,165 @@
+@font-face {
+  font-family: "iconfont"; /* Project id  */
+  src: url('iconfont.ttf?t=1687058820332') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-shanchu:before {
+  content: "\e74b";
+}
+
+.icon-pinglun:before {
+  content: "\e61a";
+}
+
+.icon-xiangyoujiantou:before {
+  content: "\e65f";
+}
+
+.icon-xiangzuojiantou:before {
+  content: "\e660";
+}
+
+.icon-triangle-play:before {
+  content: "\e617";
+}
+
+.icon-gengduo:before {
+  content: "\e62f";
+}
+
+.icon-ai07:before {
+  content: "\e67b";
+}
+
+.icon-bofang:before {
+  content: "\e616";
+}
+
+.icon-chacha:before {
+  content: "\e60e";
+}
+
+.icon-fl-pifu:before {
+  content: "\e638";
+}
+
+.icon-gou:before {
+  content: "\e66c";
+}
+
+.icon-aixin:before {
+  content: "\e61b";
+}
+
+.icon-Magnifier:before {
+  content: "\e62d";
+}
+
+.icon-tixingshixin:before {
+  content: "\ec72";
+}
+
+.icon-zuihouyiyemoyexiayishou:before {
+  content: "\e76d";
+}
+
+.icon-diyiyeshouyeshangyishou:before {
+  content: "\e76e";
+}
+
+.icon-tianjia:before {
+  content: "\e679";
+}
+
+.icon-tianjia1:before {
+  content: "\e604";
+}
+
+.icon-qingkong:before {
+  content: "\e629";
+}
+
+.icon-tianjia2:before {
+  content: "\e65e";
+}
+
+.icon-shengyinkai:before {
+  content: "\eca6";
+}
+
+.icon-shengyinjingyin:before {
+  content: "\eca9";
+}
+
+.icon-24gl-repeat2:before {
+  content: "\ea75";
+}
+
+.icon-24gl-repeatOnce2:before {
+  content: "\ea76";
+}
+
+.icon-24gf-play:before {
+  content: "\ea82";
+}
+
+.icon-fenxiang:before {
+  content: "\e740";
+}
+
+.icon-icon-test:before {
+  content: "\e608";
+}
+
+.icon-xunhuan:before {
+  content: "\e610";
+}
+
+.icon-renyuan-05:before {
+  content: "\e630";
+}
+
+.icon-xiazai:before {
+  content: "\e632";
+}
+
+.icon-prev:before {
+  content: "\ea87";
+}
+
+.icon-next:before {
+  content: "\ea8a";
+}
+
+.icon-shixingouxuan:before {
+  content: "\e6cf";
+}
+
+.icon-tubiaozhizuomoban-12:before {
+  content: "\e606";
+}
+
+.icon-tubiaozhizuomoban-17:before {
+  content: "\e609";
+}
+
+.icon-tubiaozhizuomoban-18:before {
+  content: "\e60a";
+}
+
+.icon-tubiaozhizuomoban-20:before {
+  content: "\e60b";
+}
+
+.icon-gaopinzhi:before {
+  content: "\e86c";
+}
+

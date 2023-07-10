@@ -1,0 +1,41 @@
+@font-face {
+    font-family: "iconfont logo";
+    src: url('https://at.alicdn.com/t/font_985780_km7mi63cihi.eot?t=1545807318834');
+    src: url('https://at.alicdn.com/t/font_985780_km7mi63cihi.eot?t=1545807318834#iefix') format('embedded-opentype'),
+      url('https://at.alicdn.com/t/font_985780_km7mi63cihi.woff?t=1545807318834') format('woff'),
+      url('https://at.alicdn.com/t/font_985780_km7mi63cihi.ttf?t=1545807318834') format('truetype'),
+      url('https://at.alicdn.com/t/font_985780_km7mi63cihi.svg?t=1545807318834#iconfont') format('svg');
+  }
+  
+
+/* 全局设置router-link，即a标签的样式 */
+a{
+    text-decoration: none;
+    color: #000;
+}
+a:hover{
+    color: #31c27c;
+}
+li {
+    list-style: none;
+}
+.mid {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+}
+/* 原本是放在根组件控制每个组件的样式，但是那是没有学路由的时候，使用了路由后要把公共样式放全局样式里 */
+/* 控制每个组件的宽 */
+.mid-header{
+    width: 1300px;
+    z-index: 10;
+}
+.mid-classification{
+    width: 1000px;
+/* 使音乐馆和首页文字对齐 ，实测为55.5%（搭配home-page组件中的li的padding调节*/
+    transform: translateX(-55.5%);
+/* 避免home-page-classification组件遮住上面的搜索下拉菜单 
+但是这里有个非常容易错的点，z-index不能设置成-1，不然鼠标是根本不会经过这个组件的，看着鼠标是经过了，但是由于z轴，实际是没经过的。这就是为什么；hover失效
+的原因，不是hover设置或者选择器的问题，而是源头，鼠标根本没有触发hover*/
+    z-index: 9
+}
