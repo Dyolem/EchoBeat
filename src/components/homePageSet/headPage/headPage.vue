@@ -22,6 +22,17 @@
              <wheelplay-new-song :travelDistance="slotProps.passTravelDistance" :renderCount="newSongListsLength"></wheelplay-new-song>
          </template>
     </playlist-recommendation>
+    <playlist-recommendation :renderCount="newSongListsLength" :resetIndex="initIndex">
+         <template #reccomend-head>    
+             <h2>精彩推荐</h2>    
+         </template>
+         <template #song-classification>
+             
+         </template>
+         <template #wheel-container="slotProps">
+             
+         </template>
+    </playlist-recommendation>
  </template>
  
  
