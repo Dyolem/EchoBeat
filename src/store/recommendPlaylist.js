@@ -27,8 +27,13 @@ export const useRecommendPlaylistStore=defineStore('recommendPlaylist',{
                     }) 
                     this.cover.push(item.cover)
                     
+                    
                 });
-                console.log(response);
+
+
+                this.titleAndTid=this.increaseArr(this.titleAndTid)
+                this.cover=this.increaseArr(this.cover)
+                this.creator=this.increaseArr(this.creator)
                 this.loaded=false
             }catch(error){
                 console.error();
@@ -42,7 +47,7 @@ export const useRecommendPlaylistStore=defineStore('recommendPlaylist',{
             try{
                 this.loaded=true
                 const response= await getRecommendPlaylist(id)
-                
+               
                 this.listLength=response.data.data.list.length
                 response.data.data.list.forEach(item => {
                     this.titleAndTid.push({
@@ -52,14 +57,22 @@ export const useRecommendPlaylistStore=defineStore('recommendPlaylist',{
                     }) 
                     this.cover.push(item.cover_url_medium)
                     this.creator.push(item.creator_info)
+
                 });
-                this.loaded=false
+                    
+                    this.loaded=false
                 
             }catch(error){
                 console.error(error);
             }
             
         },
-        
+        increaseArr(arr){
+            if(this.listLength%5!==0){
+                return arr=[...arr,...(arr.slice(0,5-this.listLength%5))]
+            }
+            
+            // console.log(arr);
+        }
     }
 })

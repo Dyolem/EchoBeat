@@ -47,7 +47,7 @@ excellentRecommendation.fetchExcellentRecommendation()
         position: relative;
         height: 300px;
         width: 1300px; 
-        background-color: antiquewhite;
+        /* background-color: antiquewhite; */
     }
     .album-cover-container {
         position: absolute;
@@ -60,7 +60,7 @@ excellentRecommendation.fetchExcellentRecommendation()
         margin-right: 30px;
         width: 635px;
         height: 290px;
-        background-color: pink;
+        /* background-color: pink; */
     }
     .album-img {
         width: 100%;

@@ -34,6 +34,19 @@
              </wheel-excellent-recommendation>
          </template>
     </playlist-recommendation>
+
+    <playlist-recommendation :renderCount="excellentRecommendationListsLength" >
+         <template #reccomend-head>    
+             <h2>新碟首发</h2>    
+         </template>
+         <template #song-classification>
+             
+         </template>
+         <template #wheel-container="slotProps">
+             
+         </template>
+    </playlist-recommendation>
+
  </template>
  
  
