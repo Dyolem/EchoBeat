@@ -1,22 +1,23 @@
 import { defineStore } from "pinia";
-import { getNewSongPublishApi } from "../apis/newSongPublishApi";
-export const useNewSongStore=defineStore('newSong',{
+import { getNewAlbumPublishApi } from "../apis/newAlbumPublishApi";
+export const useNewAlbumStore=defineStore('newAlbum',{
     state:()=>({
         loaded: true,
         error: null,
-        songlist:[],
+        list:[],
         listLength:null
         
     }),
     actions: {
-        async fetchNewSong(typeId) {
+        async fetchNewAlbum(typeId) {
           this.loaded = true
               try {
-                const response = await getNewSongPublishApi(typeId)
+                const response = await getNewAlbumPublishApi(typeId)
                 console.log(response);
               
-                this.songlist=response.data.data.list
-                this.listLength=this.songlist.length
+                this.list=response.data.data.list
+                this.listLength=this.list.length
+                console.log(this.listLength);
                 this.loaded=false
                 
               } catch (error) {

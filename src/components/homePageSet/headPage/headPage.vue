@@ -30,20 +30,20 @@
          </template>
          <template #wheel-container="slotProps">
              <wheel-excellent-recommendation :travelDistance="slotProps.passTravelDistance" :renderCount="excellentRecommendationListsLength"
-                                             @passNewSongListsLength="passRenderListsLength">
+                                             @passExcellentRecListsLength="passRenderListsLength">
              </wheel-excellent-recommendation>
          </template>
     </playlist-recommendation>
 
-    <playlist-recommendation :renderCount="excellentRecommendationListsLength" >
+    <playlist-recommendation :renderCount="newAlbumListsLength" >
          <template #reccomend-head>    
              <h2>新碟首发</h2>    
          </template>
          <template #song-classification>
-             
+            <new-album-category @passNewAlbumListsLength="passRenderListsLength"></new-album-category>
          </template>
          <template #wheel-container="slotProps">
-             
+            <wheel-play-new-album :travelDistance="slotProps.passTravelDistance" :renderCount="newAlbumListsLength"></wheel-play-new-album> 
          </template>
     </playlist-recommendation>
 
@@ -53,6 +53,8 @@
 <script setup>
  import { onMounted, ref } from 'vue';
  import playlistRecommendation from '../../playlistRecommendation.vue';
+
+
  import wheelContainer from "./recommendation/wheelContainer.vue";
  import recommendationTitle from './recommendation/recommendationTitle.vue'
  
@@ -61,11 +63,18 @@
  
  import WheelExcellentRecommendation from './excellentRecommendation/wheelExcellentRecommendation.vue';
 
+ import NewAlbumCategory from './newAlbumPublish/newAlbumCategory.vue';
+ import WheelPlayNewAlbum from './newAlbumPublish/wheelPlayNewAlbum.vue';
+ 
 
  import {useRecommendPlaylistStore} from "../../../store/recommendPlaylist"
  import { useNewSongStore } from '../../../store/newSong';
+ import { useNewAlbumStore } from '../../../store/newAlbum';
 
 
+
+
+ const newAlbum= useNewAlbumStore()
 
  const recommendPlaylist=useRecommendPlaylistStore()
  const newSong= useNewSongStore()
@@ -75,6 +84,7 @@
  const recommendPlaylistLength=ref(0)
  const newSongListsLength=ref(0)
  const excellentRecommendationListsLength=ref(0)
+ const newAlbumListsLength=ref(0)
  
  
  // 重置轮播索引的部分代码
@@ -96,6 +106,12 @@
         excellentRecommendationListsLength.value=Math.ceil(obj.listLength/2)
         console.log(excellentRecommendationListsLength.value);
      }
+     else if(obj.id=='newAlbumPublish')
+     {
+         newAlbumListsLength.value=Math.ceil(obj.listLength/10)
+            console.log(newAlbumListsLength.value);
+         initIndex.value=obj.resetIndex
+     }
      
      
  }
@@ -111,7 +127,9 @@
  const fetchAndWatchData = async () => {
   
  
-         await newSong.fetchNewSong(0)
+        newSong.fetchNewSong(0)
+        newAlbum.fetchNewAlbum(1)
+         
      };
  
      onMounted(() => {

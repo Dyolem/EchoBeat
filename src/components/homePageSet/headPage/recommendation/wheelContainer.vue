@@ -64,7 +64,7 @@ import { useRecommendPlaylistStore } from '../../../../store/recommendPlaylist';
     overflow: hidden;
     position: relative;
     height: 300px;
-    /* playlistitem组件一个240px，五个1300px，加上四个margin-tight的25px，一共1300px */
+    /* playlistitem组件一个240px，五个1300px，加上四个margin-right的25px，一共1300px */
     width: 1300px; 
     
 }

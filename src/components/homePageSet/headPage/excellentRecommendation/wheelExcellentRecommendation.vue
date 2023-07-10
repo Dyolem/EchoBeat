@@ -18,9 +18,9 @@ excellentRecommendation.fetchExcellentRecommendation()
         console.log(newValue);
     })
 
-    const emit =defineEmits(['passNewSongListsLength'])
+    const emit =defineEmits(['passExcellentRecListsLength'])
     watch(()=>excellentRecommendation.loaded,()=>{
-        emit('passNewSongListsLength',{
+        emit('passExcellentRecListsLength',{
             id:'excellentRecommentdation',
             listLength:excellentRecommendation.listLength,
         })
