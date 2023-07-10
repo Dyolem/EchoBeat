@@ -1,10 +1,10 @@
 <script setup>
 import { toRefs, ref, watch } from "vue"
 
-import playCover from "../../playCover.vue"
+import playCover from "../../../playCover.vue"
 
-import { useNewSongStore } from '../../../store/newSong';
-import { userToBePlayedStore } from "../../../store/toBePlayed";
+import { useNewSongStore } from '../../../../store/newSong';
+import { userToBePlayedStore } from "../../../../store/toBePlayed";
 import { useRouter } from "vue-router";
 
 

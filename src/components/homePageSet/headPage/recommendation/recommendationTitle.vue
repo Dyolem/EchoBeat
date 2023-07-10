@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 
-import  {useRecommendPlaylistStore} from '../../store/recommendPlaylist'
+import  {useRecommendPlaylistStore} from '../../../../store/recommendPlaylist'
 const recommendPlaylist=useRecommendPlaylistStore()
 
 recommendPlaylist.fetchRecommendForYou()

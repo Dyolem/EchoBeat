@@ -19,8 +19,8 @@
 <!-- 使用pinia，创建实例步骤时，记得检查有无setup（）或者script setup -->
 <script setup>
 import PlaylistItem from './playlistItem.vue';
-import { ref,watch,toRefs} from 'vue';
-import { useRecommendPlaylistStore } from '../../store/recommendPlaylist';
+import { ref,watch} from 'vue';
+import { useRecommendPlaylistStore } from '../../../../store/recommendPlaylist';
 
 
     const recommendPlaylist=useRecommendPlaylistStore()
@@ -61,7 +61,7 @@ import { useRecommendPlaylistStore } from '../../store/recommendPlaylist';
 <style scoped>
 .wheel-container {
     margin-bottom: 50px;
-   overflow: hidden;
+    overflow: hidden;
     position: relative;
     height: 300px;
     /* playlistitem组件一个240px，五个1300px，加上四个margin-tight的25px，一共1300px */

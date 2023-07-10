@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { useNewSongStore } from '../../../store/newSong';
+import { useNewSongStore } from '../../../../store/newSong';
 const newsong= useNewSongStore()
 
 
@@ -45,7 +45,6 @@ watch(()=>newsong.loaded,()=>{
         listLength:newsong.listLength,
         resetIndex:selectedIndex.value
     })
-    console.log(111111111);
 })
 
 </script>

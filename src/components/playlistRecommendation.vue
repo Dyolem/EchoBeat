@@ -33,6 +33,7 @@ import { ref, watch } from "vue";
     //页面所在页的圆点颜色渲染函数
    
     function render(){
+        console.log(props.renderCount);
         for(let i=0;i<props.renderCount;i++){
             wheelButtonRefs.value[i].style.background='#e1e1e1'
            

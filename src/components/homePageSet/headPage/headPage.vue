@@ -11,6 +11,7 @@
              <wheel-container :travelDistance="slotProps.passTravelDistance" :renderCount="recommendPlaylistLength"></wheel-container>
          </template>
     </playlist-recommendation>
+
     <playlist-recommendation :renderCount="newSongListsLength" :resetIndex="initIndex">
          <template #reccomend-head>    
              <h2>新歌首发</h2>    
@@ -22,31 +23,37 @@
              <wheelplay-new-song :travelDistance="slotProps.passTravelDistance" :renderCount="newSongListsLength"></wheelplay-new-song>
          </template>
     </playlist-recommendation>
-    <playlist-recommendation :renderCount="newSongListsLength" :resetIndex="initIndex">
+
+    <playlist-recommendation :renderCount="excellentRecommendationListsLength" >
          <template #reccomend-head>    
              <h2>精彩推荐</h2>    
          </template>
-         <template #song-classification>
-             
-         </template>
          <template #wheel-container="slotProps">
-             
+             <wheel-excellent-recommendation :travelDistance="slotProps.passTravelDistance" :renderCount="excellentRecommendationListsLength"
+                                             @passNewSongListsLength="passRenderListsLength">
+             </wheel-excellent-recommendation>
          </template>
     </playlist-recommendation>
  </template>
  
  
- <script setup>
+<script setup>
  import { onMounted, ref } from 'vue';
  import playlistRecommendation from '../../playlistRecommendation.vue';
- import wheelContainer from '../../recommendation/wheelContainer.vue';
- import recommendationTitle from '../../recommendation/recommendationTitle.vue'
+ import wheelContainer from "./recommendation/wheelContainer.vue";
+ import recommendationTitle from './recommendation/recommendationTitle.vue'
  
- import newsongCategories from './newsongCategories.vue';
- import wheelplayNewSong from './wheelplayNewSong.vue'
+ import newsongCategories from './newSongPublish/newsongCategories.vue';
+ import wheelplayNewSong from './newSongPublish/wheelplayNewSong.vue'
  
+ import WheelExcellentRecommendation from './excellentRecommendation/wheelExcellentRecommendation.vue';
+
+
  import {useRecommendPlaylistStore} from "../../../store/recommendPlaylist"
  import { useNewSongStore } from '../../../store/newSong';
+
+
+
  const recommendPlaylist=useRecommendPlaylistStore()
  const newSong= useNewSongStore()
  
@@ -54,6 +61,7 @@
  
  const recommendPlaylistLength=ref(0)
  const newSongListsLength=ref(0)
+ const excellentRecommendationListsLength=ref(0)
  
  
  // 重置轮播索引的部分代码
@@ -69,6 +77,11 @@
          newSongListsLength.value=Math.ceil(obj.listLength/9)
          console.log(newSongListsLength.value);
          initIndex.value=obj.resetIndex
+     }
+     else if(obj.id=='excellentRecommentdation')
+     {
+        excellentRecommendationListsLength.value=Math.ceil(obj.listLength/2)
+        console.log(excellentRecommendationListsLength.value);
      }
      
      

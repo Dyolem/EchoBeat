@@ -26,9 +26,9 @@ import { useRouter } from 'vue-router';
 import { ref,computed} from 'vue';
 
 
-import { userToBePlayedStore } from '../../store/toBePlayed';
-import { useSongListDetailStore } from '../../store/songlistDetail';
-import PlayCover from '../playCover.vue';
+import { userToBePlayedStore } from '../../../../store/toBePlayed';
+import { useSongListDetailStore } from '../../../../store/songlistDetail';
+import PlayCover from '../../../playCover.vue';
 
 
 
