@@ -1,12 +1,11 @@
 <script setup>
 
 import { ref, watch,toRefs } from 'vue';
-import { useSonglistStore } from '../../../store/songlist';
+
 import { useSonglistCategoryStore } from '../../../store/songlistCategory';
 import { onMounted } from 'vue';
-import { useRoute,useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 
-const songlistStore=useSonglistStore()
 const songlistCategoryStore= useSonglistCategoryStore()
 
 const moreRef=ref([])
@@ -20,7 +19,7 @@ document.addEventListener('click',function(){
         moreRef.value[categoryIndex.value].style.color=''
         categoryIndex.value=-1
     }
-    console.log(categoryIndex.value);
+    // console.log(categoryIndex.value);
    
 })
 
@@ -66,33 +65,26 @@ function prohibitPopover (event) {
 
 
 const recentClickCategory=ref([])
-const emit=defineEmits(['passKindTitle'])
-onMounted(async()=>{
-    
-    recentClickCategory.value=JSON.parse(localStorage.getItem('recentClickSonglistCategoy')) //获取最近常用数据
-    await songlistStore.fetchSongListData(routes.query.t1)
 
-    // 以下是解决查看歌单详情后，返回丢失歌单种类的问题，办法是根据路由信息查找匹配id，然后将其id和name传给父组件
-    // 把所有种类的{id，name}对象放在一个数组内
-    const newListArr=ref([])
-    songlistCategoryStore.categories.forEach(element => newListArr.value.push(...element.list));
-    // console.log(newListArr.value);
-    let index=newListArr.value.findIndex(item=>item.id==routes.query.t1)
-    // console.log(index);
-    if(index!==-1)
-    emit('passKindTitle',newListArr.value[index])
+onMounted(async()=>{
+    await songlistCategoryStore.fetchSongListCategoriesData()
+    recentClickCategory.value=JSON.parse(localStorage.getItem('recentClickSonglistCategoy')) //获取最近常用数据
+    if(recentClickCategory.value)
+    {
+
+        recentClickCategory.value.reverse()
+    }
+
 })
 
 
 
 // 路由跳转，触发watch监听
-const routes=useRoute()
+
 const router=useRouter()
 
 function fetchKindSonglist (kinds) {
-    console.log(kinds);
-    // console.log(kinds.categoryId);
-    emit('passKindTitle',{id:kinds.id,name:kinds.name})
+
     router.push({
         path:'/classified-playlist',
         query:{t1:kinds.id}
@@ -100,12 +92,8 @@ function fetchKindSonglist (kinds) {
     
     
 }
-// 为什么请求数据不放在fetchKindSonglist（）里？因为router.push是异步操作，会导致发起请求前routes.query.t1还未初始化
-// 使用延时器延迟请求可以证明这一点，因此这里改为查询参数变化时发起请求
-watch(()=>routes.query,()=>{
-    // console.log(routes.query.t1);
-    songlistStore.fetchSongListData(routes.query.t1)
-})
+
+
 
 
 

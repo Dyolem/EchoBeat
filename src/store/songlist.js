@@ -14,7 +14,7 @@ export const useSonglistStore=defineStore('songlist',{
     actions: {
         async fetchSongListData(songlistId) {
             // console.log(songlistId);
-            if(songlistId==null)
+            if(!songlistId)
             songlistId=10000000
             this.loading = true
                 try {

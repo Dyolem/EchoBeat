@@ -9,29 +9,24 @@ import playCover from "../../playCover.vue"
 
 import { useSonglistStore } from '../../../store/songlist';
 import { useSonglistCategoryStore } from '../../../store/songlistCategory';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref,watch, watchEffect } from 'vue';
+import { useRouter,useRoute } from 'vue-router';
 
 const router =useRouter()
+const routes=useRoute()
 const songlistStore=useSonglistStore()
 const songlistCategoryStore = useSonglistCategoryStore()
 
-// 请求分类数据
-songlistCategoryStore.fetchSongListCategoriesData()
-const title=ref('')
+
+
 const recentListnenInfo=ref({})  //被点击过歌单详情所属的分类的id和name
 
-function passKindTitle (data){
-    console.log(data);
-    recentListnenInfo.value=data
-    title.value=data.name
-}
-function clearCurrentKind () {
+
+const clearCurrentKind= ()=> {
     router.push({
         path:'/classified-playlist',
       
     })
-    title.value=''
     
 }
 
@@ -40,7 +35,7 @@ const recentClickSonglist=ref([]) // 最近常用的歌单种类数组
 const storeRecentListenInfo=()=>{
    
     recentClickSonglist.value=JSON.parse(localStorage.getItem('recentClickSonglistCategoy')) || []
-    if(recentClickSonglist.value.length==4)
+    if(recentClickSonglist.value.length==4 && recentClickSonglist.value[recentClickSonglist.value.length-1].id!=recentListnenInfo.value.id)
         recentClickSonglist.value.splice(0,1)
 
     if(recentClickSonglist.value.length==0)
@@ -58,6 +53,24 @@ const storeRecentListenInfo=()=>{
     localStorage.setItem('recentClickSonglistCategoy',JSON.stringify(recentClickSonglist.value))
   
 }
+// 当路由查询参数变化时请求数据
+watch(()=>routes.query,async()=>{
+    await songlistStore.fetchSongListData(routes.query.t1)
+    songlistCategoryStore.CheckCurrentCategory(routes.query.t1)
+    // console.log(routes.query.t1);
+    recentListnenInfo.value=songlistCategoryStore.currentCategoryAndId
+},{immediate:true})   //这里必须使用immediate，因为组件重新挂载的时候，路由查询参数初始化完成后，监听器还未进行监听，所以不会请求数据。
+                        // 但由于逻辑上是只要路由查询参数变化，就需要立即请求数据，这里由于路由初始化和监听器初始化有先后顺序，所以需要加上immediate
+
+
+// 使用watchEffect也可以实现
+// watchEffect(async()=>{
+//     await songlistStore.fetchSongListData(routes.query.t1)
+//     songlistCategoryStore.CheckCurrentCategory(routes.query.t1)
+//     recentListnenInfo.value=songlistCategoryStore.currentCategoryAndId
+// })
+
+
 </script>
 
 <template>
@@ -65,14 +78,14 @@ const storeRecentListenInfo=()=>{
         
             <playlist-recommendation :renderCount="Math.ceil(songlistCategoryStore.categoriesLength/4)">
                 <template #wheel-container="slotProps">
-                    <wheel-catogories :travelDistance="slotProps.passTravelDistance" @pass-kind-title="passKindTitle"></wheel-catogories>
+                    <wheel-catogories :travelDistance="slotProps.passTravelDistance" ></wheel-catogories>
                 </template>
             </playlist-recommendation>  
             
         <div class="classified-container">
-            <h2 class="recommendation" v-if="title===''?true:false">推荐歌单</h2>
-            <div class="kindTitle" v-if="title===''?false:true">
-                <p>{{ title }}</p>
+            
+            <div class="kindTitle" >
+                <p>{{ recentListnenInfo.name }}</p>
                 <span class="clear-current-kind iconfont icon-chacha" @click="clearCurrentKind"></span>
             </div>
             <div class="playlists-container">
@@ -103,9 +116,6 @@ const storeRecentListenInfo=()=>{
     width: 1325px;
     flex-wrap: wrap;
     background-color: rgba(rgb(193, 215, 199), 1);
-}
-.recommendation {
-    margin-bottom: 20px;
 }
 
 .playlists-container {
