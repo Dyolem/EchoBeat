@@ -96,7 +96,7 @@ watch(()=>routes.query,async()=>{
                                  :allowDetail="true">
                     </play-cover>
                     <div class="introduce">
-                        <div class="titletxt"><router-link class="txt-color" to="">{{ item.dissname }}</router-link></div>
+                        <div class="titletxt"><router-link class="txt-color" :to="{name:'songlist-details',params:{dissid:item.dissid}}">{{ item.dissname }}</router-link></div>
                         <div class="creator"><router-link class="txt-color" to="">{{ item.creator.name }}</router-link></div>
                         <div class="playnum">播放量：{{ item.listennum }}</div>
                     </div>

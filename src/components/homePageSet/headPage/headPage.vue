@@ -47,6 +47,8 @@
          </template>
     </playlist-recommendation>
 
+    <ranking-vue></ranking-vue>
+
  </template>
  
  
@@ -66,10 +68,12 @@
  import NewAlbumCategory from './newAlbumPublish/newAlbumCategory.vue';
  import WheelPlayNewAlbum from './newAlbumPublish/wheelPlayNewAlbum.vue';
  
+ import rankingVue from './rankingList/ranking.vue';
 
  import {useRecommendPlaylistStore} from "../../../store/recommendPlaylist"
  import { useNewSongStore } from '../../../store/newSong';
  import { useNewAlbumStore } from '../../../store/newAlbum';
+
 
 
 

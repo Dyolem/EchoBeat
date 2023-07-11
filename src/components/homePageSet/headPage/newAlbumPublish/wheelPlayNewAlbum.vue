@@ -22,6 +22,10 @@ watch(()=>props.travelDistance, (newValue, oldValue) => {
         wheelAlbumRef.value.style.transform = `translateX(-${newValue * 1300}px)`
         console.log(newValue);
     })
+
+const jumpToBeplay=()=>{
+
+}
 </script>
 
 <template>
@@ -30,7 +34,12 @@ watch(()=>props.travelDistance, (newValue, oldValue) => {
             <div class="album-unit" v-for="(unitItem,unitIndex) in renderCount" :key="unitIndex">
                 <div class="album-item" v-for="(item,index) in newAlbum.list.slice(unitIndex*10,(unitIndex+1)*10)" :key="index">
                     <play-cover :jump-id="item.mid" :cover="coverUrlFormatted(item.mid)" :active-width-and-height="{width:240,height:240}"
-                                 @passPlaySignal="jumpToBeplay" :allowDetail="true"></play-cover>
+                                 @passPlaySignal="jumpToBeplay" :allowDetail="true">
+                    </play-cover>
+                    <div class="introduce">
+                        <div class="album-title txt-ellipsis"><router-link to="" class="title-a public-a">{{ item.name }}</router-link></div>
+                        <div class="singer txt-ellipsis"><router-link  class="singer-a public-a" to="" v-for="(singer,index) in item.singers" :key="index">{{ singer.name }}<span v-if="index!==item.singers.length-1">/</span></router-link></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -42,8 +51,8 @@ watch(()=>props.travelDistance, (newValue, oldValue) => {
         overflow: hidden;
         position: relative;
         width: 1300px;
-        height: 600px;
-        background-color: pink;
+        height: 620px;
+        /* background-color: pink; */
     }
     .wheel-album {
         position: absolute;
@@ -58,9 +67,31 @@ watch(()=>props.travelDistance, (newValue, oldValue) => {
     }
     .album-item {
         
-        margin-bottom: 30px;
+        margin-bottom: 70px;
         width: 240px;
         height: 240px;
-        background-color: antiquewhite;
+        /* background-color: antiquewhite; */
+    }
+    .introduce {
+        width: 240px;
+        height: 40px;
+        /* background-color: aquamarine; */
+    }
+    .title-a {
+       color: #999999;
+    }
+    .txt-ellipsis {
+        overflow: hidden;
+        white-space: nowrap;
+  /* 不换行 */
+        text-overflow: ellipsis;
+    }
+    .public-a {
+        font-size: 14px;
+        cursor: pointer;
+        
+    }
+    .public-a:hover {
+        color: #31c27c;
     }
 </style>
