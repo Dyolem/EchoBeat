@@ -107,7 +107,7 @@ defineExpose({
         background: rgba(0, 0, 0,.1);
     }
     .public-size span{
-        font-size: 50px;
+        font-size: 14px;
         color: #333333;
     }
 
