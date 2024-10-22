@@ -4,16 +4,16 @@
 import {createRouter,createWebHashHistory} from 'vue-router'
 
 
-import classifiedPlaylist from '../components/homePageSet/classifiedList/classifiedPlaylist.vue'
+// import classifiedPlaylist from '../components/homePageSet/classifiedList/classifiedPlaylist.vue'
 
-import homePageClassification from '../components/headerFeatures/home-page-classification.vue'
-import songlistDetails from '../components/songlist/songlistDetails.vue'
-import songPlay from '../components/songlist/songPlay.vue'
-import DefaultLayout from '../components/defaultLayout.vue'
-import myMusic from '../components/myMusic.vue'
-import headPage from '../components/homePageSet/headPage/headPage.vue'
-import songDetails from '../components/songDetails/songDetails.vue'
-import { userToBePlayedStore } from '../store/toBePlayed'
+// import homePageClassification from '../components/headerFeatures/home-page-classification.vue'
+// import songlistDetails from '../components/songlist/songlistDetails.vue'
+// import songPlay from '../components/songlist/songPlay.vue'
+// import DefaultLayout from '../components/defaultLayout.vue'
+// import myMusic from '../components/myMusic.vue'
+// import headPage from '../components/homePageSet/headPage/headPage.vue'
+// import songDetails from '../components/songDetails/songDetails.vue'
+// import { userToBePlayedStore } from '../store/toBePlayed'
 
 
 const router =createRouter({
@@ -21,16 +21,16 @@ const router =createRouter({
     routes:[
       {
         path: "/",
-        component: DefaultLayout,
+        component: ()=>import('../components/defaultLayout.vue'),
         children: [
           {
             path:'',
-            component:homePageClassification,
+            component:()=>import('../components/headerFeatures/home-page-classification.vue'),
             children:[
               
                 {
                   path: "",
-                  component: headPage,  //playlistRecommendation 组件已经成为了 homePageClassification 组件的子路由。
+                  component: ()=>import('../components/homePageSet/headPage/headPage.vue'),  //playlistRecommendation 组件已经成为了 homePageClassification 组件的子路由。
                                                       //这意味着需要在 homePageClassification 组件的模板中添加一个 <router-view>，以便展示其子路由对应的组件
                 },
                 // 由于歌单详情和歌曲详情组件都是动态路由，并且使用了命名，那么分类组件也同样需要使用命名路由来导航
@@ -38,32 +38,32 @@ const router =createRouter({
                 {
                   path:'/classified-playlist',
                   name:'classified-playlist',
-                  component:classifiedPlaylist,
+                  component:()=>import('../components/homePageSet/classifiedList/classifiedPlaylist.vue'),
                   
                 },
                 {
                   path: "/songlist-details/:dissid",
                   name:'songlist-details',
-                  component: songlistDetails,
+                  component: ()=>import('../components/songlist/songlistDetails.vue'),
                 },
                 {
                   path:"/song-details/:mid",
                   name:'song-details',
-                  component:songDetails
+                  component: ()=>import('../components/songDetails/songDetails.vue'),
                 },
                 
             ]
           },
           {
             path:'my-music',
-            component:myMusic
+            component:()=>import('../components/myMusic.vue')
           }
         ],
       },
       {
         path:'/song-play',
         name:'song-play',
-        component:songPlay
+        component:()=>import('../components/songlist/songPlay.vue')
       }
         
       ]
