@@ -1,5 +1,6 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from "vite"
+import vue from "@vitejs/plugin-vue"
+import path from "path"
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,24 +10,35 @@ export default defineConfig({
   //跨域设置
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:3200',
+      "/api": {
+        target: "http://localhost:3200",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/api/, ""),
       },
-      '/proxy': {
-        target: 'http://localhost:3000',
+      "/proxy": {
+        target: "http://localhost:3000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/proxy/, '')
+        rewrite: (path) => path.replace(/^\/proxy/, ""),
       },
-      '/QQMusic': {
-        target: 'http://localhost:3300',
+      "/QQMusic": {
+        target: "http://localhost:3300",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/QQMusic/, '')
+        rewrite: (path) => path.replace(/^\/QQMusic/, ""),
       },
-    }
+    },
   },
   define: {
-    'process.env.BASE_URL': '"/"'
-  }
+    "process.env.BASE_URL": '"/"',
+  },
+  esbuild: {
+    drop: ["console", "debugger"],
+  },
+  resolve: {
+    alias: [
+      {
+        find: "@",
+        replacement: path.resolve(__dirname, "./src"),
+      },
+    ],
+  },
 })
