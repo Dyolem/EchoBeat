@@ -3,7 +3,7 @@
 import axios from "axios";
 
 const httpInstance= axios.create({
-    baseURL:'/QQMusic',
+    baseURL:import.meta.env.VITE_APP_BASE_API,
     timeout:5000
 })
 // 添加请求拦截器
