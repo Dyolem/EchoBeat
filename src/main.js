@@ -1,21 +1,20 @@
-import { createApp } from 'vue'
-import './style.css'
-import App from './App.vue'
-import {createPinia} from 'pinia'
-import axios from 'axios'
-import router from './router/index'
-import './assets/icofont/iconfont.css'
+import { createApp } from "vue"
+import "./style.css"
+import App from "./App.vue"
+import { createPinia } from "pinia"
+import axios from "axios"
+import router from "./router/index"
+import "./assets/icofont/iconfont.css"
+import loadDirective from "./directives/load"
+import piniaPluginPersistedstate from "pinia-plugin-persistedstate"
 
+const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
+const app = createApp(App)
 
-
-
-
-const pinia=createPinia()
-const app=createApp(App)
-
-app.config.globalProperties.$http=axios
+app.config.globalProperties.$http = axios
 app.use(pinia)
 app.use(router)
+app.directive("load", loadDirective)
 
-app.mount('#app')
-
+app.mount("#app")
