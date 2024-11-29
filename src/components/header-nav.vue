@@ -1,138 +1,272 @@
 <template>
-    
-    <div class="header">
-        <div class="logo">
-            <img src="../assets/img/logo.png" alt="">
-        </div>
-        <div class="nav-link">
-            <ul class="nav-li">
-                <li class="nav-li-link"><router-link to="" title="音乐馆">音乐馆</router-link></li>
-                <li class="nav-li-link"><router-link to="my-music" title="我的音乐">我的音乐</router-link></li>
-                
-                <li class="nav-li-link" @mouseover="clientshow" @mouseout="clientHide"><router-link to="" title="客户端">客户端</router-link>
-                <img src="../assets/img/mark_1.png" alt="">
-            <div class="position-control" @mouseout="clientHide" @mouseover="clientshow"><clientVue v-show="showClient" ></clientVue></div></li>
-      
-                <li class="nav-li-link"><router-link to="" title="开放平台">开放平台</router-link></li>
-                <li class="nav-li-link"><router-link to="" title="VIP">VIP</router-link></li>
-            </ul>
-        </div>
-        
-        <!-- 搜索、vip、充值部分组件 -->
-        <div class="feature">
-            <searchVue></searchVue>
-            <loginVipCharge></loginVipCharge>
-        </div>
+  <div class="pc-header">
+    <div class="logo">
+      <img src="../assets/img/favicon.jpg" alt="" />
+      <h1>EchoBeat</h1>
     </div>
-    
-   
+    <NavBar>
+      <template #nav-item-3>
+        <router-link
+          to="/client"
+          class="nav-link special"
+          @mouseout="clientHide"
+          @mouseover="clientShow"
+        >
+          <span class="client-font">客户端</span>
+          <div
+            class="position-control"
+            @mouseout="clientHide"
+            @mouseover="clientShow"
+          >
+            <client v-show="showClient"></client>
+          </div>
+        </router-link>
+      </template>
+    </NavBar>
+    <router-link to="/studio">工作站</router-link>
+    <!--    搜索、vip、充值部分组件-->
+    <div class="feature">
+      <searchVue></searchVue>
+      <!--          <loginVipCharge></loginVipCharge>-->
+    </div>
+  </div>
+  <div class="mobile-header">
+    <div class="logo">
+      <img src="../assets/img/favicon.jpg" alt="" />
+      <h1>EchoBeat</h1>
+    </div>
+    <searchVue></searchVue>
+    <div class="portrait-box">
+      <portrait></portrait>
+    </div>
+
+    <div class="menu-container" @click="openMenu($event)">
+      <echo-icon-park-outline:music-menu
+        style="font-size: 2rem; color: #a5a8ad; vertical-align: bottom"
+      ></echo-icon-park-outline:music-menu>
+    </div>
+    <Teleport to="body">
+      <Transition name="mask-fade">
+        <div class="mask" @click="closeMask($event)" v-if="isShowMenu">
+          <div class="menu-option-box" @click="$event.stopPropagation()">
+            <NavBar @closeMask="closeMask">
+              <template #nav-item-3>
+                <router-link
+                  to="/client"
+                  class="nav-link special"
+                  @mouseout="clientHide"
+                  @mouseover="clientShow"
+                >
+                  <span class="client-font">客户端</span>
+                  <div
+                    class="position-control"
+                    @mouseout="clientHide"
+                    @mouseover="clientShow"
+                  >
+                    <client v-show="showClient"></client>
+                  </div>
+                </router-link>
+              </template>
+            </NavBar>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+  </div>
 </template>
 
 <script setup>
-import searchVue from './headerFeatures/search.vue'
-import loginVipCharge from './headerFeatures/loginVipCharge.vue'
-import clientVue from './headerPopover/client.vue'
+import portrait from "./headerFeatures/portrait.vue"
+import searchVue from "./headerFeatures/search.vue"
+// import loginVipCharge from "./headerFeatures/loginVipCharge.vue"
+import NavBar from "./headerFeatures/NavBar.vue"
+import client from "./headerPopover/client.vue"
 
-import { ref } from 'vue'
+import { ref } from "vue"
 
-
-//控制客户端下载弹窗显示隐藏
-const showClient=ref(false)
-
-// 弹窗这里有个很大的问题，就是光标脱离触发元素后，弹窗就会消失，导致光标在移动到弹窗的过程中，弹窗就已经消失
-//这里用的是弹窗留一点范围在触发元素范围内，使光标在没有离开触发范围的时候已经接触到弹窗,这样就不会消失，但这个办法
-//不是很好，因为两者之间距离太远没有重叠就不能用这个办法了,另外v-show也是很关键的一点，用v-if是不成功的
-
-function clientshow(){
-    showClient.value=true
+const isShowMenu = ref(false)
+const preventScroll = (e) => {
+  e.preventDefault()
+}
+function closeMask() {
+  isShowMenu.value = false
+  window.removeEventListener("wheel", preventScroll, { passive: false })
+  window.removeEventListener("touchmove", preventScroll, { passive: false })
+}
+function openMenu() {
+  isShowMenu.value = true
+  window.addEventListener("wheel", preventScroll, { passive: false })
+  window.addEventListener("touchmove", preventScroll, { passive: false })
+}
+const showClient = ref(false)
+function clientShow() {
+  console.log(111)
+  showClient.value = true
 }
 
-function clientHide (){
-    
-    showClient.value=false
+function clientHide() {
+  console.log(222)
+  showClient.value = false
 }
-
 </script>
 
-
 <style scoped>
-   body {
-    margin: 0px;
-   }
-    * {
-        margin: 0px;
-        padding: 0px;
-        list-style: none;
-    }
-  .position-control {
-    position: absolute;
-    top: 80px;
-    left: 22px;
-     
-  }
-    
-    .header {
-       
-        
-        display: flex;
-        flex-direction: row;
-        justify-content: flex-start;
-        border-bottom: 1px solid #f2f2f2;
-    }
-    .logo {
-        position: relative;
-        width: 173px;
-        height: 100px;
-    }
-    .logo img {
-        position: absolute;
-        top: 50%;
-        width: 100%;
-        transform: translateY(-50%);
-    }
-    .nav-li {
-        display: flex;
-        margin-left: 30px;
-        
-    }
-    /* 如果写成.nav-li-link :hover，又会出现跟行高一样继承到子组件
-    里的问题，解决办法要么选择到router-link，要么再去子组件里删除样式l,这里选择去子组件删 */
-    .nav-li-link:hover {
-        
-        cursor: pointer;
-    }
-     .nav-li-link:first-child a{
-        background-color: #31c27c;
-        color: #fff;
+.client-font {
+  position: relative;
+}
 
-    }
-  
-     .nav-li-link:nth-child(3) {
-        position:relative;
-    }
-     .nav-li-link {
-       /* 这个行高会继承到client组件里的privilege p元素，还没弄清原理
-       解决办法是记得在privilege p里设置行高😓 */
-        line-height: 100px;
-       
-        font-size: 20px;
-    }
-    .nav-li-link a {
-        display: inline-block;
-        padding: 0px 20px;
-        height: 100px;
-        
-    }
-    .nav-li-link img {
-        position: absolute;
-        top: 14%;
-        left: 60%;
-    }
-    .feature {
-        display: flex;
-        align-items: center;
-        height: 100px;
-    }
-    
-   
+.client-font::before {
+  position: absolute;
+  content: url("../assets/img/mark_1.png");
+  top: -20px;
+  left: 20px;
+}
+
+.nav-client {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  background-color: aquamarine;
+}
+
+.position-control {
+  position: absolute;
+  top: 80px;
+  left: 22px;
+}
+
+.nav-link {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 500;
+}
+
+.special-icon {
+  position: absolute;
+  top: 20px;
+  left: 65px;
+}
+
+.nav-li {
+  display: flex;
+  margin-left: 30px;
+}
+
+.nav-li-link {
+  width: 100px;
+  height: 100px;
+  background-color: #31c27c;
+}
+
+@media screen and (min-width: 900px) {
+  .pc-header {
+    min-width: 1400px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f2f2f2;
+  }
+
+  .mobile-header {
+    display: none;
+  }
+
+  .logo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 220px;
+    height: 100%;
+  }
+
+  .logo img {
+    width: 50px;
+  }
+
+  .feature {
+    display: flex;
+    align-items: center;
+    height: 100px;
+  }
+}
+
+@media screen and (max-width: 450px) {
+  .pc-header {
+    display: none;
+  }
+
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    max-width: 400px;
+    width: 375px;
+  }
+
+  .portrait-box {
+    margin: 0 10px;
+  }
+
+  .pc-nav-link {
+    display: none;
+  }
+
+  .feature {
+    display: none;
+  }
+
+  .logo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 120px;
+    height: 60px;
+  }
+
+  .logo img {
+    width: 26px;
+  }
+
+  .logo h1 {
+    font-size: 18px;
+  }
+}
+
+.menu-option-box {
+  position: absolute;
+  right: 0;
+  width: 75%;
+  height: 100%;
+  background-color: #f2f2f2;
+}
+
+.mask {
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  position: absolute;
+  top: 0;
+  z-index: 9999;
+}
+
+.mask-fade-enter-from,
+.mask-fade-leave-to {
+  opacity: 0;
+}
+
+.mask-fade-enter-to,
+.mask-fade-leave-from {
+  opacity: 1;
+}
+
+.mask-fade-enter-active,
+.mask-fade-leave-active {
+  transition: all 0.3s ease-in-out;
+}
 </style>

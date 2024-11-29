@@ -68,7 +68,7 @@ const loginStatus = useLoginStatus()
     <!-- <button class="test" @click="fetchQR">点击获取二维码</button>
     <button class="test" @click="checkQRLoginStatus">检查二维码登录结果</button>
     <button class="test" @click="getUserInfo">获取登录用户信息</button> -->
-    <img :src="loginQRImg" alt="">
+    <!-- <img :src="loginQRImg" alt=""> -->
     <router-view></router-view>
     <login v-if="loginStatus.isLogin"></login>
   </div>
