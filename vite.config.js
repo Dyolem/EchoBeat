@@ -1,10 +1,35 @@
 import { defineConfig } from "vite"
 import vue from "@vitejs/plugin-vue"
+import Icons from "unplugin-icons/vite"
+import IconsResolver from "unplugin-icons/resolver"
+import Components from "unplugin-vue-components/vite"
+import vueJsx from "@vitejs/plugin-vue-jsx"
 import path from "path"
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    vueJsx(),
+    Icons({
+      /* options */
+      compiler: "vue3",
+    }),
+    Components({
+      resolvers: [
+        IconsResolver({
+          prefix: "echo",
+          // customCollections: [
+          //   "custom",
+          //   "inline",
+          //   // custom external packages
+          //   "plain-color-icons",
+          //   "test-color-icons",
+          // ],
+        }),
+      ],
+    }),
+  ],
   //设置根路径
   // base: '/music-vue/',
   //跨域设置
