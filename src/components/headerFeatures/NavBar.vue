@@ -1,25 +1,24 @@
 <script setup>
-import { useRoute } from 'vue-router';
-import { ref, onMounted, watch } from 'vue'
+import { useRoute } from "vue-router"
+import { ref, onMounted, watch } from "vue"
 const route = useRoute()
 onMounted(() => {
-
-  console.log(route);
-  console.log(route.path);
-  watch(() => route.path, () => {
-    emit('closeMask')
-  })
-
+  console.log(route)
+  console.log(route.path)
+  watch(
+    () => route.path,
+    () => {
+      emit("closeMask")
+    },
+  )
 })
-const emit = defineEmits(['closeMask'])
+const emit = defineEmits(["closeMask"])
 
 //控制客户端下载弹窗显示隐藏
-
 
 // 弹窗这里有个很大的问题，就是光标脱离触发元素后，弹窗就会消失，导致光标在移动到弹窗的过程中，弹窗就已经消失
 //这里用的是弹窗留一点范围在触发元素范围内，使光标在没有离开触发范围的时候已经接触到弹窗,这样就不会消失，但这个办法
 //不是很好，因为两者之间距离太远没有重叠就不能用这个办法了,另外v-show也是很关键的一点，用v-if是不成功的
-
 
 // const navMap = ref([
 //   {
@@ -77,20 +76,28 @@ const emit = defineEmits(['closeMask'])
 // ]);
 
 const navItems = ref([
-  { id: 1, title: '音乐馆', to: '/' },
-  { id: 2, title: '我的音乐', to: '/my-music' },
-  { id: 3, title: '客户端', to: '/client' }, // 可通过插槽自定义
-  { id: 4, title: '开放平台', to: '/open-platform' },
-  { id: 5, title: 'VIP', to: '/vip' }
-]);
+  { id: 1, title: "音乐馆", to: "/" },
+  { id: 2, title: "我的音乐", to: "/my-music" },
+  { id: 3, title: "客户端", to: "/client" }, // 可通过插槽自定义
+  { id: 4, title: "开放平台", to: "/open-platform" },
+  { id: 5, title: "VIP", to: "/vip" },
+  { id: 6, title: "工作站", to: "/studio" },
+])
 </script>
 <template>
   <div class="nav-bar">
     <ul class="nav-list">
-      <li v-for="item in navItems" :key="item.id" class="nav-item" :class="{ 'active-nav': route.path === item.to }">
+      <li
+        v-for="item in navItems"
+        :key="item.id"
+        class="nav-item"
+        :class="{ 'active-nav': route.path === item.to }"
+      >
         <!-- 如果传入了自定义插槽则使用插槽，否则使用默认渲染 -->
         <slot :name="`nav-item-${item.id}`">
-          <router-link :to="item.to" class="nav-link">{{ item.title }}</router-link>
+          <router-link :to="item.to" class="nav-link">{{
+            item.title
+          }}</router-link>
         </slot>
       </li>
     </ul>
@@ -102,7 +109,6 @@ const navItems = ref([
   position: absolute;
   top: 80px;
   left: 22px;
-
 }
 
 .nav-bar {
@@ -112,7 +118,7 @@ const navItems = ref([
   flex: 1;
 }
 
-@media screen and (max-width:450px) {
+@media screen and (max-width: 450px) {
   .nav-list {
     display: flex;
     flex-direction: column;
@@ -135,7 +141,7 @@ const navItems = ref([
   }
 }
 
-@media screen and (min-width:900px) {
+@media screen and (min-width: 900px) {
   .nav-list {
     display: flex;
     justify-content: space-around;
@@ -144,8 +150,6 @@ const navItems = ref([
     padding: 0;
   }
 }
-
-
 
 .nav-item {
   height: 100%;

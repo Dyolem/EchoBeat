@@ -23,10 +23,10 @@
         </router-link>
       </template>
     </NavBar>
-    <router-link to="/studio">工作站</router-link>
     <!--    搜索、vip、充值部分组件-->
     <div class="feature">
       <searchVue></searchVue>
+      <portrait></portrait>
       <!--          <loginVipCharge></loginVipCharge>-->
     </div>
   </div>
