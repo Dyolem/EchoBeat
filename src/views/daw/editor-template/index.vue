@@ -15,13 +15,28 @@ const gridHeight = ref(BASE_GRID_HEIGHT)
 const trackZoomRatio = ref(TRACK_ZOOM_RATIO)
 const trackAmount = ref(10)
 const beatsNumber = ref(BEATS_NUMBER)
-const editorContentWidth = computed(() => {
+const canvasContentWidth = computed(() => {
   return gridWidth.value * trackZoomRatio.value * beatsNumber.value * 4
 })
-const editorContentHeight = computed(() => {
+const canvasContentHeight = computed(() => {
   return gridHeight.value * trackAmount.value
 })
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
+const props = defineProps({
+  defaultEditorViewHeight: {
+    type: Number,
+  },
+})
+const defaultEditorViewHeight = ref(props.defaultEditorViewHeight)
+const editorViewHeight = computed({
+  get: () => {
+    console.log(defaultEditorViewHeight.value)
+    return defaultEditorViewHeight.value
+  },
+  set: (newValue) => {
+    defaultEditorViewHeight.value = newValue
+  },
+})
 </script>
 
 <template>
@@ -35,22 +50,24 @@ const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
         <TrackRuler
           :grid-width="gridWidth"
           :grid-height="gridHeight"
-          :track-ruler-width="editorContentWidth"
+          :track-ruler-width="canvasContentWidth"
           :track-zoom-ratio="trackZoomRatio"
         ></TrackRuler>
         <TimeLine
-          :timeline-height="editorContentHeight"
+          :timeline-height="canvasContentHeight"
           :parent-container="editorContentContainerRef"
-          :track-ruler-width="editorContentWidth"
+          :track-ruler-width="canvasContentWidth"
         ></TimeLine>
       </div>
 
       <div class="editor-content">
-        <InteractableLayer
-          :canvas-width="editorContentWidth"
-          :canvas-height="editorContentHeight"
-          v-model:track-zoom-ratio="trackZoomRatio"
-        ></InteractableLayer>
+        <slot name="default-interactable-layer">
+          <InteractableLayer
+            :canvas-width="canvasContentWidth"
+            :canvas-height="canvasContentHeight"
+            v-model:track-zoom-ratio="trackZoomRatio"
+          ></InteractableLayer>
+        </slot>
       </div>
     </div>
   </section>
@@ -61,7 +78,7 @@ const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
 .studio-editor {
   display: flex;
   width: 100vw;
-  height: var(--content-height);
+  height: v-bind(editorViewHeight + "px");
 }
 
 .editor-side-bar {
@@ -75,8 +92,8 @@ const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  height: var(--content-height);
-  //padding-left: 10px;
+  height: v-bind(editorViewHeight + "px");
+  /**padding-left: 10px;**/
 }
 .track-ruler-container {
   position: sticky;
@@ -84,7 +101,8 @@ const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
   z-index: 10;
 }
 .editor-content {
-  width: 100%;
+  width: v-bind(canvasContentWidth + "px");
+  height: v-bind(canvasContentHeight + "px");
   flex-grow: 1;
   background-color: black;
 }

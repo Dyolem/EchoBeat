@@ -1,7 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, useTemplateRef, watch, watchEffect } from "vue"
 import { debounce } from "@/utils/debounce.js"
-import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
 
@@ -89,9 +88,11 @@ function drawGrid(
 }
 let canvas = null
 let interactableLayer = null
+const canvasBackgroundRef = useTemplateRef("canvasBackgroundRef")
 
 onMounted(() => {
-  canvas = document.getElementById("background")
+  // canvas = document.getElementById("background")
+  canvas = canvasBackgroundRef.value
   interactableLayer = document.getElementById("interactable-layer")
 
   drawGrid(canvas, {
@@ -160,9 +161,12 @@ onUnmounted(() => {
   <div class="interactable-container" ref="interactableContainerRef">
     <canvas
       id="background"
+      ref="canvasBackgroundRef"
       style="position: absolute; top: 0; left: 0; z-index: 1"
     ></canvas>
-    <div id="interactable-layer"></div>
+    <slot name="interactable-layer">
+      <div id="interactable-layer"></div>
+    </slot>
   </div>
 </template>
 
