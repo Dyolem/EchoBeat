@@ -1,10 +1,9 @@
 <script setup>
-import TrackRuler from "@/views/daw/editor/track-ruler/index.vue"
-import InteractableLayer from "@/views/daw/editor/interactable-layer/index.vue"
-import ContextMenu from "@/components/ContextMenu.vue"
+import TrackRuler from "@/views/daw/editor-template/track-ruler/index.vue"
+import InteractableLayer from "@/views/daw/editor-template/interactable-layer/index.vue"
 
-import { computed, onMounted, ref, useTemplateRef } from "vue"
-import TimeLine from "@/views/daw/editor/interactable-layer/TimeLine.vue"
+import { computed, ref, useTemplateRef } from "vue"
+import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 
 const BEATS_NUMBER = 95
 const BASE_GRID_WIDTH = 20
@@ -23,14 +22,6 @@ const editorContentHeight = computed(() => {
   return gridHeight.value * trackAmount.value
 })
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
-onMounted(() => {
-  // editorContentContainerRef.value.addEventListener("click", (event) => {
-  //   console.log(event.pageX)
-  // })
-})
-// window.addEventListener("mousemove", () => {
-//   console.log(editorContentContainerRef.value.scrollLeft)
-// })
 </script>
 
 <template>

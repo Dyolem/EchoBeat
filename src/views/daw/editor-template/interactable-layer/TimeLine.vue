@@ -39,6 +39,7 @@ onMounted(() => {
         console.log("selectionchange")
       },
       {
+        // once: true,
         signal: selectionController.signal,
       },
     )

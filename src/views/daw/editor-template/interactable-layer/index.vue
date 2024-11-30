@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, useTemplateRef, watch, watchEffect } from "vue"
 import { debounce } from "@/utils/debounce.js"
-import TimeLine from "@/views/daw/editor/interactable-layer/TimeLine.vue"
+import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
 

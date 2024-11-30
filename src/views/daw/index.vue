@@ -1,6 +1,6 @@
 <script setup>
 import EditorHeader from "@/views/daw/header/index.vue"
-import Editor from "@/views/daw/editor/index.vue"
+import Editor from "@/views/daw/editor-template/index.vue"
 </script>
 
 <template>
