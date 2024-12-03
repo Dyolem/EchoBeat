@@ -32,7 +32,7 @@ const beatInfo = computed(() => {
       width: dynamicBeatWidth.value,
     })
   }
-  console.log(beatInfoArr)
+  // console.log(beatInfoArr)
   return beatInfoArr
 })
 </script>

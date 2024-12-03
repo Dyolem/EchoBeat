@@ -8,6 +8,10 @@ const ZOOM_THRESHOLD = 0.1
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
 const props = defineProps({
+  id: {
+    type: String,
+    default: "",
+  },
   canvasWidth: {
     type: Number,
     default: 2000,
@@ -55,6 +59,13 @@ function CreateZoomCanvas(increment = 0.1, emit) {
       return
     }
     emit("update:trackZoomRatio", newZoomVal)
+    trackRulerStore.SynchronizeState(props.id, {
+      trackZoomRatio: newZoomVal,
+      translateXDistance:
+        (trackRulerStore.timeLineInstanceMap.get(props.id).translateXDistance /
+          trackRulerStore.timeLineInstanceMap.get(props.id).trackZoomRatio) *
+        newZoomVal,
+    })
   }
 }
 const zoomCanvas = CreateZoomCanvas(ZOOM_THRESHOLD, emit)
@@ -125,7 +136,27 @@ onMounted(() => {
       const translateX =
         event.clientX -
         interactableContainerRef.value.getBoundingClientRect().left
-      trackRulerStore.timeLineTranslateDistance = translateX
+      trackRulerStore.SynchronizeState(props.id, {
+        translateXDistance: translateX,
+      })
+    },
+    {
+      signal: controller.signal,
+    },
+  )
+  interactableContainerRef.value.addEventListener(
+    "keydown",
+    (e) => {
+      console.log(11)
+      zoomCanvas((zoomIncrement) => {
+        if (e.ctrlKey) {
+          if (e.code === "Equal") {
+            return Number((props.trackZoomRatio + zoomIncrement).toFixed(1))
+          } else if (e.code === "Minus") {
+            return Number((props.trackZoomRatio - zoomIncrement).toFixed(1))
+          }
+        }
+      })
     },
     {
       signal: controller.signal,
@@ -137,15 +168,15 @@ window.addEventListener(
   "keydown",
   (e) => {
     e.preventDefault()
-    zoomCanvas((zoomIncrement) => {
-      if (e.ctrlKey) {
-        if (e.code === "Equal") {
-          return Number((props.trackZoomRatio + zoomIncrement).toFixed(1))
-        } else if (e.code === "Minus") {
-          return Number((props.trackZoomRatio - zoomIncrement).toFixed(1))
-        }
-      }
-    })
+    // zoomCanvas((zoomIncrement) => {
+    //   if (e.ctrlKey) {
+    //     if (e.code === "Equal") {
+    //       return Number((props.trackZoomRatio + zoomIncrement).toFixed(1))
+    //     } else if (e.code === "Minus") {
+    //       return Number((props.trackZoomRatio - zoomIncrement).toFixed(1))
+    //     }
+    //   }
+    // })
   },
   {
     signal: controller.signal,
@@ -158,7 +189,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="interactable-container" ref="interactableContainerRef">
+  <div
+    class="interactable-container"
+    ref="interactableContainerRef"
+    tabindex="-1"
+  >
     <canvas
       id="background"
       ref="canvasBackgroundRef"

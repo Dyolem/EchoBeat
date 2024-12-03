@@ -1,9 +1,13 @@
 <script setup>
-import { onMounted, ref, useTemplateRef, watch } from "vue"
+import { computed, onMounted, ref, useTemplateRef, watch } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
 const timelineRef = useTemplateRef("timelineRef")
 const props = defineProps({
+  id: {
+    type: String,
+    default: "",
+  },
   timelineHeight: {
     type: Number,
     default: 600,
@@ -15,17 +19,24 @@ const props = defineProps({
   trackRulerWidth: {
     type: Number,
   },
+  trackZoomRatio: {
+    type: Number,
+    default: 1,
+  },
 })
-// watch(
-//   () => trackRulerStore.timeLineTranslateDistance,
-//   (newVal) => {
-//     timelineRef.value.style.transform = `translateX(${newVal}px)`
-//   },
-// )
+
+trackRulerStore.timeLineInstanceMap.set(props.id, {
+  translateXDistance: 0,
+  scrollLeft: 0,
+  trackZoomRatio: props.trackZoomRatio,
+})
+const timeLineTranslateDistance = computed(() => {
+  return trackRulerStore.timeLineInstanceMap.get(props.id).translateXDistance
+})
 onMounted(() => {
   if (!timelineRef.value) return
   let translateXDistance = 0
-
+  trackRulerStore.timelineStateReset()
   timelineRef.value.addEventListener("mousedown", () => {
     const selectionController = new AbortController()
     document.addEventListener(
@@ -45,25 +56,28 @@ onMounted(() => {
     )
 
     const controller = new AbortController()
+    function mousemoveHandler(event) {
+      const left =
+        event.clientX - props.parentContainer.getBoundingClientRect().left
+      translateXDistance = props.parentContainer.scrollLeft + left
+      if (
+        translateXDistance >= 0 &&
+        translateXDistance <= props.trackRulerWidth
+      ) {
+        trackRulerStore.SynchronizeState(props.id, {
+          translateXDistance,
+          scrollLeft: translateXDistance - left,
+          trackZoomRatio: props.trackZoomRatio,
+        })
 
-    document.addEventListener(
-      "mousemove",
-      (event) => {
-        const left =
-          event.clientX - props.parentContainer.getBoundingClientRect().left
-        translateXDistance = props.parentContainer.scrollLeft + left
-        if (
-          translateXDistance >= 0 &&
-          translateXDistance <= props.trackRulerWidth
-        ) {
-          trackRulerStore.timeLineTranslateDistance = translateXDistance
-          // timelineRef.value.style.transform = `translateX(${translateXDistance}px)`
-        }
-      },
-      {
-        signal: controller.signal,
-      },
-    )
+        // props.parentContainer.scrollLeft = translateXDistance - left
+        // console.log(translateXDistance - left)
+        // timelineRef.value.style.transform = `translateX(${translateXDistance}px)`
+      }
+    }
+    document.addEventListener("mousemove", mousemoveHandler, {
+      signal: controller.signal,
+    })
     document.addEventListener("mouseup", () => {
       console.log("mouseup")
       controller.abort()
@@ -91,9 +105,7 @@ onMounted(() => {
   background-clip: content-box;
   border-left: var(--enlarge-hover-size) solid transparent;
   border-right: var(--enlarge-hover-size) solid transparent;
-  transform: v-bind(
-    "`translateX(${trackRulerStore.timeLineTranslateDistance}px)`"
-  );
+  transform: v-bind("`translateX(${timeLineTranslateDistance}px)`");
 }
 .timeline:hover {
   cursor: col-resize;
