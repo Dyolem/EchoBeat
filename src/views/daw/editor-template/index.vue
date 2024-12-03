@@ -2,14 +2,31 @@
 import TrackRuler from "@/views/daw/editor-template/track-ruler/index.vue"
 import InteractableLayer from "@/views/daw/editor-template/interactable-layer/index.vue"
 
-import { computed, ref, useTemplateRef, useId, watch, onMounted } from "vue"
+import {
+  computed,
+  ref,
+  useTemplateRef,
+  useId,
+  watch,
+  onMounted,
+  onUnmounted,
+  toRefs,
+} from "vue"
 import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
+import { debounce } from "@/utils/debounce.js"
 const trackRulerStore = useTrackRulerStore()
 const BEATS_NUMBER = 95
 const BASE_GRID_WIDTH = 20
 const BASE_GRID_HEIGHT = 90
 const TRACK_ZOOM_RATIO = 1
+
+const MIN_DRAWER_EDITOR_HEIGHT = 300
+const MAX_DRAWER_EDITOR_HEIGHT = 700
+const MIN_DRAWER_EDITOR_WIDTH = 600
+const MAX_DRAWER_EDITOR_WIDTH = 1600
+const INIT_DRAWER_EDITOR_HEIGHT = 400
+const INIT_DRAWER_EDITOR_WIDTH = 1600
 
 const id = useId()
 const gridWidth = ref(BASE_GRID_WIDTH)
@@ -23,13 +40,65 @@ const canvasContentWidth = computed(() => {
 const canvasContentHeight = computed(() => {
   return gridHeight.value * trackAmount.value
 })
+
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
 const props = defineProps({
   editorViewHeight: {
     type: Number,
+    default: INIT_DRAWER_EDITOR_HEIGHT,
+  },
+  editorViewWidth: {
+    type: Number,
+    default: INIT_DRAWER_EDITOR_WIDTH,
+  },
+  resizable: {
+    type: Boolean,
+    default: false,
+  },
+  resizableEditorHeightRange: {
+    type: Array,
+    default: () => [MIN_DRAWER_EDITOR_HEIGHT, MAX_DRAWER_EDITOR_HEIGHT],
+  },
+  resizableEditorWidthRange: {
+    type: Array,
+    default: () => [MIN_DRAWER_EDITOR_WIDTH, MAX_DRAWER_EDITOR_WIDTH],
+  },
+
+  resizeDirection: {
+    type: Array,
+    default: () => [],
   },
 })
-
+const emit = defineEmits(["update:editorViewWidth", "update:editorViewHeight"])
+// const minDrawerEditorHeight = computed(() => {
+//   return props.minResizableEditorHeight
+// })
+const { resizableEditorWidthRange, resizableEditorHeightRange } = toRefs(props)
+// const maxResizableEditorHeight = computed(() => {
+//   return resizableEditorHeightRange
+// })
+const drawerEditorHeight = ref(INIT_DRAWER_EDITOR_HEIGHT)
+const drawerEditorWidth = ref(INIT_DRAWER_EDITOR_WIDTH)
+const controller = new AbortController()
+// function resizeHandler(event) {
+//   const maxEditorHeight =
+//     window.innerHeight - headerHeight.value - footerHeight.value
+//   mainEditorHeight.value = maxEditorHeight
+//   console.log(maxEditorHeight, MAX_DRAWER_EDITOR_HEIGHT)
+//
+//   maxDrawerEditorHeight.value = Math.min(
+//     maxEditorHeight,
+//     MAX_DRAWER_EDITOR_HEIGHT,
+//   )
+//   minDrawerEditorHeight.value = Math.min(
+//     maxDrawerEditorHeight.value,
+//     minDrawerEditorHeight.value,
+//   )
+// }
+// const debouncedResizeHandler = debounce(resizeHandler, 200)
+// window.addEventListener("resize", debouncedResizeHandler, {
+//   signal: controller.signal,
+// })
 onMounted(() => {
   trackRulerStore.editorViewWidth =
     editorContentContainerRef.value.getBoundingClientRect().width
@@ -39,10 +108,186 @@ onMounted(() => {
       editorContentContainerRef.value.scrollLeft = newVal
     },
   )
+  if (!props.resizable) return
+  // resizeHandler()
+  const box = editorContentContainerRef.value
+
+  // 鼠标触发区域的边缘宽度
+  const edgeWidth = 10
+
+  // 状态跟踪
+  let isResizing = false
+  let resizeDirection = ""
+  let startX, startY, startWidth, startHeight
+
+  // 根据鼠标位置设置光标样式
+  box.addEventListener(
+    "mousemove",
+    (e) => {
+      if (isResizing) return // 如果正在拖动，跳过
+
+      const rect = box.getBoundingClientRect()
+      const offsetX = e.clientX - rect.left
+      const offsetY = e.clientY - rect.top
+
+      if (
+        props.resizeDirection.includes("nw") &&
+        offsetX < edgeWidth &&
+        offsetY < edgeWidth
+      ) {
+        // 左上角
+        box.style.cursor = "nwse-resize"
+        resizeDirection = "nw"
+      } else if (
+        props.resizeDirection.includes("ne") &&
+        offsetX > rect.width - edgeWidth &&
+        offsetY < edgeWidth
+      ) {
+        // 右上角
+        box.style.cursor = "nesw-resize"
+        resizeDirection = "ne"
+      } else if (
+        props.resizeDirection.includes("sw") &&
+        offsetX < edgeWidth &&
+        offsetY > rect.height - edgeWidth
+      ) {
+        // 左下角
+        box.style.cursor = "nesw-resize"
+        resizeDirection = "sw"
+      } else if (
+        props.resizeDirection.includes("se") &&
+        offsetX > rect.width - edgeWidth &&
+        offsetY > rect.height - edgeWidth
+      ) {
+        // 右下角
+        box.style.cursor = "nwse-resize"
+        resizeDirection = "se"
+      } else if (props.resizeDirection.includes("w") && offsetX < edgeWidth) {
+        // 左边
+        box.style.cursor = "ew-resize"
+        resizeDirection = "w"
+      } else if (
+        props.resizeDirection.includes("e") &&
+        offsetX > rect.width - edgeWidth
+      ) {
+        // 右边
+        box.style.cursor = "ew-resize"
+        resizeDirection = "e"
+      } else if (props.resizeDirection.includes("n") && offsetY < edgeWidth) {
+        // 上边
+        box.style.cursor = "ns-resize"
+        resizeDirection = "n"
+      } else if (
+        props.resizeDirection.includes("s") &&
+        offsetY > rect.height - edgeWidth - 20 &&
+        offsetY < rect.height - edgeWidth - 10
+      ) {
+        // 下边
+        box.style.cursor = "ns-resize"
+        resizeDirection = "s"
+      } else {
+        // 默认
+        box.style.cursor = "default"
+        resizeDirection = ""
+      }
+    },
+    { signal: controller.signal },
+  )
+
+  // 开始拖动
+  box.addEventListener(
+    "mousedown",
+    (e) => {
+      if (!resizeDirection) return
+
+      isResizing = true
+      startX = e.clientX
+      startY = e.clientY
+      startWidth = box.clientWidth
+      startHeight = box.getBoundingClientRect().height
+
+      document.body.style.cursor = box.style.cursor // 设置全局光标样式
+    },
+    { signal: controller.signal },
+  )
+
+  // 拖动调整尺寸
+  document.addEventListener(
+    "mousemove",
+    (e) => {
+      if (!isResizing) return
+
+      const dx = e.clientX - startX
+      const dy = e.clientY - startY
+      const clampLegalValue = (height, range) => {
+        const [min, max] = range
+        return Math.max(Math.min(height, max), min)
+      }
+      if (resizeDirection.includes("e")) {
+        // box.style.width = `${startWidth + dx}px`
+        const width = clampLegalValue(
+          startWidth + dx,
+          resizableEditorWidthRange.value,
+        )
+        emit("update:editorViewWidth", width)
+      }
+      if (resizeDirection.includes("s")) {
+        console.log(11)
+        const height = clampLegalValue(
+          startHeight + dy,
+          resizableEditorHeightRange.value,
+        )
+        emit("update:editorViewHeight", height)
+        // drawerEditorHeight.value = height
+        // box.style.height = `${height}px`
+      }
+      if (resizeDirection.includes("w")) {
+        // box.style.width = `${startWidth - dx}px`
+        const width = clampLegalValue(
+          startWidth - dx,
+          resizableEditorWidthRange.value,
+        )
+        console.log(width)
+        emit("update:editorViewWidth", width)
+        // drawerEditorWidth.value =width
+        // box.style.left = `${box.offsetLeft + dx}px`
+      }
+      if (resizeDirection.includes("n")) {
+        let height = startHeight - dy
+        height = clampLegalValue(height, resizableEditorHeightRange.value)
+        // box.style.height = `${height}px`
+        emit("update:editorViewHeight", height)
+        // drawerEditorHeight.value = height
+        // box.style.top = `${box.offsetTop + dy}px`
+      }
+    },
+    { signal: controller.signal },
+  )
+
+  // 停止拖动
+  document.addEventListener(
+    "mouseup",
+    () => {
+      isResizing = false
+      resizeDirection = ""
+      document.body.style.cursor = "default"
+    },
+    { signal: controller.signal },
+  )
 })
 
-const editorViewHeight = computed(() => {
-  return props.editorViewHeight
+// const editorViewHeight = computed(() => {
+//   if (props.resizable) return drawerEditorHeight.value
+//   return props.editorViewHeight
+// })
+// const editorViewWidth = computed(() => {
+//   if (props.resizable) return drawerEditorWidth.value
+//   console.log(props.editorViewWidth)
+//   return props.editorViewWidth
+// })
+
+onUnmounted(() => {
+  controller.abort()
 })
 </script>
 
@@ -87,22 +332,15 @@ const editorViewHeight = computed(() => {
 @import "src/styles/scrollbar.css";
 .studio-editor {
   display: flex;
-  width: 100vw;
   height: v-bind(editorViewHeight + "px");
 }
 
-.editor-side-bar {
-  width: 300px;
-  flex-shrink: 0;
-  height: 100%;
-  background-color: gray;
-}
 .editor-content-container {
   overflow: auto;
-  flex-grow: 1;
   display: flex;
   flex-direction: column;
   height: v-bind(editorViewHeight + "px");
+  width: v-bind(editorViewWidth + "px");
   /**padding-left: 10px;**/
 }
 .track-ruler-container {
