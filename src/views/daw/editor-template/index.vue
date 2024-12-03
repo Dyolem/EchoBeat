@@ -23,8 +23,10 @@ const TRACK_ZOOM_RATIO = 1
 
 const MIN_DRAWER_EDITOR_HEIGHT = 300
 const MAX_DRAWER_EDITOR_HEIGHT = 700
+
 const MIN_DRAWER_EDITOR_WIDTH = 600
 const MAX_DRAWER_EDITOR_WIDTH = 1600
+
 const INIT_DRAWER_EDITOR_HEIGHT = 400
 const INIT_DRAWER_EDITOR_WIDTH = 1600
 
@@ -70,35 +72,11 @@ const props = defineProps({
   },
 })
 const emit = defineEmits(["update:editorViewWidth", "update:editorViewHeight"])
-// const minDrawerEditorHeight = computed(() => {
-//   return props.minResizableEditorHeight
-// })
+
 const { resizableEditorWidthRange, resizableEditorHeightRange } = toRefs(props)
-// const maxResizableEditorHeight = computed(() => {
-//   return resizableEditorHeightRange
-// })
-const drawerEditorHeight = ref(INIT_DRAWER_EDITOR_HEIGHT)
-const drawerEditorWidth = ref(INIT_DRAWER_EDITOR_WIDTH)
+
 const controller = new AbortController()
-// function resizeHandler(event) {
-//   const maxEditorHeight =
-//     window.innerHeight - headerHeight.value - footerHeight.value
-//   mainEditorHeight.value = maxEditorHeight
-//   console.log(maxEditorHeight, MAX_DRAWER_EDITOR_HEIGHT)
-//
-//   maxDrawerEditorHeight.value = Math.min(
-//     maxEditorHeight,
-//     MAX_DRAWER_EDITOR_HEIGHT,
-//   )
-//   minDrawerEditorHeight.value = Math.min(
-//     maxDrawerEditorHeight.value,
-//     minDrawerEditorHeight.value,
-//   )
-// }
-// const debouncedResizeHandler = debounce(resizeHandler, 200)
-// window.addEventListener("resize", debouncedResizeHandler, {
-//   signal: controller.signal,
-// })
+
 onMounted(() => {
   trackRulerStore.editorViewWidth =
     editorContentContainerRef.value.getBoundingClientRect().width
@@ -109,7 +87,7 @@ onMounted(() => {
     },
   )
   if (!props.resizable) return
-  // resizeHandler()
+
   const box = editorContentContainerRef.value
 
   // 鼠标触发区域的边缘宽度
@@ -168,7 +146,7 @@ onMounted(() => {
         resizeDirection = "w"
       } else if (
         props.resizeDirection.includes("e") &&
-        offsetX > rect.width - edgeWidth
+        offsetX > rect.width - edgeWidth - 10
       ) {
         // 右边
         box.style.cursor = "ew-resize"
@@ -203,7 +181,7 @@ onMounted(() => {
       isResizing = true
       startX = e.clientX
       startY = e.clientY
-      startWidth = box.clientWidth
+      startWidth = box.getBoundingClientRect().width
       startHeight = box.getBoundingClientRect().height
 
       document.body.style.cursor = box.style.cursor // 设置全局光标样式
@@ -247,7 +225,6 @@ onMounted(() => {
           startWidth - dx,
           resizableEditorWidthRange.value,
         )
-        console.log(width)
         emit("update:editorViewWidth", width)
         // drawerEditorWidth.value =width
         // box.style.left = `${box.offsetLeft + dx}px`
@@ -276,16 +253,6 @@ onMounted(() => {
   )
 })
 
-// const editorViewHeight = computed(() => {
-//   if (props.resizable) return drawerEditorHeight.value
-//   return props.editorViewHeight
-// })
-// const editorViewWidth = computed(() => {
-//   if (props.resizable) return drawerEditorWidth.value
-//   console.log(props.editorViewWidth)
-//   return props.editorViewWidth
-// })
-
 onUnmounted(() => {
   controller.abort()
 })
@@ -293,7 +260,6 @@ onUnmounted(() => {
 
 <template>
   <section class="studio-editor" :id="id">
-    <div class="editor-side-bar"></div>
     <div
       class="editor-content-container beatified-scrollbar"
       ref="editorContentContainerRef"
