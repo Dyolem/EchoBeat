@@ -58,7 +58,14 @@ onUnmounted(() => {
       <button @click="isOpenDrawerEditor = !isOpenDrawerEditor">
         instrument
       </button>
-      <DrawerEditor v-if="isOpenDrawerEditor"></DrawerEditor>
+      <teleport to="body">
+        <Transition name="drawer">
+          <DrawerEditor
+            class="drawer-box"
+            v-show="isOpenDrawerEditor"
+          ></DrawerEditor>
+        </Transition>
+      </teleport>
     </footer>
   </div>
 </template>
@@ -83,11 +90,24 @@ onUnmounted(() => {
   height: 100%;
   background-color: gray;
 }
-
+.drawer-box {
+  position: absolute;
+  bottom: v-bind(footerHeight + "px");
+  z-index: 100;
+}
 .footer {
   position: relative;
   width: 100vw;
   height: v-bind(footerHeight + "px");
   background-color: lightpink;
+}
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.drawer-enter-from,
+.drawer-leave-to {
+  opacity: 0;
 }
 </style>

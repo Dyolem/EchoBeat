@@ -111,14 +111,10 @@ onUnmounted(() => {
 
 <style scoped>
 .drawer-editor-container {
-  position: absolute;
   display: flex;
   height: fit-content;
-  transform: translateY(-100%);
-  z-index: 100;
 }
 .drawer-editor-side-bar {
-  min-width: 100px;
   width: v-bind(drawerEditorSideBarWidth + "px");
   background-color: gray;
 }
