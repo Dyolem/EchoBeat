@@ -44,6 +44,7 @@ const canvasContentHeight = computed(() => {
 })
 
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
+const editorContentRef = useTemplateRef("editorContentRef")
 const props = defineProps({
   editorViewHeight: {
     type: Number,
@@ -185,6 +186,7 @@ onMounted(() => {
       startHeight = box.getBoundingClientRect().height
 
       document.body.style.cursor = box.style.cursor // 设置全局光标样式
+      editorContentRef.value.style.pointerEvents = "none"
     },
     { signal: controller.signal },
   )
@@ -248,6 +250,7 @@ onMounted(() => {
       isResizing = false
       resizeDirection = ""
       document.body.style.cursor = "default"
+      editorContentRef.value.style.pointerEvents = "initial"
     },
     { signal: controller.signal },
   )
@@ -280,7 +283,7 @@ onUnmounted(() => {
         ></TimeLine>
       </div>
 
-      <div class="editor-content">
+      <div class="editor-content" ref="editorContentRef">
         <slot name="default-interactable-layer">
           <InteractableLayer
             :id="id"
