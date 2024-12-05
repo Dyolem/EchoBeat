@@ -199,9 +199,7 @@ onUnmounted(() => {
       ref="canvasBackgroundRef"
       style="position: absolute; top: 0; left: 0; z-index: 1"
     ></canvas>
-    <slot name="interactable-layer">
-      <div id="interactable-layer"></div>
-    </slot>
+    <div id="interactable-layer"><slot name="interactable-layer"> </slot></div>
   </div>
 </template>
 
@@ -210,5 +208,9 @@ onUnmounted(() => {
   position: relative;
   width: v-bind(canvasWidth + "px");
   height: v-bind(canvasHeight + "px");
+}
+#interactable-layer {
+  position: absolute;
+  z-index: 10;
 }
 </style>

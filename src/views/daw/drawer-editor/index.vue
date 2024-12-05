@@ -96,7 +96,9 @@ onUnmounted(() => {
 
 <template>
   <div class="drawer-editor-container" ref="drawerEditorContainerRef">
-    <div class="drawer-editor-side-bar"></div>
+    <div class="drawer-editor-side-bar">
+      <slot name="editor-sidebar"></slot>
+    </div>
     <Editor
       v-model:editor-view-height="drawerEditorViewHeight"
       v-model:editor-view-width="drawerEditorViewWidth"
@@ -105,7 +107,21 @@ onUnmounted(() => {
       :resize-direction="['n', 's', 'w', 'e', 'nw']"
       :resizable-editor-height-range="heightRange"
       :resizable-editor-width-range="widthRange"
-    ></Editor>
+    >
+      <template
+        #default-interactable-layer="{
+          interactableLayerWidth,
+          interactableLayerHeight,
+        }"
+      >
+        <slot
+          name="custom-editor-layer"
+          :interactableLayerWidth="interactableLayerWidth"
+          :interactableLayerHeight="interactableLayerHeight"
+        >
+        </slot>
+      </template>
+    </Editor>
   </div>
 </template>
 

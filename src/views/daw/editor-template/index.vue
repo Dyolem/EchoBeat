@@ -284,14 +284,21 @@ onUnmounted(() => {
       </div>
 
       <div class="editor-content" ref="editorContentRef">
-        <slot name="default-interactable-layer">
-          <InteractableLayer
-            :id="id"
-            :canvas-width="canvasContentWidth"
-            :canvas-height="canvasContentHeight"
-            v-model:track-zoom-ratio="trackZoomRatio"
-          ></InteractableLayer>
-        </slot>
+        <InteractableLayer
+          :id="id"
+          :canvas-width="canvasContentWidth"
+          :canvas-height="canvasContentHeight"
+          v-model:track-zoom-ratio="trackZoomRatio"
+        >
+          <template #interactable-layer>
+            <slot
+              name="default-interactable-layer"
+              :interactableLayerWidth="canvasContentWidth"
+              :interactableLayerHeight="canvasContentHeight"
+            >
+            </slot>
+          </template>
+        </InteractableLayer>
       </div>
     </div>
   </section>
@@ -315,7 +322,7 @@ onUnmounted(() => {
 .track-ruler-container {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 100;
 }
 .editor-content {
   width: v-bind(canvasContentWidth + "px");
