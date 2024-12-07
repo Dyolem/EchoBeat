@@ -6,8 +6,11 @@ import MidiOptions from "@/views/daw/midi-editor/midi-sidebar/midi-options/index
 
 <template>
   <DrawerEditor>
-    <template #editor-sidebar>
-      <div class="midi-editor-sidebar">
+    <template #editor-sidebar="{ editorSidebarWidth, editorSidebarHeight }">
+      <div
+        class="midi-editor-sidebar"
+        :style="{ height: editorSidebarHeight + 'px' }"
+      >
         <MidiOptions></MidiOptions>
         <ChromaticScale></ChromaticScale>
       </div>

@@ -97,7 +97,11 @@ onUnmounted(() => {
 <template>
   <div class="drawer-editor-container" ref="drawerEditorContainerRef">
     <div class="drawer-editor-side-bar">
-      <slot name="editor-sidebar"></slot>
+      <slot
+        name="editor-sidebar"
+        :editorSidebarWidth="drawerEditorSideBarWidth"
+        :editorSidebarHeight="drawerEditorViewHeight"
+      ></slot>
     </div>
     <Editor
       v-model:editor-view-height="drawerEditorViewHeight"
