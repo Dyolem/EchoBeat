@@ -1,7 +1,7 @@
 <script setup>
 import DrawerEditor from "@/views/daw/drawer-editor/index.vue"
-import ChromaticScale from "@/views/daw/midi-editor/midi-sidebar/chromatic-scale/index.vue"
-import MidiOptions from "@/views/daw/midi-editor/midi-sidebar/midi-options/index.vue"
+import MidiSidebar from "@/views/daw/midi-editor/midi-sidebar/index.vue"
+import NoteEditor from "@/views/daw/midi-editor/note-editor/index.vue"
 </script>
 
 <template>
@@ -11,24 +11,27 @@ import MidiOptions from "@/views/daw/midi-editor/midi-sidebar/midi-options/index
         class="midi-editor-sidebar"
         :style="{ height: editorSidebarHeight + 'px' }"
       >
-        <MidiOptions></MidiOptions>
-        <ChromaticScale></ChromaticScale>
+        <midi-sidebar></midi-sidebar>
       </div>
     </template>
 
     <template
       #custom-editor-layer="{ interactableLayerWidth, interactableLayerHeight }"
     >
-      <div
-        class="test"
-        :style="{
-          width: interactableLayerWidth + 'px',
-          height: interactableLayerHeight + 'px',
-          backgroundColor: 'antiquewhite',
-        }"
-      >
-        {{ `${interactableLayerWidth}, ${interactableLayerHeight}` }}
-      </div>
+      <NoteEditor
+        :note-track-width="interactableLayerWidth"
+        :note-track-height="interactableLayerHeight"
+      ></NoteEditor>
+      <!--      <div-->
+      <!--        class="test"-->
+      <!--        :style="{-->
+      <!--          width: interactableLayerWidth + 'px',-->
+      <!--          height: interactableLayerHeight + 'px',-->
+      <!--          backgroundColor: 'antiquewhite',-->
+      <!--        }"-->
+      <!--      >-->
+      <!--        {{ `${interactableLayerWidth}, ${interactableLayerHeight}` }}-->
+      <!--      </div>-->
     </template>
   </DrawerEditor>
 </template>
