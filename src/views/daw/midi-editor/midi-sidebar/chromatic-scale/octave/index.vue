@@ -1,4 +1,6 @@
 <script setup>
+import { computed, inject } from "vue"
+
 const props = defineProps({
   id: {
     type: Number,
@@ -7,6 +9,16 @@ const props = defineProps({
     type: String,
     default: "C",
   },
+})
+const pianoKeySize = inject("pianoKeySize")
+const whiteKeyWidth = computed(() => {
+  return pianoKeySize.value.whiteKeyWidth
+})
+const whiteKeyHeight = computed(() => {
+  return pianoKeySize.value.whiteKeyHeight
+})
+const blackKeyHeight = computed(() => {
+  return pianoKeySize.value.blackKeyHeight
 })
 </script>
 
@@ -42,9 +54,9 @@ const props = defineProps({
 
 <style scoped>
 .octave-box {
-  --black-key-height: 10px;
-  --white-key-height: 16px;
-  --white-key-width: 60px;
+  --black-key-height: v-bind(blackKeyHeight + "px");
+  --white-key-height: v-bind(whiteKeyHeight + "px");
+  --white-key-width: v-bind(whiteKeyWidth + "px");
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -72,7 +84,7 @@ const props = defineProps({
   text-align: end;
   background-color: white;
   width: var(--white-key-width);
-  height: 16px;
+  height: v-bind(whiteKeyHeight + "px");
   border: 1px solid gray;
   border-top: none;
   font-size: 12px;

@@ -1,7 +1,11 @@
 <script setup>
 import Octave from "@/views/daw/midi-editor/midi-sidebar/chromatic-scale/octave/index.vue"
-import { computed, ref } from "vue"
-const chromaticScaleArr = ref(["C1", "C2", "C3", "C4", "C5", "C6", "C7"])
+import { computed, inject } from "vue"
+
+const chromaticInfo = inject("chromaticInfo")
+const chromaticScaleArr = computed(() => {
+  return chromaticInfo.value.chromaticScale
+})
 const octaveInfoArr = computed(() => {
   return chromaticScaleArr.value
     .slice()
