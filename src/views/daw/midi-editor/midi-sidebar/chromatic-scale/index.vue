@@ -6,8 +6,8 @@ const octaveInfoArr = computed(() => {
   return chromaticScaleArr.value
     .slice()
     .reverse()
-    .map((item) => {
-      return { id: item, octaveName: item }
+    .map((item, index) => {
+      return { id: index, octaveName: item }
     })
 })
 </script>
