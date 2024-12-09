@@ -34,7 +34,7 @@ function scrollHandler(event) {
 </script>
 
 <template>
-  <div class="chromatic-scale-container">
+  <div class="chromatic-scale-container scrollbar-settings">
     <div class="fold-button">Fold</div>
     <div
       class="octave-container beatified-scrollbar"
@@ -54,8 +54,10 @@ function scrollHandler(event) {
 <style scoped>
 @import "src/styles/scrollbar.css";
 .chromatic-scale-container {
+  box-sizing: border-box;
   width: 100px;
   height: 100%;
+  padding-bottom: var(--scrollbar-width);
   background-color: antiquewhite;
   display: flex;
   flex-direction: column;
@@ -73,5 +75,9 @@ function scrollHandler(event) {
   overflow: auto;
   width: 100%;
   box-sizing: border-box;
+  scrollbar-width: none; /* Firefox,Chrome,Edge */
+}
+.octave-container::-webkit-scrollbar {
+  display: none; /* Chrome,Edge,Safari */
 }
 </style>
