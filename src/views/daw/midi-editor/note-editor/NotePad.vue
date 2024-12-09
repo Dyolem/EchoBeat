@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject } from "vue"
+import { computed, inject, watchEffect } from "vue"
 
 const OCTAVE_KEY_COUNT = 12
 const OCTAVE_WHITE_KEY_COUNT = 7
@@ -58,6 +58,10 @@ const rectInfo = computed(() => {
   }
 
   return rectInfoArr
+})
+const { updateCanvasContentHeight } = inject("canvasContentHeight")
+watchEffect(() => {
+  updateCanvasContentHeight(svgHeight.value)
 })
 </script>
 

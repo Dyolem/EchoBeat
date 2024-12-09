@@ -11,6 +11,7 @@ import {
   onMounted,
   onUnmounted,
   toRefs,
+  inject,
 } from "vue"
 import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
@@ -36,11 +37,20 @@ const gridHeight = ref(BASE_GRID_HEIGHT)
 const trackZoomRatio = ref(TRACK_ZOOM_RATIO)
 const trackAmount = ref(10)
 const beatsNumber = ref(BEATS_NUMBER)
+
+const {
+  canvasContentHeight: provideCanvasContentHeight = null,
+  updateCanvasContentHeight = null,
+} = inject("canvasContentHeight", {})
 const canvasContentWidth = computed(() => {
   return gridWidth.value * trackZoomRatio.value * beatsNumber.value * 4
 })
 const canvasContentHeight = computed(() => {
-  return gridHeight.value * trackAmount.value
+  if (props.canvasContentHeightProp !== undefined)
+    return props.canvasContentHeightProp
+  else if (provideCanvasContentHeight !== null)
+    return provideCanvasContentHeight.value
+  else return gridHeight.value * trackAmount.value
 })
 
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
@@ -71,8 +81,19 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  editorScrollTop: {
+    type: Number,
+  },
+  canvasContentHeightProp: {
+    type: Number,
+    default: undefined,
+  },
 })
-const emit = defineEmits(["update:editorViewWidth", "update:editorViewHeight"])
+const emit = defineEmits([
+  "update:editorViewWidth",
+  "update:editorViewHeight",
+  "update:editorScrollTop",
+])
 
 const { resizableEditorWidthRange, resizableEditorHeightRange } = toRefs(props)
 
@@ -85,6 +106,12 @@ onMounted(() => {
     () => trackRulerStore.timeLineInstanceMap.get(id).scrollLeft,
     (newVal) => {
       editorContentContainerRef.value.scrollLeft = newVal
+    },
+  )
+  watch(
+    () => props.editorScrollTop,
+    (newVal) => {
+      editorContentContainerRef.value.scrollTop = newVal
     },
   )
   if (!props.resizable) return
@@ -255,7 +282,11 @@ onMounted(() => {
     { signal: controller.signal },
   )
 })
-
+function scrollHandler(event) {
+  const editorScrollTop = event.target.scrollTop
+  if (props.editorScrollTop === editorScrollTop) return
+  emit("update:editorScrollTop", editorScrollTop)
+}
 onUnmounted(() => {
   controller.abort()
 })
@@ -266,6 +297,7 @@ onUnmounted(() => {
     <div
       class="editor-content-container beatified-scrollbar"
       ref="editorContentContainerRef"
+      @scroll="scrollHandler"
     >
       <div class="track-ruler-container">
         <TrackRuler

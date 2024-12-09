@@ -1,7 +1,19 @@
 <script setup>
 import Octave from "@/views/daw/midi-editor/midi-sidebar/chromatic-scale/octave/index.vue"
-import { computed, inject } from "vue"
-
+import { computed, inject, useTemplateRef, watch } from "vue"
+const props = defineProps({
+  chromaticScaleScrollTop: {
+    type: Number,
+  },
+})
+const emit = defineEmits(["update:chromaticScaleScrollTop"])
+const octaveContainerRef = useTemplateRef("octaveContainerRef")
+watch(
+  () => props.chromaticScaleScrollTop,
+  (newScrollTopVal) => {
+    octaveContainerRef.value.scrollTop = newScrollTopVal
+  },
+)
 const chromaticInfo = inject("chromaticInfo")
 const chromaticScaleArr = computed(() => {
   return chromaticInfo.value.chromaticScale
@@ -14,12 +26,21 @@ const octaveInfoArr = computed(() => {
       return { id: index, octaveName: item }
     })
 })
+
+function scrollHandler(event) {
+  const scrollTop = event.target.scrollTop
+  emit("update:chromaticScaleScrollTop", scrollTop)
+}
 </script>
 
 <template>
   <div class="chromatic-scale-container">
     <div class="fold-button">Fold</div>
-    <div class="octave-boxes beatified-scrollbar">
+    <div
+      class="octave-container beatified-scrollbar"
+      @scroll="scrollHandler"
+      ref="octaveContainerRef"
+    >
       <Octave
         v-for="item in octaveInfoArr"
         :key="item.id"
@@ -47,7 +68,7 @@ const octaveInfoArr = computed(() => {
   align-content: center;
   background-color: palevioletred;
 }
-.octave-boxes {
+.octave-container {
   flex-grow: 1;
   overflow: auto;
   width: 100%;

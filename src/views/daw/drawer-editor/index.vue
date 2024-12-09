@@ -31,6 +31,16 @@ const maxDrawerEditorWidth = ref(MAX_DRAWER_EDITOR_WIDTH)
 const initDrawerEditorWidth = ref(INIT_DRAWER_EDITOR_WIDTH)
 const initDrawerEditorHeight = ref(INIT_DRAWER_EDITOR_HEIGHT)
 
+const props = defineProps({
+  editorScrollTop: {
+    type: Number,
+  },
+  canvasContentHeightProp: {
+    type: Number,
+    default: undefined,
+  },
+})
+const emit = defineEmits(["update:editorScrollTop"])
 const drawerEditorViewHeight = computed({
   get: () => {
     return initDrawerEditorHeight.value
@@ -89,6 +99,10 @@ function updateEditorViewWidthHandler(newViewWidthVal) {
   drawerEditorSideBarWidth.value = window.innerWidth - newViewWidthVal
   console.log(drawerEditorSideBarWidth.value)
 }
+function updateEditorScrollTopHandler(editorScrollTop) {
+  emit("update:editorScrollTop", editorScrollTop)
+}
+
 onUnmounted(() => {
   controller.abort()
 })
@@ -111,6 +125,9 @@ onUnmounted(() => {
       :resize-direction="['n', 's', 'w', 'e', 'nw']"
       :resizable-editor-height-range="heightRange"
       :resizable-editor-width-range="widthRange"
+      :editor-scroll-top="editorScrollTop"
+      @update:editor-scroll-top="updateEditorScrollTopHandler"
+      :canvas-content-height-prop="canvasContentHeightProp"
     >
       <template
         #default-interactable-layer="{
