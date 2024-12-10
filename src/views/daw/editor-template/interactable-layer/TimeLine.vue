@@ -78,11 +78,14 @@ onMounted(() => {
     document.addEventListener("mousemove", mousemoveHandler, {
       signal: controller.signal,
     })
-    document.addEventListener("mouseup", () => {
-      console.log("mouseup")
-      controller.abort()
-      selectionController.abort()
-    })
+    document.addEventListener(
+      "mouseup",
+      () => {
+        controller.abort()
+        selectionController.abort()
+      },
+      { once: true },
+    )
   })
 })
 </script>
@@ -100,7 +103,7 @@ onMounted(() => {
   left: calc(-0px - var(--enlarge-hover-size));
   z-index: 10;
   width: 2px;
-  height: v-bind("timelineHeight + 'px'");
+  height: v-bind(timelineHeight + "px");
   background-color: red;
   background-clip: content-box;
   border-left: var(--enlarge-hover-size) solid transparent;
