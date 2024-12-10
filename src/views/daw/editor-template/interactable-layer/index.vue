@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, useTemplateRef, watch, watchEffect } from "vue"
+import { inject, onMounted, onUnmounted, useTemplateRef, watch } from "vue"
 import { debounce } from "@/utils/debounce.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
@@ -7,6 +7,7 @@ const trackRulerStore = useTrackRulerStore()
 const ZOOM_THRESHOLD = 0.1
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
+const drawGrid = inject("drawGrid", defaultDrawGrid)
 const props = defineProps({
   id: {
     type: String,
@@ -31,6 +32,10 @@ const props = defineProps({
   gridHeight: {
     type: Number,
     default: 90,
+  },
+  modifyTimelineByClick: {
+    type: Boolean,
+    default: true,
   },
 })
 
@@ -71,7 +76,7 @@ function CreateZoomCanvas(increment = 0.1, emit) {
 const zoomCanvas = CreateZoomCanvas(ZOOM_THRESHOLD, emit)
 
 // 绘制轨道格子
-function drawGrid(
+function defaultDrawGrid(
   target,
   { canvasWidth, canvasHeight, gridWidth = 20, gridHeight = 90 },
 ) {
@@ -83,14 +88,17 @@ function drawGrid(
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
   ctx.beginPath()
-  ctx.strokeStyle = "#ddd"
 
+  //Draw vertical lines
   for (let x = 0; x < canvasWidth; x += gridWidth) {
+    ctx.strokeStyle = "#ddd"
     ctx.moveTo(x, 0)
     ctx.lineTo(x, canvasHeight)
   }
-
+  ctx.stroke()
+  // Draw horizontal lines
   for (let y = 0; y < canvasHeight; y += gridHeight) {
+    ctx.strokeStyle = "#ddd"
     ctx.moveTo(0, y)
     ctx.lineTo(canvasWidth, y)
   }
@@ -130,20 +138,7 @@ onMounted(() => {
   interactableContainerRef.value.addEventListener("wheel", drawHandler, {
     signal: controller.signal,
   })
-  interactableContainerRef.value.addEventListener(
-    "click",
-    (event) => {
-      const translateX =
-        event.clientX -
-        interactableContainerRef.value.getBoundingClientRect().left
-      trackRulerStore.SynchronizeState(props.id, {
-        translateXDistance: translateX,
-      })
-    },
-    {
-      signal: controller.signal,
-    },
-  )
+
   interactableContainerRef.value.addEventListener(
     "keydown",
     (e) => {
@@ -162,6 +157,23 @@ onMounted(() => {
       signal: controller.signal,
     },
   )
+
+  if (props.modifyTimelineByClick) {
+    interactableContainerRef.value.addEventListener(
+      "click",
+      (event) => {
+        const translateX =
+          event.clientX -
+          interactableContainerRef.value.getBoundingClientRect().left
+        trackRulerStore.SynchronizeState(props.id, {
+          translateXDistance: translateX,
+        })
+      },
+      {
+        signal: controller.signal,
+      },
+    )
+  }
 })
 
 window.addEventListener(

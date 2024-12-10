@@ -12,6 +12,7 @@ import {
   onUnmounted,
   toRefs,
   inject,
+  provide,
 } from "vue"
 import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
@@ -42,6 +43,9 @@ const {
   canvasContentHeight: provideCanvasContentHeight = null,
   updateCanvasContentHeight = null,
 } = inject("canvasContentHeight", {})
+
+const trackRulerHeight = ref(50)
+provide("trackRulerHeight", trackRulerHeight)
 const canvasContentWidth = computed(() => {
   return gridWidth.value * trackZoomRatio.value * beatsNumber.value * 4
 })
@@ -55,6 +59,8 @@ const canvasContentHeight = computed(() => {
 
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
 const editorContentRef = useTemplateRef("editorContentRef")
+provide("editorContentContainerRef", editorContentContainerRef)
+
 const props = defineProps({
   editorViewHeight: {
     type: Number,
@@ -87,6 +93,10 @@ const props = defineProps({
   canvasContentHeightProp: {
     type: Number,
     default: undefined,
+  },
+  modifyTimelineByClick: {
+    type: Boolean,
+    default: true,
   },
 })
 const emit = defineEmits([
@@ -304,6 +314,7 @@ onUnmounted(() => {
           :grid-width="gridWidth"
           :grid-height="gridHeight"
           :track-ruler-width="canvasContentWidth"
+          :track-ruler-height="trackRulerHeight"
           :track-zoom-ratio="trackZoomRatio"
         ></TrackRuler>
         <TimeLine
@@ -320,6 +331,7 @@ onUnmounted(() => {
           :id="id"
           :canvas-width="canvasContentWidth"
           :canvas-height="canvasContentHeight"
+          :modify-timeline-by-click="modifyTimelineByClick"
           v-model:track-zoom-ratio="trackZoomRatio"
         >
           <template #interactable-layer>

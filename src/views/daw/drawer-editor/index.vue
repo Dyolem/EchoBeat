@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue"
+import { computed, onMounted, onUnmounted, provide, ref } from "vue"
 import Editor from "@/views/daw/editor-template/index.vue"
 import { debounce } from "@/utils/debounce.js"
 
@@ -39,7 +39,11 @@ const props = defineProps({
     type: Number,
     default: undefined,
   },
+  drawDrawerEditorGridHandler: {
+    type: Function,
+  },
 })
+provide("drawGrid", props.drawDrawerEditorGridHandler)
 const emit = defineEmits(["update:editorScrollTop"])
 const drawerEditorViewHeight = computed({
   get: () => {
@@ -128,6 +132,7 @@ onUnmounted(() => {
       :editor-scroll-top="editorScrollTop"
       @update:editor-scroll-top="updateEditorScrollTopHandler"
       :canvas-content-height-prop="canvasContentHeightProp"
+      :modify-timeline-by-click="false"
     >
       <template
         #default-interactable-layer="{
