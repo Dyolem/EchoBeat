@@ -7,6 +7,10 @@ const props = defineProps({
     type: Number,
     default: 2000,
   },
+  trackRulerHeight: {
+    type: Number,
+    default: 50,
+  },
   gridWidth: {
     type: Number,
   },
@@ -64,7 +68,7 @@ const beatInfo = computed(() => {
 <style scoped>
 .track-ruler-container {
   width: v-bind(trackRulerWidth + "px");
-  height: 50px;
+  height: v-bind(trackRulerHeight + "px");
   background-color: #f0f0f0;
   position: relative;
   display: flex;
