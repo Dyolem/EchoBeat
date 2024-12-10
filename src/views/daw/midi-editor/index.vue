@@ -58,12 +58,34 @@ provide("canvasContentHeight", {
   canvasContentHeight,
   updateCanvasContentHeight,
 })
+function drawNotePadGrid(
+  target,
+  { canvasWidth, canvasHeight, gridWidth = 20, gridHeight = 90 },
+) {
+  if (!target) return
+  const ctx = target.getContext("2d")
+  target.width = canvasWidth
+  target.height = canvasHeight + 1
+
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+
+  ctx.beginPath()
+
+  //Draw vertical lines
+  for (let x = 0; x < canvasWidth; x += gridWidth) {
+    ctx.strokeStyle = "#ddd"
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, canvasHeight)
+  }
+  ctx.stroke()
+}
 </script>
 
 <template>
   <DrawerEditor
     :canvas-content-height-prop="canvasContentHeight"
     :editor-scroll-top="editorScrollTop"
+    :draw-drawer-editor-grid-handler="drawNotePadGrid"
     @update:editor-scroll-top="updateEditorScrollTopHandler"
   >
     <template #editor-sidebar="{ editorSidebarWidth, editorSidebarHeight }">
