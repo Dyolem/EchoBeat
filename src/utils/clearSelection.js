@@ -5,7 +5,7 @@ export default function clearSelection() {
     () => {
       const selection = window.getSelection()
       if (selection && selection.toString()) {
-        // 清空选区，禁用弹出选项
+        // Clear selection and disable pop-up options
         selection.removeAllRanges()
       }
     },
