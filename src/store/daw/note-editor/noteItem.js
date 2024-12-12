@@ -3,9 +3,11 @@ import { computed, ref, watch } from "vue"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const noteHeight = ref(10)
+  const minGridWidth = ref(20)
   const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
   const NATURAL_SEMITONE = ["E", "B"]
+  const isSnapedToHorizontalGrid = ref(true)
   const pitchNameMappedToArea = computed(() => {
     const _toFixed = (val, num = 1) => {
       return Number(val.toFixed(num))
@@ -67,9 +69,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   function noteItemTemplate({ x, y } = {}, insertToSpecifiedPitchName) {
     const count = noteItemsMap.value.get(insertToSpecifiedPitchName).noteItems
       .length
-    const [insertStartY, insertEndY] = noteItemsMap.value.get(
+    const [snappedX, snappedY] = snapToOtherPitchNameTrack(
+      { x, y },
       insertToSpecifiedPitchName,
-    ).scaleY
+    )
+    // const [insertStartY, insertEndY] = noteItemsMap.value.get(
+    //   insertToSpecifiedPitchName,
+    // ).scaleY
     // console.log(
     //   { x, y },
     //   insertToSpecifiedPitchName,
@@ -81,8 +87,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       id: `${insertToSpecifiedPitchName}-${count}`,
       width: 20,
       height: 10,
-      x: x,
-      y: insertStartY,
+      x: snappedX,
+      y: snappedY,
       backGroundColor: "lightblue",
     }
   }
@@ -122,9 +128,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const pitchName =
       expectedInsertToPitchName ??
       getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
-    const scaleY = noteItemsMap.value.get(pitchName)?.scaleY
+    const snappedY = noteItemsMap.value.get(pitchName)?.scaleY[0]
+    const snappedX = Math.floor(x / minGridWidth.value) * minGridWidth.value
 
-    return scaleY
+    return [snappedX, snappedY]
   }
   function updateNoteItemPosition(id, pitchName, position) {
     if (id === undefined || pitchName === undefined || position.length !== 2)
@@ -135,11 +142,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     if (updateNoteTarget === undefined) return
     // const [startY, endY] = noteItemsMap.value.get(pitchName).scaleY
     const [x, y] = position
-    const [startY, endY] = snapToOtherPitchNameTrack({ x, y })
-    updateNoteTarget.x = x
-    updateNoteTarget.y = startY
-    // updateNoteTarget.x = x
-    // updateNoteTarget.y = y
+    const [snappedX, snappedY] = snapToOtherPitchNameTrack({ x, y })
+    if (isSnapedToHorizontalGrid.value) {
+      updateNoteTarget.x = snappedX
+    } else {
+      updateNoteTarget.x = x
+    }
+    updateNoteTarget.y = snappedY
     // if (y < startY || y > endY) {
     //   const insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
     //     { x, y },
@@ -152,6 +161,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     // }
   }
   return {
+    isSnapedToHorizontalGrid,
     noteHeight,
     noteItemsMap,
     insertNoteItem,

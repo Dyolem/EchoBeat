@@ -142,9 +142,9 @@ function stretchEditorNoteLength(event) {}
   position: absolute;
   overflow: hidden;
   display: flex;
-  width: 30px;
+  width: 20px;
   height: v-bind(noteHeight + "px");
-  padding: 0 4px;
+  padding: 0 2px;
   background-color: var(--note-background-color);
   border-radius: 2px;
 }
@@ -154,7 +154,7 @@ function stretchEditorNoteLength(event) {}
   background-color: var(--note-background-color);
 }
 .draggable-region {
-  width: 6px;
+  width: 4px;
   height: 100%;
   background-color: var(--note-background-color);
 }
