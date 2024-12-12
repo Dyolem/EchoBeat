@@ -1,9 +1,15 @@
 <script setup>
-import { inject, onMounted, useTemplateRef } from "vue"
+import { inject, onMounted, useTemplateRef, watch } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
+import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
+const noteItemMap = useNoteItemStore()
 
 const editorNoteRef = useTemplateRef("editorNoteRef")
 const props = defineProps({
+  belongedPitchName: {
+    type: String,
+    required: true,
+  },
   noteWidth: {
     type: Number,
     default: 30,
@@ -23,6 +29,15 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  notePosition: {
+    type: Object,
+    default: () => [0, 0],
+  },
+})
+
+const isNoteMainSelected = defineModel("isNoteMainSelected", {
+  type: Boolean,
+  default: false,
 })
 const editorContentContainerRef = inject("editorContentContainerRef")
 const trackRulerHeight = inject("trackRulerHeight")
@@ -37,14 +52,7 @@ function isLegalTranslateDistance(translateXDistance, translateYDistance) {
     translateYDistance <= props.notePadHeight - props.noteHeight
   )
 }
-function draggableRegionHandler(event) {}
-const isNoteMainSelected = defineModel("isNoteMainSelected", {
-  type: Boolean,
-  default: false,
-})
-
-onMounted(() => {})
-function stretchEditorNoteLength(event) {
+function draggableRegionHandler(event) {
   if (!isNoteMainSelected.value) return
   const selectionController = clearSelection()
   const mousedownX =
@@ -57,6 +65,7 @@ function stretchEditorNoteLength(event) {
       editorContentContainerRef.value.getBoundingClientRect().left
     translateXDistance =
       editorContentContainerRef.value.scrollLeft + left - mousedownX
+
     const top =
       event.clientY -
       editorContentContainerRef.value.getBoundingClientRect().top
@@ -65,8 +74,9 @@ function stretchEditorNoteLength(event) {
       top -
       trackRulerHeight.value -
       mousedownY
-    if (isLegalTranslateDistance(translateXDistance, translateYDistance))
+    if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
       editorNoteRef.value.style.transform = `translate(${translateXDistance}px,${translateYDistance}px)`
+    }
   }
   document.addEventListener("mousemove", mouseMoveHandler)
   document.addEventListener(
@@ -80,6 +90,21 @@ function stretchEditorNoteLength(event) {
     },
   )
 }
+
+onMounted(() => {
+  watch(
+    () => props.notePosition,
+    (newPosition) => {
+      const [newX, newY] = newPosition.value
+      // console.log(isLegalTranslateDistance(newX, newY))
+      if (isLegalTranslateDistance(newX, newY) && editorNoteRef.value) {
+        editorNoteRef.value.style.transform = `translate(${newX}px,${newY}px)`
+      }
+    },
+    { deep: true, immediate: true },
+  )
+})
+function stretchEditorNoteLength(event) {}
 </script>
 
 <template>
@@ -87,16 +112,16 @@ function stretchEditorNoteLength(event) {
     class="editor-note"
     :class="{ 'is-selected': isNoteMainSelected }"
     ref="editorNoteRef"
-    @mousedown="stretchEditorNoteLength"
+    @mousedown="draggableRegionHandler"
   >
     <div
       class="editor-note-left draggable-region"
-      @mousedown="draggableRegionHandler"
+      @mousedown="stretchEditorNoteLength"
     ></div>
     <div class="editor-note-main" @click.stop="isNoteMainSelected = true"></div>
     <div
       class="editor-note-right draggable-region"
-      @mousedown="draggableRegionHandler"
+      @mousedown="stretchEditorNoteLength"
     ></div>
   </div>
 </template>
@@ -105,6 +130,7 @@ function stretchEditorNoteLength(event) {
 .editor-note {
   --note-background-color: v-bind(noteBackGroundColor);
   box-sizing: border-box;
+  position: absolute;
   overflow: hidden;
   display: flex;
   width: 30px;
