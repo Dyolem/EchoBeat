@@ -80,6 +80,7 @@ function noteEditorClickHandler(event) {
       <note-item
         v-for="noteItem in noteTrack.noteItems"
         :key="noteItem.id"
+        :id="noteItem.id"
         :belonged-pitch-name="pitchName"
         :note-height="noteHeight"
         :note-pad-width="notePadWidth"

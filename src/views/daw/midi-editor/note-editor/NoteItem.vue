@@ -6,6 +6,10 @@ const noteItemMap = useNoteItemStore()
 
 const editorNoteRef = useTemplateRef("editorNoteRef")
 const props = defineProps({
+  id: {
+    type: String,
+    required: true,
+  },
   belongedPitchName: {
     type: String,
     required: true,
@@ -75,7 +79,12 @@ function draggableRegionHandler(event) {
       trackRulerHeight.value -
       mousedownY
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      editorNoteRef.value.style.transform = `translate(${translateXDistance}px,${translateYDistance}px)`
+      console.log("move")
+      noteItemMap.updateNoteItemPosition(props.id, props.belongedPitchName, [
+        translateXDistance,
+        translateYDistance,
+      ])
+      // editorNoteRef.value.style.transform = `translate(${translateXDistance}px,${translateYDistance}px)`
     }
   }
   document.addEventListener("mousemove", mouseMoveHandler)

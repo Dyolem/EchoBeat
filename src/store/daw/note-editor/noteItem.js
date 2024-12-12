@@ -54,14 +54,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   function getInsertToSpecifiedPitchName({ x, y } = {}, pitchNameMappedToArea) {
     if (x === undefined || y === undefined) return
     let insertToSpecifiedPitchName = ""
-    pitchNameMappedToArea.find((item) => {
-      const { pitchName, scale } = item
-      const [startY, endY] = scale
+    const res = pitchNameMappedToArea.find((item) => {
+      const [startY, endY] = item.scale
       if (y >= startY && y < endY) {
-        insertToSpecifiedPitchName = pitchName
         return true
       }
     })
+    insertToSpecifiedPitchName = res?.pitchName ?? ""
     return insertToSpecifiedPitchName
   }
 
@@ -87,21 +86,78 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       backGroundColor: "lightblue",
     }
   }
-  function insertNoteItem({ x, y } = {}) {
+  const getSpecifiedNote = (id, pitchName) => {
+    return noteItemsMap.value
+      .get(pitchName)
+      .noteItems.find((item) => item.id === id)
+  }
+  function insertNoteItem({ x, y } = {}, insertToSpecifiedPitchName) {
     if (x === undefined || y === undefined) return
 
-    const insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
-      { x, y },
-      pitchNameMappedToArea.value,
-    )
+    const pitchName =
+      insertToSpecifiedPitchName ??
+      getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
     // console.log(insertToSpecifiedPitchName)
     // console.log(noteItemsMap.value.get(insertToSpecifiedPitchName))
     noteItemsMap.value
-      .get(insertToSpecifiedPitchName)
-      .noteItems.push(noteItemTemplate({ x, y }, insertToSpecifiedPitchName))
+      .get(pitchName)
+      ?.noteItems.push(noteItemTemplate({ x, y }, pitchName))
   }
-  function updateNoteItemPosition(pitchName, id, position) {}
-  return { noteHeight, noteItemsMap, insertNoteItem, updateNoteItemPosition }
+  function deleteNoteItem(id, deleteFromSpecifiedPitchName) {
+    if (id === undefined || deleteFromSpecifiedPitchName === undefined) return
+    // const deleteNoteTarget = noteItemsMap.value
+    //   .get(deleteFromSpecifiedPitchName)
+    //   .noteItems.find((item) => item.id === id)
+    // if(deleteNoteTarget === undefined) return
+    const deleteTargetArr = noteItemsMap.value.get(
+      deleteFromSpecifiedPitchName,
+    ).noteItems
+    if (!deleteTargetArr) return
+
+    const deleteIndex = deleteTargetArr.findIndex((item) => item.id === id)
+    if (deleteIndex === -1) return
+    deleteTargetArr.toSpliced(deleteIndex, 1)
+  }
+  function snapToOtherPitchNameTrack({ x, y }, expectedInsertToPitchName) {
+    const pitchName =
+      expectedInsertToPitchName ??
+      getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
+    const scaleY = noteItemsMap.value.get(pitchName)?.scaleY
+
+    return scaleY
+  }
+  function updateNoteItemPosition(id, pitchName, position) {
+    if (id === undefined || pitchName === undefined || position.length !== 2)
+      return
+    const updateNoteTarget = noteItemsMap.value
+      .get(pitchName)
+      .noteItems.find((item) => item.id === id)
+    if (updateNoteTarget === undefined) return
+    // const [startY, endY] = noteItemsMap.value.get(pitchName).scaleY
+    const [x, y] = position
+    const [startY, endY] = snapToOtherPitchNameTrack({ x, y })
+    updateNoteTarget.x = x
+    updateNoteTarget.y = startY
+    // updateNoteTarget.x = x
+    // updateNoteTarget.y = y
+    // if (y < startY || y > endY) {
+    //   const insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
+    //     { x, y },
+    //     pitchNameMappedToArea.value,
+    //   )
+    //   insertNoteItem({ x, y }, insertToSpecifiedPitchName)
+    // } else {
+    //   updateNoteTarget.x = x
+    //   updateNoteTarget.y = y
+    // }
+  }
+  return {
+    noteHeight,
+    noteItemsMap,
+    insertNoteItem,
+    deleteNoteItem,
+    updateNoteItemPosition,
+  }
 })
 
 // new Map([
@@ -109,7 +165,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 //     "c4",
 //     {
 //       pitchName: "c4",
-//       scaleY: 20,
+//       scaleY: [20,40],
 //       noteItems: [
 //         {
 //           id: "c4-1",
@@ -134,7 +190,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 //     "c5",
 //     {
 //       pitchName: "c5",
-//       scaleY: 80,
+//       scaleY: [80,100],
 //       noteItems: [
 //         {
 //           id: "c5-1",
