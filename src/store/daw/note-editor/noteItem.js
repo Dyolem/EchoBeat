@@ -7,7 +7,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
   const NATURAL_SEMITONE = ["E", "B"]
-  const isSnapedToHorizontalGrid = ref(true)
+  const isSnappedToHorizontalGrid = ref(true)
   const pitchNameMappedToArea = computed(() => {
     const _toFixed = (val, num = 1) => {
       return Number(val.toFixed(num))
@@ -143,7 +143,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     // const [startY, endY] = noteItemsMap.value.get(pitchName).scaleY
     const [x, y] = position
     const [snappedX, snappedY] = snapToOtherPitchNameTrack({ x, y })
-    if (isSnapedToHorizontalGrid.value) {
+    if (isSnappedToHorizontalGrid.value) {
       updateNoteTarget.x = snappedX
     } else {
       updateNoteTarget.x = x
@@ -161,7 +161,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     // }
   }
   return {
-    isSnapedToHorizontalGrid,
+    isSnappedToHorizontalGrid,
     noteHeight,
     noteItemsMap,
     insertNoteItem,

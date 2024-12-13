@@ -87,6 +87,7 @@ function noteEditorClickHandler(event) {
         :note-pad-height="notePadHeight"
         :note-position="getNotePosition(noteItem.x, noteItem.y)"
         v-model:is-note-main-selected="isNoteMainSelected"
+        :noteEditorRegionRef="noteEditorRegionRef"
       ></note-item>
     </template>
   </div>

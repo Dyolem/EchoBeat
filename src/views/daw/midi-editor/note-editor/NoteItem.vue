@@ -1,5 +1,5 @@
 <script setup>
-import { inject, onMounted, useTemplateRef, watch } from "vue"
+import { onMounted, useTemplateRef, watch } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 const noteItemMap = useNoteItemStore()
@@ -37,14 +37,16 @@ const props = defineProps({
     type: Object,
     default: () => [0, 0],
   },
+  noteEditorRegionRef: {
+    type: Object,
+    required: true,
+  },
 })
 
 const isNoteMainSelected = defineModel("isNoteMainSelected", {
   type: Boolean,
   default: false,
 })
-const editorContentContainerRef = inject("editorContentContainerRef")
-const trackRulerHeight = inject("trackRulerHeight")
 
 let translateXDistance = 0
 let translateYDistance = 0
@@ -64,27 +66,19 @@ function draggableRegionHandler(event) {
   const mousedownY =
     event.clientY - editorNoteRef.value.getBoundingClientRect().top
   function mouseMoveHandler(event) {
-    const left =
-      event.clientX -
-      editorContentContainerRef.value.getBoundingClientRect().left
     translateXDistance =
-      editorContentContainerRef.value.scrollLeft + left - mousedownX
-
-    const top =
-      event.clientY -
-      editorContentContainerRef.value.getBoundingClientRect().top
+      event.clientX - props.noteEditorRegionRef.getBoundingClientRect().left
+    if (!noteItemMap.isSnappedToHorizontalGrid) {
+      translateXDistance -= mousedownX
+    }
     translateYDistance =
-      editorContentContainerRef.value.scrollTop +
-      top -
-      trackRulerHeight.value -
-      mousedownY
+      event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top
+
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      console.log("move")
       noteItemMap.updateNoteItemPosition(props.id, props.belongedPitchName, [
         translateXDistance,
         translateYDistance,
       ])
-      // editorNoteRef.value.style.transform = `translate(${translateXDistance}px,${translateYDistance}px)`
     }
   }
   document.addEventListener("mousemove", mouseMoveHandler)
