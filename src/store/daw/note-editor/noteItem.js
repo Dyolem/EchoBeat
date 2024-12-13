@@ -73,16 +73,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       { x, y },
       insertToSpecifiedPitchName,
     )
-    // const [insertStartY, insertEndY] = noteItemsMap.value.get(
-    //   insertToSpecifiedPitchName,
-    // ).scaleY
-    // console.log(
-    //   { x, y },
-    //   insertToSpecifiedPitchName,
-    //   pitchNameMappedToArea.value,
-    //   noteItemsMap.value,
-    //   insertStartY,
-    // )
+
     return {
       id: `${insertToSpecifiedPitchName}-${count}`,
       width: 20,
@@ -97,24 +88,23 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
   }
-  function insertNoteItem({ x, y } = {}, insertToSpecifiedPitchName) {
+  function insertNoteItem(
+    { x, y } = {},
+    insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
+      { x, y },
+      pitchNameMappedToArea.value,
+    ),
+  ) {
     if (x === undefined || y === undefined) return
 
-    const pitchName =
-      insertToSpecifiedPitchName ??
-      getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
-    // console.log(insertToSpecifiedPitchName)
-    // console.log(noteItemsMap.value.get(insertToSpecifiedPitchName))
     noteItemsMap.value
-      .get(pitchName)
-      ?.noteItems.push(noteItemTemplate({ x, y }, pitchName))
+      .get(insertToSpecifiedPitchName)
+      ?.noteItems.push(noteItemTemplate({ x, y }, insertToSpecifiedPitchName))
   }
+
   function deleteNoteItem(id, deleteFromSpecifiedPitchName) {
     if (id === undefined || deleteFromSpecifiedPitchName === undefined) return
-    // const deleteNoteTarget = noteItemsMap.value
-    //   .get(deleteFromSpecifiedPitchName)
-    //   .noteItems.find((item) => item.id === id)
-    // if(deleteNoteTarget === undefined) return
+
     const deleteTargetArr = noteItemsMap.value.get(
       deleteFromSpecifiedPitchName,
     ).noteItems
@@ -124,15 +114,21 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     if (deleteIndex === -1) return
     deleteTargetArr.toSpliced(deleteIndex, 1)
   }
-  function snapToOtherPitchNameTrack({ x, y }, expectedInsertToPitchName) {
-    const pitchName =
-      expectedInsertToPitchName ??
-      getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
-    const snappedY = noteItemsMap.value.get(pitchName)?.scaleY[0]
+
+  function snapToOtherPitchNameTrack(
+    { x, y },
+    expectedInsertToPitchName = getInsertToSpecifiedPitchName(
+      { x, y },
+      pitchNameMappedToArea.value,
+    ),
+  ) {
+    const snappedY = noteItemsMap.value.get(expectedInsertToPitchName)
+      ?.scaleY[0]
     const snappedX = Math.floor(x / minGridWidth.value) * minGridWidth.value
 
     return [snappedX, snappedY]
   }
+
   function updateNoteItemPosition(id, pitchName, position) {
     if (id === undefined || pitchName === undefined || position.length !== 2)
       return
@@ -140,7 +136,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
     if (updateNoteTarget === undefined) return
-    // const [startY, endY] = noteItemsMap.value.get(pitchName).scaleY
+
     const [x, y] = position
     const [snappedX, snappedY] = snapToOtherPitchNameTrack({ x, y })
     if (isSnappedToHorizontalGrid.value) {
@@ -149,16 +145,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       updateNoteTarget.x = x
     }
     updateNoteTarget.y = snappedY
-    // if (y < startY || y > endY) {
-    //   const insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
-    //     { x, y },
-    //     pitchNameMappedToArea.value,
-    //   )
-    //   insertNoteItem({ x, y }, insertToSpecifiedPitchName)
-    // } else {
-    //   updateNoteTarget.x = x
-    //   updateNoteTarget.y = y
-    // }
   }
   return {
     isSnappedToHorizontalGrid,
