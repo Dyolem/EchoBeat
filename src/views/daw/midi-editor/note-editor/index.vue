@@ -38,25 +38,38 @@ const getNotePosition = (x, y) => {
   if (x === undefined || y === undefined) return
   return ref([x, y])
 }
-function noteEditorClickHandler(event) {
-  noteMainSelectedId.value = ""
-  const insertX =
+const getCursorPositionInNoteEditorRegion = (event) => {
+  if (!event) return
+  const x =
     event.clientX - noteEditorRegionRef.value.getBoundingClientRect().left
-  const insertY =
+  const y =
     event.clientY - noteEditorRegionRef.value.getBoundingClientRect().top
-  noteItems.insertNoteItem({ x: insertX, y: insertY })
-  // const count = noteItems.noteItemsMap.get("c4").noteItems.length
-  // const insertToSpecifiedPitchName = "c4"
-  // noteItems.noteItemsMap.get("c4").noteItems.push({
-  //   id: `${insertToSpecifiedPitchName}-${count}`,
-  //   width: 20,
-  //   height: 10,
-  //   x: insertX,
-  //   y: insertY,
-  //   backGroundColor: "lightblue",
-  // })
-  console.log(insertX, insertY)
-  console.log(noteEditorRegionRef.value.getBoundingClientRect().top)
+  return { x, y }
+}
+function noteEditorClickHandler(event) {
+  if (noteItems.editorMode === "select") {
+    if (noteMainSelectedId.value !== "") {
+      noteMainSelectedId.value = ""
+    }
+  } else if (noteItems.editorMode === "insert") {
+    const { x: insertX, y: insertY } =
+      getCursorPositionInNoteEditorRegion(event)
+    noteMainSelectedId.value = noteItems.insertNoteItem({
+      x: insertX,
+      y: insertY,
+    })
+  }
+}
+function noteEditorDblClickHandler(event) {
+  console.log("dbl")
+  if (noteItems.editorMode === "select") {
+    const { x: insertX, y: insertY } =
+      getCursorPositionInNoteEditorRegion(event)
+    noteMainSelectedId.value = noteItems.insertNoteItem({
+      x: insertX,
+      y: insertY,
+    })
+  }
 }
 </script>
 
@@ -69,7 +82,11 @@ function noteEditorClickHandler(event) {
   <div
     class="note-editor-region"
     @click="noteEditorClickHandler"
+    @dblclick="noteEditorDblClickHandler"
     ref="noteEditorRegionRef"
+    :class="{
+      'is-inserted': noteItems.editorMode === 'insert',
+    }"
   >
     <template
       class="note-editor-track"
@@ -106,5 +123,11 @@ function noteEditorClickHandler(event) {
   width: v-bind(notePadWidth + "px");
   height: v-bind(noteHeight + "px");
   background-color: gold;
+}
+.is-inserted:hover {
+  cursor:
+    url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNHB4IiBoZWlnaHQ9IjI0cHgiIHZpZXdCb3g9IjAgMCA3MiA3MiI+PHBhdGggZmlsbD0iIzliOWI5YSIgZD0ibTU5LjQxIDE3LjU4bC0yLjU5OC0yLjU0MWwtMi41NS0yLjU4OXMtMTEuNTEgNy4wOTgtMTkuMTIgMTUuMjhjLTEwLjQxIDExLjE5LTE0LjU5IDE3LjItMTQuNTkgMTcuMmw2LjQ5NyA2LjQ3NWEyMTggMjE4IDAgMCAwIDE3LjE1LTE0LjY1YzguMTg4LTcuNjEzIDE1LjIyLTE5LjE4IDE1LjIyLTE5LjE4eiIvPjxwYXRoIGZpbGw9IiMzZjNmM2YiIGQ9Ik0zMC43NCAzMi44N2MtMy43NDYgMy43MDYtNy4wNzEgNy44MTItMTAuMTkgMTIuMDZsNi40NjYgNi4zNjRjNC4zMDgtMy4wNSA4LjI3Ny02LjQzNiAxMi4wNS0xMC4xM3oiLz48cGF0aCBmaWxsPSIjZDBjZmNlIiBzdHJva2U9IiNkMGNmY2UiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIyIiBkPSJtMjcuMDIgNTEuMjlsLTUuNjM4IDYuMzZsLTcuNzk0Ljc3bC42My03LjgwN2w2LjMzNy01LjY4NyIvPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIGQ9Im0xNy43NyA1NC4xMWwtMi45NyAzLjEybTkuNDktMi43NGwtMi45MDggMy4xNjRsLTcuNzk0Ljc3bC42My03LjgwN2wzLjIxNy0yLjk4NE01OS4xNCAxNy4yM2wtMi42MTYtMi41MjNsLTIuNTY5LTIuNTcxcy0xMS40NiA3LjE4MS0xOS4wMSAxNS40MmMtMTAuMzMgMTEuMjctMTQuNDcgMTcuMzEtMTQuNDcgMTcuMzFsNi41NDMgNi40MjhhMjE4IDIxOCAwIDAgMCAxNy4wNS0xNC43OGM4LjEzMy03LjY3MiAxNS4wOC0xOS4yOCAxNS4wOC0xOS4yOHpNMzguOTcgNDAuOTdsLTguMzkxLTguMjQzIi8+PC9zdmc+)
+      4 19.75,
+    auto;
 }
 </style>

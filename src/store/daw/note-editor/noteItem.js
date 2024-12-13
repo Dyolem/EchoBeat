@@ -8,6 +8,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
   const NATURAL_SEMITONE = ["E", "B"]
   const isSnappedToHorizontalGrid = ref(true)
+  const EDITOR_MODE_ENUM = ["select", "insert", "velocity"]
+  const editorMode = ref("select")
   const pitchNameMappedToArea = computed(() => {
     const _toFixed = (val, num = 1) => {
       return Number(val.toFixed(num))
@@ -88,6 +90,33 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
   }
+  function isExistNoteItem(
+    { x, y } = {},
+    isSnappedToHorizontalGrid,
+    insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
+      { x, y },
+      pitchNameMappedToArea.value,
+    ),
+  ) {
+    if (x === undefined || y === undefined) return
+    const noteItems = noteItemsMap.value.get(
+      insertToSpecifiedPitchName,
+    ).noteItems
+    return (
+      noteItems.find((item) => {
+        const { x: itemX, y: itemY } = item
+        if (isSnappedToHorizontalGrid) {
+          if (x - itemX >= 0 && x - itemX < minGridWidth.value) {
+            return true
+          }
+        } else {
+          if (x === itemX && y === itemY) {
+            return true
+          }
+        }
+      }) ?? false
+    )
+  }
   function insertNoteItem(
     { x, y } = {},
     insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
@@ -96,10 +125,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     ),
   ) {
     if (x === undefined || y === undefined) return
+    const template = noteItemTemplate({ x, y }, insertToSpecifiedPitchName)
+    noteItemsMap.value.get(insertToSpecifiedPitchName)?.noteItems.push(template)
 
-    noteItemsMap.value
-      .get(insertToSpecifiedPitchName)
-      ?.noteItems.push(noteItemTemplate({ x, y }, insertToSpecifiedPitchName))
+    return template.id
   }
 
   function deleteNoteItem(id, deleteFromSpecifiedPitchName) {
@@ -112,7 +141,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
     const deleteIndex = deleteTargetArr.findIndex((item) => item.id === id)
     if (deleteIndex === -1) return
-    deleteTargetArr.toSpliced(deleteIndex, 1)
+    deleteTargetArr.splice(deleteIndex, 1)
   }
 
   function snapToOtherPitchNameTrack(
@@ -147,11 +176,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteTarget.y = snappedY
   }
   return {
+    editorMode,
     isSnappedToHorizontalGrid,
     noteHeight,
     noteItemsMap,
     insertNoteItem,
     deleteNoteItem,
+    isExistNoteItem,
     updateNoteItemPosition,
   }
 })

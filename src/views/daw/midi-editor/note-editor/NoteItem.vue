@@ -47,7 +47,19 @@ const noteMainSelectedId = defineModel("noteMainSelectedId", {
   type: String,
   default: "",
 })
-
+onMounted(() => {
+  watch(
+    () => props.notePosition,
+    (newPosition) => {
+      const [newX, newY] = newPosition.value
+      // console.log(isLegalTranslateDistance(newX, newY))
+      if (isLegalTranslateDistance(newX, newY) && editorNoteRef.value) {
+        editorNoteRef.value.style.transform = `translate(${newX}px,${newY}px)`
+      }
+    },
+    { deep: true, immediate: true },
+  )
+})
 let translateXDistance = 0
 let translateYDistance = 0
 function isLegalTranslateDistance(translateXDistance, translateYDistance) {
@@ -58,14 +70,18 @@ function isLegalTranslateDistance(translateXDistance, translateYDistance) {
     translateYDistance <= props.notePadHeight - props.noteHeight
   )
 }
+
 function draggableRegionHandler(event) {
-  if (noteMainSelectedId.value !== props.id) return
+  console.log(2)
+  if (noteItemMap.editorMode === "insert") return
+  if (noteMainSelectedId.value !== props.id) noteMainSelectedId.value = props.id
   const selectionController = clearSelection()
   const mousedownX =
     event.clientX - editorNoteRef.value.getBoundingClientRect().left
   const mousedownY =
     event.clientY - editorNoteRef.value.getBoundingClientRect().top
   function mouseMoveHandler(event) {
+    console.log("move")
     translateXDistance =
       event.clientX - props.noteEditorRegionRef.getBoundingClientRect().left
     if (!noteItemMap.isSnappedToHorizontalGrid) {
@@ -94,34 +110,88 @@ function draggableRegionHandler(event) {
   )
 }
 
-onMounted(() => {
-  watch(
-    () => props.notePosition,
-    (newPosition) => {
-      const [newX, newY] = newPosition.value
-      // console.log(isLegalTranslateDistance(newX, newY))
-      if (isLegalTranslateDistance(newX, newY) && editorNoteRef.value) {
-        editorNoteRef.value.style.transform = `translate(${newX}px,${newY}px)`
-      }
-    },
-    { deep: true, immediate: true },
-  )
-})
 function stretchEditorNoteLength(event) {}
+
+let isMoved = false
+let firstRapidMouseDown = 0
+let secondRapidMouseDown = 0
+const noteMainMousedown = new AbortController()
+function noteMainMousedownHandler(event) {
+  console.log(isMoved)
+  console.log(event.timeStamp)
+  firstRapidMouseDown =
+    firstRapidMouseDown === 0 ? event.timeStamp : firstRapidMouseDown
+  console.log("firstRapidMouseDown:" + firstRapidMouseDown)
+  const timeInterval = event.timeStamp - firstRapidMouseDown
+  const timer = setTimeout(() => {
+    console.log("reset")
+    firstRapidMouseDown = 0
+    isMoved = false
+  }, 300)
+  if (timeInterval === 0) {
+    if (noteItemMap.editorMode === "insert") {
+      noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
+      noteMainSelectedId.value = ""
+    }
+  }
+  if (timeInterval > 0 && timeInterval < 300) {
+    clearTimeout(timer)
+    console.log("time")
+    document.addEventListener(
+      "mousemove",
+      (event) => {
+        isMoved = true
+      },
+      {
+        once: true,
+      },
+    )
+    document.addEventListener(
+      "mouseup",
+      (event) => {
+        if (!isMoved) {
+          console.log("delete")
+          noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
+        } else {
+          isMoved = false
+        }
+      },
+      {
+        once: true,
+      },
+    )
+  }
+  // if (noteItemMap.editorMode === "insert") {
+  //   noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
+  // } else if (noteItemMap.editorMode === "select") {
+  //   noteMainSelectedId.value = props.id
+  // }
+}
+function noteMainDblClickHandler() {
+  if (isMoved) return
+  noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
+  isMoved = false
+}
 </script>
 
 <template>
   <div
     class="editor-note"
-    :class="{ 'is-selected': noteMainSelectedId === id }"
+    :class="{
+      'is-edited': noteMainSelectedId === id,
+      'is-selected':
+        noteMainSelectedId === id && noteItemMap.editorMode === 'select',
+    }"
     ref="editorNoteRef"
-    @mousedown="draggableRegionHandler"
+    @click.stop="() => {}"
+    @dblclick.stop="() => {}"
+    @mousedown.stop="draggableRegionHandler"
   >
     <div
       class="editor-note-left draggable-region"
       @mousedown="stretchEditorNoteLength"
     ></div>
-    <div class="editor-note-main" @click.stop="noteMainSelectedId = id"></div>
+    <div class="editor-note-main" @mousedown="noteMainMousedownHandler"></div>
     <div
       class="editor-note-right draggable-region"
       @mousedown="stretchEditorNoteLength"
@@ -155,10 +225,12 @@ function stretchEditorNoteLength(event) {}
 .draggable-region:hover {
   cursor: ew-resize;
 }
-.is-selected {
-  border: 1px solid #fff;
-}
+
 .is-selected:hover {
   cursor: move;
+}
+.is-edited {
+  border: 1px solid #fff;
+  z-index: 1;
 }
 </style>
