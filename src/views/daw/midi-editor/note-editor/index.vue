@@ -33,13 +33,13 @@ const noteHeight = computed(() => {
   )
 })
 noteItems.noteHeight = noteHeight.value
-const isNoteMainSelected = ref(false)
+const noteMainSelectedId = ref("")
 const getNotePosition = (x, y) => {
   if (x === undefined || y === undefined) return
   return ref([x, y])
 }
 function noteEditorClickHandler(event) {
-  isNoteMainSelected.value = false
+  noteMainSelectedId.value = ""
   const insertX =
     event.clientX - noteEditorRegionRef.value.getBoundingClientRect().left
   const insertY =
@@ -86,7 +86,7 @@ function noteEditorClickHandler(event) {
         :note-pad-width="notePadWidth"
         :note-pad-height="notePadHeight"
         :note-position="getNotePosition(noteItem.x, noteItem.y)"
-        v-model:is-note-main-selected="isNoteMainSelected"
+        v-model:note-main-selected-id="noteMainSelectedId"
         :noteEditorRegionRef="noteEditorRegionRef"
       ></note-item>
     </template>

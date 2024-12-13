@@ -43,9 +43,9 @@ const props = defineProps({
   },
 })
 
-const isNoteMainSelected = defineModel("isNoteMainSelected", {
-  type: Boolean,
-  default: false,
+const noteMainSelectedId = defineModel("noteMainSelectedId", {
+  type: String,
+  default: "",
 })
 
 let translateXDistance = 0
@@ -59,7 +59,7 @@ function isLegalTranslateDistance(translateXDistance, translateYDistance) {
   )
 }
 function draggableRegionHandler(event) {
-  if (!isNoteMainSelected.value) return
+  if (noteMainSelectedId.value !== props.id) return
   const selectionController = clearSelection()
   const mousedownX =
     event.clientX - editorNoteRef.value.getBoundingClientRect().left
@@ -113,7 +113,7 @@ function stretchEditorNoteLength(event) {}
 <template>
   <div
     class="editor-note"
-    :class="{ 'is-selected': isNoteMainSelected }"
+    :class="{ 'is-selected': noteMainSelectedId === id }"
     ref="editorNoteRef"
     @mousedown="draggableRegionHandler"
   >
@@ -121,7 +121,7 @@ function stretchEditorNoteLength(event) {}
       class="editor-note-left draggable-region"
       @mousedown="stretchEditorNoteLength"
     ></div>
-    <div class="editor-note-main" @click.stop="isNoteMainSelected = true"></div>
+    <div class="editor-note-main" @click.stop="noteMainSelectedId = id"></div>
     <div
       class="editor-note-right draggable-region"
       @mousedown="stretchEditorNoteLength"
