@@ -52,7 +52,6 @@ onMounted(() => {
     () => props.notePosition,
     (newPosition) => {
       const [newX, newY] = newPosition.value
-      // console.log(isLegalTranslateDistance(newX, newY))
       if (isLegalTranslateDistance(newX, newY) && editorNoteRef.value) {
         editorNoteRef.value.style.transform = `translate(${newX}px,${newY}px)`
       }
@@ -72,16 +71,19 @@ function isLegalTranslateDistance(translateXDistance, translateYDistance) {
 }
 
 function draggableRegionHandler(event) {
-  console.log(2)
+  // 'insert' editor mode prohibit to drag note element
   if (noteItemMap.editorMode === "insert") return
   if (noteMainSelectedId.value !== props.id) noteMainSelectedId.value = props.id
+
   const selectionController = clearSelection()
   const mousedownX =
     event.clientX - editorNoteRef.value.getBoundingClientRect().left
-  const mousedownY =
-    event.clientY - editorNoteRef.value.getBoundingClientRect().top
+  /*
+   * Reserve in the future need to achieve vertical smooth movement effect
+   * const mousedownY = event.clientY - editorNoteRef.value.getBoundingClientRect().top
+   * */
+
   function mouseMoveHandler(event) {
-    console.log("move")
     translateXDistance =
       event.clientX - props.noteEditorRegionRef.getBoundingClientRect().left
     if (!noteItemMap.isSnappedToHorizontalGrid) {
@@ -114,32 +116,45 @@ function stretchEditorNoteLength(event) {}
 
 let isMoved = false
 let firstRapidMouseDown = 0
-let secondRapidMouseDown = 0
-const noteMainMousedown = new AbortController()
 function noteMainMousedownHandler(event) {
-  console.log(isMoved)
-  console.log(event.timeStamp)
   firstRapidMouseDown =
     firstRapidMouseDown === 0 ? event.timeStamp : firstRapidMouseDown
-  console.log("firstRapidMouseDown:" + firstRapidMouseDown)
+
   const timeInterval = event.timeStamp - firstRapidMouseDown
+  /*
+   * If there is no second click within 300 milliseconds,
+   * all the states changed by the first click will be reset
+   * */
   const timer = setTimeout(() => {
-    console.log("reset")
     firstRapidMouseDown = 0
     isMoved = false
   }, 300)
+
+  //A single click should execute the logic
   if (timeInterval === 0) {
     if (noteItemMap.editorMode === "insert") {
       noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
       noteMainSelectedId.value = ""
     }
+    /*
+     * For select editing mode, there is no logic that needs to be executed with a single click
+     * */
   }
+  //The second click(double click) should execute the logic
   if (timeInterval > 0 && timeInterval < 300) {
+    /*
+     * Clear the previous timer used to reset the state ,
+     * because the second click was performed within 300 milliseconds
+     * */
     clearTimeout(timer)
-    console.log("time")
+
+    /*
+     * The following event handler function must be one-time ,
+     * otherwise it will add up as the number of double clicks increases
+     * */
     document.addEventListener(
       "mousemove",
-      (event) => {
+      () => {
         isMoved = true
       },
       {
@@ -148,9 +163,8 @@ function noteMainMousedownHandler(event) {
     )
     document.addEventListener(
       "mouseup",
-      (event) => {
+      () => {
         if (!isMoved) {
-          console.log("delete")
           noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
         } else {
           isMoved = false
@@ -161,16 +175,6 @@ function noteMainMousedownHandler(event) {
       },
     )
   }
-  // if (noteItemMap.editorMode === "insert") {
-  //   noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
-  // } else if (noteItemMap.editorMode === "select") {
-  //   noteMainSelectedId.value = props.id
-  // }
-}
-function noteMainDblClickHandler() {
-  if (isMoved) return
-  noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
-  isMoved = false
 }
 </script>
 

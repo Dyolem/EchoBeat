@@ -16,7 +16,6 @@ const props = defineProps({
   },
 })
 const noteEditorRegionRef = useTemplateRef("noteEditorRegionRef")
-const editorContentContainerRef = inject("editorContentContainerRef")
 const chromaticInfo = inject("chromaticInfo")
 const pianoKeySize = inject("pianoKeySize")
 const whiteKeyHeight = computed(() => {
@@ -61,7 +60,6 @@ function noteEditorClickHandler(event) {
   }
 }
 function noteEditorDblClickHandler(event) {
-  console.log("dbl")
   if (noteItems.editorMode === "select") {
     const { x: insertX, y: insertY } =
       getCursorPositionInNoteEditorRegion(event)
