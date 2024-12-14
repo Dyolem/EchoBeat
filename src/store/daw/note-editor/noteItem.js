@@ -1,5 +1,6 @@
 import { defineStore } from "pinia"
 import { computed, ref, watch } from "vue"
+import { EDITOR_MODE_ENUM } from "@/constants/daw/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const noteHeight = ref(10)
@@ -8,8 +9,17 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
   const NATURAL_SEMITONE = ["E", "B"]
   const isSnappedToHorizontalGrid = ref(true)
-  const EDITOR_MODE_ENUM = ["select", "insert", "velocity"]
-  const editorMode = ref("select")
+  const editorMode = ref(EDITOR_MODE_ENUM.SELECT)
+
+  const isInsertMode = computed(
+    () => editorMode.value === EDITOR_MODE_ENUM.INSERT,
+  )
+  const isSelectMode = computed(
+    () => editorMode.value === EDITOR_MODE_ENUM.SELECT,
+  )
+  const isVelocityMode = computed(
+    () => editorMode.value === EDITOR_MODE_ENUM.VELOCITY,
+  )
   const pitchNameMappedToArea = computed(() => {
     const _toFixed = (val, num = 1) => {
       return Number(val.toFixed(num))
@@ -177,6 +187,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }
   return {
     editorMode,
+    isInsertMode,
+    isSelectMode,
+    isVelocityMode,
     isSnappedToHorizontalGrid,
     noteHeight,
     noteItemsMap,

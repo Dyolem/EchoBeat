@@ -72,7 +72,7 @@ function isLegalTranslateDistance(translateXDistance, translateYDistance) {
 
 function draggableRegionHandler(event) {
   // 'insert' editor mode prohibit to drag note element
-  if (noteItemMap.editorMode === "insert") return
+  if (noteItemMap.isInsertMode) return
   if (noteMainSelectedId.value !== props.id) noteMainSelectedId.value = props.id
 
   const selectionController = clearSelection()
@@ -132,7 +132,7 @@ function noteMainMousedownHandler(event) {
 
   //A single click should execute the logic
   if (timeInterval === 0) {
-    if (noteItemMap.editorMode === "insert") {
+    if (noteItemMap.isInsertMode) {
       noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
       noteMainSelectedId.value = ""
     }

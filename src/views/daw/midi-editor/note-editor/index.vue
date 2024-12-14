@@ -46,11 +46,11 @@ const getCursorPositionInNoteEditorRegion = (event) => {
   return { x, y }
 }
 function noteEditorClickHandler(event) {
-  if (noteItems.editorMode === "select") {
+  if (noteItems.isSelectMode) {
     if (noteMainSelectedId.value !== "") {
       noteMainSelectedId.value = ""
     }
-  } else if (noteItems.editorMode === "insert") {
+  } else if (noteItems.isInsertMode) {
     const { x: insertX, y: insertY } =
       getCursorPositionInNoteEditorRegion(event)
     noteMainSelectedId.value = noteItems.insertNoteItem({
@@ -60,7 +60,7 @@ function noteEditorClickHandler(event) {
   }
 }
 function noteEditorDblClickHandler(event) {
-  if (noteItems.editorMode === "select") {
+  if (noteItems.isSelectMode) {
     const { x: insertX, y: insertY } =
       getCursorPositionInNoteEditorRegion(event)
     noteMainSelectedId.value = noteItems.insertNoteItem({
