@@ -70,6 +70,12 @@ function isLegalTranslateDistance(translateXDistance, translateYDistance) {
   )
 }
 
+function getMovementInNoteEditorRegion(event) {
+  return {
+    x: event.clientX - props.noteEditorRegionRef.getBoundingClientRect().left,
+    y: event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top,
+  }
+}
 function draggableRegionHandler(event) {
   // 'insert' editor mode prohibit to drag note element
   if (noteItemMap.isInsertMode) return
@@ -112,7 +118,40 @@ function draggableRegionHandler(event) {
   )
 }
 
-function stretchEditorNoteLength(event) {}
+function stretchEditorNoteLength(event, stretchSide) {
+  if (noteMainSelectedId.value !== props.id) noteMainSelectedId.value = props.id
+  const selectionController = clearSelection()
+  const { x: mousedownStartX } = getMovementInNoteEditorRegion(event)
+  const initWidth = props.noteWidth
+  const [initX] = props.notePosition.value
+  function mousemoveHandler(event) {
+    const { x: moveX } = getMovementInNoteEditorRegion(event)
+    const stretchXLength = moveX - mousedownStartX
+
+    const moveInfo = {
+      id: props.id,
+      pitchName: props.belongedPitchName,
+      stretchXLength: stretchXLength,
+      initWidth: initWidth,
+      mousedownStartX,
+      initX: initX,
+      maxMovementRegionWidth: props.notePadWidth,
+    }
+
+    noteItemMap.stretchNoteWidth(moveInfo)
+  }
+  document.addEventListener("mousemove", mousemoveHandler)
+  document.addEventListener(
+    "mouseup",
+    () => {
+      document.removeEventListener("mousemove", mousemoveHandler)
+      selectionController.abort()
+    },
+    {
+      once: true,
+    },
+  )
+}
 
 let isMoved = false
 let firstRapidMouseDown = 0
@@ -193,12 +232,20 @@ function noteMainMousedownHandler(event) {
   >
     <div
       class="editor-note-left draggable-region"
-      @mousedown="stretchEditorNoteLength"
+      @mousedown.stop="
+        (event) => {
+          stretchEditorNoteLength(event, 'left')
+        }
+      "
     ></div>
     <div class="editor-note-main" @mousedown="noteMainMousedownHandler"></div>
     <div
       class="editor-note-right draggable-region"
-      @mousedown="stretchEditorNoteLength"
+      @mousedown.stop="
+        (event) => {
+          stretchEditorNoteLength(event, 'right')
+        }
+      "
     ></div>
   </div>
 </template>
@@ -210,7 +257,7 @@ function noteMainMousedownHandler(event) {
   position: absolute;
   overflow: hidden;
   display: flex;
-  width: 20px;
+  width: v-bind(noteWidth + "px");
   height: v-bind(noteHeight + "px");
   padding: 0 2px;
   background-color: var(--note-background-color);

@@ -185,6 +185,54 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
     updateNoteTarget.y = snappedY
   }
+
+  function stretchNoteWidth({
+    id,
+    pitchName,
+    stretchXLength,
+    initWidth,
+    mousedownStartX,
+    initX,
+    maxMovementRegionWidth,
+  }) {
+    if (
+      id === undefined ||
+      pitchName === undefined ||
+      stretchXLength === undefined ||
+      initWidth === undefined ||
+      initX === undefined ||
+      mousedownStartX === undefined ||
+      maxMovementRegionWidth === undefined
+    )
+      return
+
+    const updateNoteTarget = noteItemsMap.value
+      .get(pitchName)
+      .noteItems.find((item) => item.id === id)
+
+    if (updateNoteTarget === undefined) return
+    let newWidth = 0
+    let newX = 0
+    const middlePoint = initWidth / 2
+
+    if (mousedownStartX - initX < middlePoint) {
+      newWidth = initWidth - stretchXLength
+      newX = initX + stretchXLength
+      const maxWidth = initX + initWidth
+      if (newWidth < minGridWidth.value || newWidth > maxWidth) return
+      updateNoteTarget.width = newWidth
+      updateNoteTarget.x = newX
+    } else {
+      const maxWidth = maxMovementRegionWidth - initX
+      newWidth = initWidth + stretchXLength
+      if (newWidth < minGridWidth.value || newWidth > maxWidth) return
+      updateNoteTarget.width = newWidth
+      // updateNoteTarget.width = Math.min(
+      //   Math.max(newWidth, minGridWidth.value),
+      //   maxWidth,
+      // )
+    }
+  }
   return {
     editorMode,
     isInsertMode,
@@ -197,6 +245,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     deleteNoteItem,
     isExistNoteItem,
     updateNoteItemPosition,
+    stretchNoteWidth,
   }
 })
 

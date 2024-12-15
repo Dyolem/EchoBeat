@@ -97,6 +97,7 @@ function noteEditorDblClickHandler(event) {
         :key="noteItem.id"
         :id="noteItem.id"
         :belonged-pitch-name="pitchName"
+        :note-width="noteItem.width"
         :note-height="noteHeight"
         :note-pad-width="notePadWidth"
         :note-pad-height="notePadHeight"
