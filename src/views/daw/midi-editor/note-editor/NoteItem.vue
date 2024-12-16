@@ -84,6 +84,8 @@ function draggableRegionHandler(event) {
   const selectionController = clearSelection()
   const mousedownX =
     event.clientX - editorNoteRef.value.getBoundingClientRect().left
+  const mousedownY =
+    event.clientY - editorNoteRef.value.getBoundingClientRect().top
   /*
    * Reserve in the future need to achieve vertical smooth movement effect
    * const mousedownY = event.clientY - editorNoteRef.value.getBoundingClientRect().top
@@ -92,17 +94,17 @@ function draggableRegionHandler(event) {
   function mouseMoveHandler(event) {
     translateXDistance =
       event.clientX - props.noteEditorRegionRef.getBoundingClientRect().left
-    if (!noteItemMap.isSnappedToHorizontalGrid) {
-      translateXDistance -= mousedownX
-    }
+
     translateYDistance =
       event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      noteItemMap.updateNoteItemPosition(props.id, props.belongedPitchName, [
-        translateXDistance,
-        translateYDistance,
-      ])
+      noteItemMap.updateNoteItemPosition(
+        props.id,
+        props.belongedPitchName,
+        [translateXDistance, translateYDistance],
+        [mousedownX, mousedownY],
+      )
     }
   }
   document.addEventListener("mousemove", mouseMoveHandler)

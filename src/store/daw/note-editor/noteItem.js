@@ -5,6 +5,7 @@ import { EDITOR_MODE_ENUM } from "@/constants/daw/index.js"
 export const useNoteItemStore = defineStore("noteItem", () => {
   const noteHeight = ref(10)
   const minGridWidth = ref(20)
+  const minGridHeight = ref(9.3)
   const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
   const NATURAL_SEMITONE = ["E", "B"]
@@ -21,7 +22,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     () => editorMode.value === EDITOR_MODE_ENUM.VELOCITY,
   )
   const pitchNameMappedToArea = computed(() => {
-    const _toFixed = (val, num = 1) => {
+    const _toFixed = (val, num = 2) => {
       return Number(val.toFixed(num))
     }
     const pitchNameMappedToAreaArr = []
@@ -81,10 +82,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   function noteItemTemplate({ x, y } = {}, insertToSpecifiedPitchName) {
     const count = noteItemsMap.value.get(insertToSpecifiedPitchName).noteItems
       .length
-    const [snappedX, snappedY] = snapToOtherPitchNameTrack(
-      { x, y },
-      insertToSpecifiedPitchName,
-    )
+    const [snappedX, snappedY] = snapToOtherPitchNameTrack({ x, y })
 
     return {
       id: `${insertToSpecifiedPitchName}-${count}`,
@@ -154,21 +152,50 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     deleteTargetArr.splice(deleteIndex, 1)
   }
 
-  function snapToOtherPitchNameTrack(
-    { x, y },
-    expectedInsertToPitchName = getInsertToSpecifiedPitchName(
+  function snapToOtherPitchNameTrack({ x, y }, mousedownPositionInNote = []) {
+    const expectedInsertToPitchName = getInsertToSpecifiedPitchName(
       { x, y },
       pitchNameMappedToArea.value,
-    ),
-  ) {
-    const snappedY = noteItemsMap.value.get(expectedInsertToPitchName)
-      ?.scaleY[0]
-    const snappedX = Math.floor(x / minGridWidth.value) * minGridWidth.value
+    )
 
-    return [snappedX, snappedY]
+    if (mousedownPositionInNote.length === 0) {
+      //insert logic
+      const snappedY = noteItemsMap.value.get(expectedInsertToPitchName)
+        ?.scaleY[0]
+      const snappedX = Math.floor(x / minGridWidth.value) * minGridWidth.value
+      return [snappedX, snappedY]
+    } else {
+      //update logic
+      const [mousedownXInNote, mousedownYInNote] = mousedownPositionInNote
+
+      /*
+       * const snappedX = Math.floor((x - mousedownXInNote) / minGridWidth.value) * minGridWidth.value
+       * 根据算法，吸附网格的原理是移动位置x是网格值的整数倍时，更新一次x值，
+       * 由于note元素自身有宽度，光标位置在元素内部，并不是元素的左上角，所以需要减去mousedownXInNote的值
+       * 但这样导致一个问题：假设网格值为20，note位于(20,0)，宽度为20,光标相对于note元素的点击位置为(3，0)，相对于noteRegion元素的点击位置为(23，0)
+       * 现在往右拖动17px，此时相对于note元素的点击位置为(20，0)，相对于noteRegion元素的点击位置为(40，0)
+       * 此时40已经是网格值的20整数倍，所以需要进行一次移动，根据计算：Math.floor((40-3)/20)*20=20，可以发现note并不会移动，
+       * 可以看出相对于noteRegion元素的点击位置为要大于等于43时才能让note移动，此后的移动阈值需要x满足63，83...
+       * 这就违反了移动位置x是网格值的整数倍时的规则，而bug的产生原因在于减去的mousedownXInNote值，被提前进行了取整。
+       * 然而减去mousedownXInNote的值是必须，因此可以单独对mousedownXInNote值进行取整，然后将取整的两个值相减。
+       * */
+      const snappedX =
+        Math.floor(x / minGridWidth.value) * minGridWidth.value -
+        Math.floor(mousedownXInNote / minGridWidth.value) * minGridWidth.value
+      const snappedY =
+        Math.floor(y / minGridHeight.value) * minGridHeight.value -
+        Math.floor(mousedownYInNote / minGridHeight.value) * minGridHeight.value
+
+      return [snappedX, snappedY]
+    }
   }
 
-  function updateNoteItemPosition(id, pitchName, position) {
+  function updateNoteItemPosition(
+    id,
+    pitchName,
+    position,
+    mousedownPositionInNote,
+  ) {
     if (id === undefined || pitchName === undefined || position.length !== 2)
       return
     const updateNoteTarget = noteItemsMap.value
@@ -177,11 +204,15 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     if (updateNoteTarget === undefined) return
 
     const [x, y] = position
-    const [snappedX, snappedY] = snapToOtherPitchNameTrack({ x, y })
+    const [mousedownXInNote] = mousedownPositionInNote
+    const [snappedX, snappedY] = snapToOtherPitchNameTrack(
+      { x, y },
+      mousedownPositionInNote,
+    )
     if (isSnappedToHorizontalGrid.value) {
       updateNoteTarget.x = snappedX
     } else {
-      updateNoteTarget.x = x
+      updateNoteTarget.x = x - mousedownXInNote
     }
     updateNoteTarget.y = snappedY
   }
