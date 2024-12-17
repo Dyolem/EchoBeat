@@ -169,7 +169,6 @@ onMounted(() => {
   interactableContainerRef.value.addEventListener(
     "keydown",
     (e) => {
-      console.log(11)
       zoomCanvas((zoomIncrement) => {
         if (e.ctrlKey) {
           if (e.code === "Equal") {

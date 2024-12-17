@@ -138,12 +138,14 @@ onUnmounted(() => {
         #default-interactable-layer="{
           interactableLayerWidth,
           interactableLayerHeight,
+          zoomRatio,
         }"
       >
         <slot
           name="custom-editor-layer"
           :interactableLayerWidth="interactableLayerWidth"
           :interactableLayerHeight="interactableLayerHeight"
+          :zoomRatio="zoomRatio"
         >
         </slot>
       </template>

@@ -16,7 +16,7 @@ import {
 } from "vue"
 import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
-import { debounce } from "@/utils/debounce.js"
+
 const trackRulerStore = useTrackRulerStore()
 const BEATS_NUMBER = 95
 const BASE_GRID_WIDTH = 20
@@ -346,6 +346,7 @@ onUnmounted(() => {
               name="default-interactable-layer"
               :interactableLayerWidth="canvasContentWidth"
               :interactableLayerHeight="canvasContentHeight"
+              :zoomRatio="trackZoomRatio"
             >
             </slot>
           </template>

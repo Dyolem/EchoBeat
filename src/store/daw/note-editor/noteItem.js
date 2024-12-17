@@ -1,11 +1,14 @@
 import { defineStore } from "pinia"
 import { computed, ref, watch } from "vue"
 import { EDITOR_MODE_ENUM } from "@/constants/daw/index.js"
+import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const noteHeight = ref(10)
+  const noteWidth = ref(20)
   const minGridWidth = ref(20)
   const minGridHeight = ref(9.3)
+  const editorGridParametersStore = useEditorGridParametersStore()
   const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
   const NATURAL_SEMITONE = ["E", "B"]
@@ -86,8 +89,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
     return {
       id: `${insertToSpecifiedPitchName}-${count}`,
-      width: 20,
-      height: 10,
+      width: noteWidth.value * editorGridParametersStore.trackZoomRatio,
+      height: noteHeight.value,
       x: snappedX,
       y: snappedY,
       backGroundColor: "lightblue",
@@ -180,8 +183,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
        * 然而减去mousedownXInNote的值是必须，因此可以单独对mousedownXInNote值进行取整，然后将取整的两个值相减。
        * */
       const snappedX =
-        Math.floor(x / minGridWidth.value) * minGridWidth.value -
-        Math.floor(mousedownXInNote / minGridWidth.value) * minGridWidth.value
+        Math.floor(x / editorGridParametersStore.minGridHorizontalMovement) *
+          editorGridParametersStore.minGridHorizontalMovement -
+        Math.floor(
+          mousedownXInNote /
+            editorGridParametersStore.minGridHorizontalMovement,
+        ) *
+          editorGridParametersStore.minGridHorizontalMovement
       const snappedY =
         Math.floor(y / minGridHeight.value) * minGridHeight.value -
         Math.floor(mousedownYInNote / minGridHeight.value) * minGridHeight.value
@@ -264,6 +272,22 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       // )
     }
   }
+  function patchUpdateNoteItems(newTrackZoomRatio, oldTrackZoomRatio) {
+    if (
+      newTrackZoomRatio === oldTrackZoomRatio ||
+      newTrackZoomRatio === undefined ||
+      oldTrackZoomRatio === undefined
+    )
+      return
+    console.log(newTrackZoomRatio, oldTrackZoomRatio)
+    noteItemsMap.value.forEach((pitchNameObj, pitchName) => {
+      pitchNameObj.noteItems.forEach((noteItem) => {
+        noteItem.x = (noteItem.x / oldTrackZoomRatio) * newTrackZoomRatio
+        noteItem.width =
+          (noteItem.width / oldTrackZoomRatio) * newTrackZoomRatio
+      })
+    })
+  }
   return {
     editorMode,
     isInsertMode,
@@ -277,6 +301,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     isExistNoteItem,
     updateNoteItemPosition,
     stretchNoteWidth,
+    patchUpdateNoteItems,
   }
 })
 
