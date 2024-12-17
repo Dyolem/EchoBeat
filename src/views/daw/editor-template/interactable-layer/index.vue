@@ -46,11 +46,11 @@ const props = defineProps({
 })
 
 watch(
-  () => props.canvasWidth,
-  (newCanvasWidth) => {
+  () => [props.canvasWidth, props.canvasHeight],
+  ([newCanvasWidth, newCanvasHeight]) => {
     drawGrid(canvas, {
       canvasWidth: newCanvasWidth,
-      canvasHeight: props.canvasHeight + 1,
+      canvasHeight: newCanvasHeight,
       gridWidth: props.gridWidth,
       gridHeight: props.gridHeight,
       minGridWidth: props.minGridWidth,
