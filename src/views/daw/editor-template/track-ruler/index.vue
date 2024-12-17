@@ -23,7 +23,7 @@ const props = defineProps({
   },
 })
 const dynamicBeatWidth = computed(() => {
-  return props.gridWidth * BEAT_GRID_RATIO * props.trackZoomRatio
+  return props.gridWidth * BEAT_GRID_RATIO
 })
 const beatInfo = computed(() => {
   const beatInfoArr = []

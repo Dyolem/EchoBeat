@@ -5,6 +5,8 @@ import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
 
 const ZOOM_THRESHOLD = 0.1
+const MAX_ZOOM = 6
+const MIN_ZOOM = 0.8
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
 const drawGrid = inject("drawGrid", defaultDrawGrid)
@@ -33,6 +35,10 @@ const props = defineProps({
     type: Number,
     default: 90,
   },
+  minGridWidth: {
+    type: Number,
+    default: 20,
+  },
   modifyTimelineByClick: {
     type: Boolean,
     default: true,
@@ -47,20 +53,25 @@ watch(
       canvasHeight: props.canvasHeight + 1,
       gridWidth: props.gridWidth,
       gridHeight: props.gridHeight,
+      minGridWidth: props.minGridWidth,
     })
   },
 )
 const emit = defineEmits(["update:trackZoomRatio"])
-function CreateZoomCanvas(increment = 0.1, emit) {
+function CreateZoomCanvas(
+  increment = 0.1,
+  zoomScale = [MIN_ZOOM, MAX_ZOOM],
+  emit,
+) {
   if (!emit) return
-  const isInClamp = (val) => {
-    const min = 0.8
-    const max = 3
+
+  const isClamped = (val, scale) => {
+    const [min, max] = scale
     return val >= min && val <= max
   }
   return function (handleZoom) {
     const newZoomVal = handleZoom(increment)
-    if (!isInClamp(newZoomVal)) {
+    if (!isClamped(newZoomVal, zoomScale)) {
       return
     }
     emit("update:trackZoomRatio", newZoomVal)
@@ -73,12 +84,18 @@ function CreateZoomCanvas(increment = 0.1, emit) {
     })
   }
 }
-const zoomCanvas = CreateZoomCanvas(ZOOM_THRESHOLD, emit)
+const zoomCanvas = CreateZoomCanvas(ZOOM_THRESHOLD, [MIN_ZOOM, MAX_ZOOM], emit)
 
 // 绘制轨道格子
 function defaultDrawGrid(
   target,
-  { canvasWidth, canvasHeight, gridWidth = 20, gridHeight = 90 },
+  {
+    canvasWidth,
+    canvasHeight,
+    gridWidth = props.gridWidth,
+    gridHeight = props.gridHeight,
+    minGridWidth = props.minGridWidth,
+  },
 ) {
   if (!target) return
   const ctx = target.getContext("2d")
@@ -90,10 +107,20 @@ function defaultDrawGrid(
   ctx.beginPath()
 
   //Draw vertical lines
-  for (let x = 0; x < canvasWidth; x += gridWidth) {
+  const isAliquot = gridWidth % minGridWidth === 0
+
+  for (let x = 0; x <= canvasWidth; x += gridWidth) {
     ctx.strokeStyle = "#ddd"
     ctx.moveTo(x, 0)
     ctx.lineTo(x, canvasHeight)
+    if (isAliquot && gridWidth !== minGridWidth) {
+      const integralMultiple = gridWidth / minGridWidth
+      for (let i = 1; i < integralMultiple; i++) {
+        const drawnX = x - i * minGridWidth
+        ctx.moveTo(drawnX, 0)
+        ctx.lineTo(drawnX, canvasHeight)
+      }
+    }
   }
   ctx.stroke()
   // Draw horizontal lines

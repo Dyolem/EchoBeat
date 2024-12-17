@@ -20,6 +20,7 @@ import { debounce } from "@/utils/debounce.js"
 const trackRulerStore = useTrackRulerStore()
 const BEATS_NUMBER = 95
 const BASE_GRID_WIDTH = 20
+const MIN_GRID_WIDTH = 20
 const BASE_GRID_HEIGHT = 90
 const TRACK_ZOOM_RATIO = 1
 
@@ -33,11 +34,14 @@ const INIT_DRAWER_EDITOR_HEIGHT = 400
 const INIT_DRAWER_EDITOR_WIDTH = 1600
 
 const id = useId()
-const gridWidth = ref(BASE_GRID_WIDTH)
-const gridHeight = ref(BASE_GRID_HEIGHT)
 const trackZoomRatio = ref(TRACK_ZOOM_RATIO)
 const trackAmount = ref(10)
 const beatsNumber = ref(BEATS_NUMBER)
+const minGridWidth = ref(MIN_GRID_WIDTH)
+const gridWidth = computed(() => {
+  return trackZoomRatio.value * BASE_GRID_WIDTH
+})
+const gridHeight = ref(BASE_GRID_HEIGHT)
 
 const {
   canvasContentHeight: provideCanvasContentHeight = null,
@@ -47,7 +51,7 @@ const {
 const trackRulerHeight = ref(50)
 provide("trackRulerHeight", trackRulerHeight)
 const canvasContentWidth = computed(() => {
-  return gridWidth.value * trackZoomRatio.value * beatsNumber.value * 4
+  return gridWidth.value * beatsNumber.value * 4
 })
 const canvasContentHeight = computed(() => {
   if (props.canvasContentHeightProp !== undefined)
@@ -332,6 +336,9 @@ onUnmounted(() => {
           :canvas-width="canvasContentWidth"
           :canvas-height="canvasContentHeight"
           :modify-timeline-by-click="modifyTimelineByClick"
+          :grid-width="gridWidth"
+          :grid-height="gridHeight"
+          :min-grid-width="minGridWidth"
           v-model:track-zoom-ratio="trackZoomRatio"
         >
           <template #interactable-layer>
