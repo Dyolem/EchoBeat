@@ -3,6 +3,8 @@ import { computed, inject, ref, useTemplateRef, watch } from "vue"
 import NotePad from "@/views/daw/midi-editor/note-editor/NotePad.vue"
 import NoteItem from "@/views/daw/midi-editor/note-editor/NoteItem.vue"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
+import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
+const editorGridParametersStore = useEditorGridParametersStore()
 const noteItems = useNoteItemStore()
 
 const OCTAVE_KEY_COUNT = 12
@@ -32,10 +34,18 @@ const noteHeight = computed(() => {
         chromaticInfo.value.octaveCount *
         OCTAVE_WHITE_KEY_COUNT) /
       (OCTAVE_KEY_COUNT * chromaticInfo.value.octaveCount)
-    ).toFixed(1),
+    ).toFixed(3),
   )
 })
-noteItems.noteHeight = noteHeight.value
+watch(
+  noteHeight,
+  (newVal) => {
+    noteItems.noteHeight = newVal
+    editorGridParametersStore.minGridVerticalMovement = newVal
+  },
+  { immediate: true },
+)
+
 const noteMainSelectedId = ref("")
 const getNotePosition = (x, y) => {
   if (x === undefined || y === undefined) return

@@ -165,7 +165,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       //insert logic
       const snappedY = noteItemsMap.value.get(expectedInsertToPitchName)
         ?.scaleY[0]
-      const snappedX = Math.floor(x / minGridWidth.value) * minGridWidth.value
+      const snappedX =
+        Math.floor(x / editorGridParametersStore.minGridHorizontalMovement) *
+        editorGridParametersStore.minGridHorizontalMovement
       return [snappedX, snappedY]
     } else {
       //update logic
@@ -191,8 +193,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
         ) *
           editorGridParametersStore.minGridHorizontalMovement
       const snappedY =
-        Math.floor(y / minGridHeight.value) * minGridHeight.value -
-        Math.floor(mousedownYInNote / minGridHeight.value) * minGridHeight.value
+        Math.floor(y / editorGridParametersStore.minGridVerticalMovement) *
+          editorGridParametersStore.minGridVerticalMovement -
+        Math.floor(
+          mousedownYInNote / editorGridParametersStore.minGridVerticalMovement,
+        ) *
+          editorGridParametersStore.minGridVerticalMovement
 
       return [snappedX, snappedY]
     }
@@ -279,7 +285,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       oldTrackZoomRatio === undefined
     )
       return
-    console.log(newTrackZoomRatio, oldTrackZoomRatio)
+
     noteItemsMap.value.forEach((pitchNameObj, pitchName) => {
       pitchNameObj.noteItems.forEach((noteItem) => {
         noteItem.x = (noteItem.x / oldTrackZoomRatio) * newTrackZoomRatio
