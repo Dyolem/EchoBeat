@@ -1,6 +1,9 @@
 import { defineStore } from "pinia"
 import { computed, ref, watch } from "vue"
-import { EDITOR_MODE_ENUM } from "@/constants/daw/index.js"
+import {
+  EDITOR_MODE_ENUM,
+  TENSILE_ADSORPTION_GRID_THRESHOLD,
+} from "@/constants/daw/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
@@ -8,6 +11,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const noteWidth = ref(20)
   const minGridWidth = ref(20)
   const minGridHeight = ref(9.3)
+  const stretchNoteWidthSnappedToGridThreshold = ref(
+    TENSILE_ADSORPTION_GRID_THRESHOLD,
+  )
+
   const editorGridParametersStore = useEditorGridParametersStore()
   const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
@@ -261,21 +268,78 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const middlePoint = initWidth / 2
 
     if (mousedownStartX - initX < middlePoint) {
+      //left side drag
       newWidth = initWidth - stretchXLength
       newX = initX + stretchXLength
+
+      /*
+       * If the stretched values of the coordinates of the left
+       * and right borders of the note element are within the threshold (3px)
+       * and the minimum moving grid distance, the adsorption is triggered
+       * */
+      if (isSnappedToHorizontalGrid.value) {
+        let restMovement =
+          newX % editorGridParametersStore.minGridHorizontalMovement
+        if (
+          restMovement <
+          editorGridParametersStore.minGridHorizontalMovement / 2
+        ) {
+          //When stretched from right to left, it attaches to the left
+          if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
+            newX -= restMovement
+            newWidth += restMovement
+          }
+        } else {
+          //When stretched from left to right, it attaches to the right
+          restMovement =
+            editorGridParametersStore.minGridHorizontalMovement - restMovement
+          if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
+            newX += restMovement
+            newWidth -= restMovement
+          }
+        }
+      }
+
       const maxWidth = initX + initWidth
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
-      updateNoteTarget.width = newWidth
       updateNoteTarget.x = newX
+      updateNoteTarget.width = newWidth
     } else {
+      //right side drag
       const maxWidth = maxMovementRegionWidth - initX
       newWidth = initWidth + stretchXLength
+
+      /*
+       * If the stretched values of the coordinates of the left
+       * and right borders of the note element are within the threshold (3px)
+       * and the minimum moving grid distance, the adsorption is triggered
+       * */
+      if (isSnappedToHorizontalGrid.value) {
+        //noteRightSidePositionX: note元素右边界的translateX值
+        const noteRightSidePositionX = updateNoteTarget.x + newWidth
+        let restMovement =
+          noteRightSidePositionX %
+          editorGridParametersStore.minGridHorizontalMovement
+        if (
+          restMovement <
+          editorGridParametersStore.minGridHorizontalMovement / 2
+        ) {
+          //When stretched from right to left, it attaches to the left
+          if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
+            newWidth -= restMovement
+          }
+        } else {
+          //When stretched from left to right, it attaches to the right
+          restMovement =
+            editorGridParametersStore.minGridHorizontalMovement - restMovement
+          if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
+            newWidth += restMovement
+          }
+        }
+      }
+
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
       updateNoteTarget.width = newWidth
-      // updateNoteTarget.width = Math.min(
-      //   Math.max(newWidth, minGridWidth.value),
-      //   maxWidth,
-      // )
     }
   }
   function patchUpdateNoteItems(newTrackZoomRatio, oldTrackZoomRatio) {
