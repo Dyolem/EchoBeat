@@ -9,9 +9,17 @@ import {
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
+  const editorGridParametersStore = useEditorGridParametersStore()
   const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
   const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
-  const noteWidth = ref(baseWidth)
+
+  const nextInsertedNoteWidth = ref(0)
+  const noteWidth = computed(() => {
+    return (
+      nextInsertedNoteWidth.value ||
+      baseWidth * editorGridParametersStore.trackZoomRatio
+    )
+  })
   const noteHeight = ref(baseHeight)
 
   const minGridWidth = ref(minWidth)
@@ -20,7 +28,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     TENSILE_ADSORPTION_GRID_THRESHOLD,
   )
 
-  const editorGridParametersStore = useEditorGridParametersStore()
   const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
   const NATURAL_SEMITONE = ["E", "B"]
@@ -101,7 +108,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
     return {
       id: `${insertToSpecifiedPitchName}-${count}`,
-      width: noteWidth.value * editorGridParametersStore.trackZoomRatio,
+      width: noteWidth.value,
       height: noteHeight.value,
       x: snappedX,
       y: snappedY,
@@ -309,6 +316,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
       updateNoteTarget.x = newX
       updateNoteTarget.width = newWidth
+      nextInsertedNoteWidth.value = newWidth
     } else {
       //right side drag
       const maxWidth = maxMovementRegionWidth - initX
@@ -345,6 +353,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
       updateNoteTarget.width = newWidth
+      nextInsertedNoteWidth.value = newWidth
     }
   }
   function patchUpdateNoteItems(newTrackZoomRatio, oldTrackZoomRatio) {
