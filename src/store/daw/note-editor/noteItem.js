@@ -3,14 +3,19 @@ import { computed, ref, watch } from "vue"
 import {
   EDITOR_MODE_ENUM,
   TENSILE_ADSORPTION_GRID_THRESHOLD,
+  NOTE_ELEMENT_SIZE,
+  NOTE_ELEMENT_MIN_SIZE,
 } from "@/constants/daw/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
-  const noteHeight = ref(10)
-  const noteWidth = ref(20)
-  const minGridWidth = ref(20)
-  const minGridHeight = ref(9.3)
+  const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
+  const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
+  const noteWidth = ref(baseWidth)
+  const noteHeight = ref(baseHeight)
+
+  const minGridWidth = ref(minWidth)
+  const minGridHeight = ref(minHeight) //Temporarily out of use
   const stretchNoteWidthSnappedToGridThreshold = ref(
     TENSILE_ADSORPTION_GRID_THRESHOLD,
   )

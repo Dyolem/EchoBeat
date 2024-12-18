@@ -16,13 +16,14 @@ import {
 } from "vue"
 import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
+import { DEFAULT_ZOOM_RATIO } from "@/constants/daw/index.js"
 
 const trackRulerStore = useTrackRulerStore()
 const BEATS_NUMBER = 95
 const BASE_GRID_WIDTH = 20
 const MIN_GRID_WIDTH = 20
 const BASE_GRID_HEIGHT = 90
-const TRACK_ZOOM_RATIO = 1
+const TRACK_ZOOM_RATIO = DEFAULT_ZOOM_RATIO
 
 const MIN_DRAWER_EDITOR_HEIGHT = 300
 const MAX_DRAWER_EDITOR_HEIGHT = 700

@@ -1,12 +1,14 @@
 import { defineStore } from "pinia"
-import { ref, watchEffect } from "vue"
+import { ref } from "vue"
+import { NOTE_ELEMENT_SIZE, DEFAULT_ZOOM_RATIO } from "@/constants/daw/index.js"
 
 export const useEditorGridParametersStore = defineStore(
   "editorGridParameters",
   () => {
-    const trackZoomRatio = ref(1)
-    const minGridHorizontalMovement = ref(20)
-    const minGridVerticalMovement = ref(9.3)
+    const trackZoomRatio = ref(DEFAULT_ZOOM_RATIO)
+    const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
+    const minGridHorizontalMovement = ref(baseWidth)
+    const minGridVerticalMovement = ref(baseHeight)
 
     return {
       trackZoomRatio,

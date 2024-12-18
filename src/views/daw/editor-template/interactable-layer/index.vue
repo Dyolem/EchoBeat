@@ -2,11 +2,15 @@
 import { inject, onMounted, onUnmounted, useTemplateRef, watch } from "vue"
 import { debounce } from "@/utils/debounce.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
+import {
+  ZOOM_THRESHOLD,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  DEFAULT_ZOOM_RATIO,
+} from "@/constants/daw/index.js"
+
 const trackRulerStore = useTrackRulerStore()
 
-const ZOOM_THRESHOLD = 0.1
-const MAX_ZOOM = 6
-const MIN_ZOOM = 0.8
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
 const drawGrid = inject("drawGrid", defaultDrawGrid)
@@ -25,7 +29,7 @@ const props = defineProps({
   },
   trackZoomRatio: {
     type: Number,
-    default: 1,
+    default: DEFAULT_ZOOM_RATIO,
   },
   gridWidth: {
     type: Number,
@@ -59,7 +63,7 @@ watch(
 )
 const emit = defineEmits(["update:trackZoomRatio"])
 function CreateZoomCanvas(
-  increment = 0.1,
+  increment = ZOOM_THRESHOLD,
   zoomScale = [MIN_ZOOM, MAX_ZOOM],
   emit,
 ) {
