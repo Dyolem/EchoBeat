@@ -1,6 +1,9 @@
 <script setup>
 import Octave from "@/views/daw/midi-editor/midi-sidebar/chromatic-scale/octave/index.vue"
 import { computed, inject, useTemplateRef, watch } from "vue"
+import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
+const audioGenerator = useAudioGeneratorStore()
+
 const props = defineProps({
   chromaticScaleScrollTop: {
     type: Number,
@@ -23,13 +26,76 @@ const octaveInfoArr = computed(() => {
     .slice()
     .reverse()
     .map((item, index) => {
-      return { id: index, octaveName: item }
+      return {
+        id: index,
+        octaveName: item,
+        octaveIndex: chromaticScaleArr.value.length - index,
+      }
     })
 })
 
 function scrollHandler(event) {
   const scrollTop = event.target.scrollTop
   emit("update:chromaticScaleScrollTop", scrollTop)
+}
+
+function playNote(target) {
+  target.style.backgroundColor = "purple"
+  const noteName = target.dataset["noteName"]
+  audioGenerator.generateAudio(noteName)
+}
+function isNoteElement(elementTarget) {
+  return (
+    elementTarget.classList.value === "white-key" ||
+    elementTarget.classList.value === "black-key"
+  )
+}
+function playPianoAudioTrack(event) {
+  const target = event.target
+  if (!target) return
+  const noteController = new AbortController()
+  let emittedTarget = null
+  if (isNoteElement(target)) {
+    playNote(target)
+    emittedTarget = target
+  }
+  document.addEventListener(
+    "mousemove",
+    (event) => {
+      const nextNote = event.target
+      if (!isNoteElement(nextNote)) {
+        resetState(emittedTarget)
+        return
+      }
+      if (nextNote !== emittedTarget) {
+        resetState(emittedTarget)
+        playNote(nextNote)
+        emittedTarget = nextNote
+      }
+    },
+    {
+      signal: noteController.signal,
+    },
+  )
+  document.addEventListener(
+    "mouseup",
+    (event) => {
+      resetState(event.target)
+      noteController.abort()
+    },
+    {
+      once: true,
+    },
+  )
+}
+
+function resetState(target) {
+  if (!target) return
+  if (target.classList.value === "white-key") {
+    target.style.backgroundColor = "white"
+  } else if (target.classList.value === "black-key") {
+    target.style.backgroundColor = "black"
+  }
 }
 </script>
 
@@ -39,6 +105,7 @@ function scrollHandler(event) {
     <div
       class="octave-container beatified-scrollbar"
       @scroll="scrollHandler"
+      @mousedown="playPianoAudioTrack"
       ref="octaveContainerRef"
     >
       <Octave
@@ -46,6 +113,7 @@ function scrollHandler(event) {
         :key="item.id"
         :id="item.id"
         :octave-name="item.octaveName"
+        :octave-index="item.octaveIndex"
       ></Octave>
     </div>
   </div>

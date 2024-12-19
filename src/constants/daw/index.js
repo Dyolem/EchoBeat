@@ -26,3 +26,52 @@ export const BEATS_NUMBER = 95
 export const BASE_GRID_WIDTH = 20
 export const MIN_GRID_WIDTH = BASE_GRID_WIDTH * MIN_ZOOM
 export const BASE_GRID_HEIGHT = 90
+
+// 音名的顺序表
+export const NOTES_TABLE = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+]
+export function generateNoteFrequencyMap(notes = NOTES_TABLE) {
+  // 创建音名与频率映射的 Map
+  const noteFrequencyMap = new Map()
+
+  // A4 的标准频率（440 Hz）
+  const A4_FREQUENCY = 440
+
+  // A4 在 MIDI 的位置
+  const A4_POSITION = 69
+
+  // 根据 MIDI 编码计算频率
+  function calculateFrequency(midiNumber) {
+    return Math.pow(2, (midiNumber - A4_POSITION) / 12) * A4_FREQUENCY
+  }
+
+  // 填充音名与频率的映射（从 A0 到 C8）
+  for (let octave = 0; octave <= 8; octave++) {
+    for (let i = 0; i < notes.length; i++) {
+      const noteName = `${notes[i]}${octave}`
+      const midiNumber = octave * 12 + i
+      if (midiNumber >= 21 && midiNumber <= 108) {
+        // 限制在钢琴音域范围内
+        const frequency = calculateFrequency(midiNumber)
+        noteFrequencyMap.set(noteName, frequency.toFixed(2)) // 保留两位小数
+      }
+    }
+  }
+
+  // 打印结果
+  console.log(noteFrequencyMap)
+  return noteFrequencyMap
+}
+export const NOTE_FREQUENCY_MAP = generateNoteFrequencyMap()

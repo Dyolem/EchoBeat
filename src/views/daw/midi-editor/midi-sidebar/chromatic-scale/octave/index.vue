@@ -1,5 +1,7 @@
 <script setup>
-import { computed, inject } from "vue"
+import { computed, inject, useTemplateRef } from "vue"
+import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
+const audioGenerator = useAudioGeneratorStore()
 
 const props = defineProps({
   id: {
@@ -8,6 +10,10 @@ const props = defineProps({
   octaveName: {
     type: String,
     default: "C",
+  },
+  octaveIndex: {
+    type: Number,
+    default: 1,
   },
 })
 const pianoKeySize = inject("pianoKeySize")
@@ -20,33 +26,104 @@ const whiteKeyHeight = computed(() => {
 const blackKeyHeight = computed(() => {
   return pianoKeySize.value.blackKeyHeight
 })
+
+const octaveBoxRef = useTemplateRef("octaveBoxRef")
+function getPitchName(noteName) {
+  return `${noteName}${props.octaveIndex}`
+}
+function playNote(target) {
+  const noteName = target.dataset["noteName"]
+  const pitchName = getPitchName(noteName)
+  audioGenerator.generateAudio(pitchName)
+}
+function playPianoAudioTrack(event) {
+  const target = event.target
+  if (!target) return
+  const noteController = new AbortController()
+  if (
+    target.classList.value === "white-key" ||
+    target.classList.value === "black-key"
+  ) {
+    target.style.backgroundColor = "purple"
+    playNote(target)
+    let emittedTarget = target
+    document.addEventListener(
+      "mousemove",
+      (event) => {
+        const nextNote = event.target
+        if (nextNote !== emittedTarget) {
+          resetState(target)
+          playNote(nextNote)
+          emittedTarget = nextNote
+        }
+      },
+      {
+        signal: noteController.signal,
+      },
+    )
+    document.addEventListener(
+      "mouseup",
+      () => {
+        noteController.abort()
+      },
+      {
+        once: true,
+      },
+    )
+    // target.addEventListener("mouseleave", () => {
+    //   resetState(target)
+    // })
+  }
+}
+function endPianoAudioTrack(event) {
+  resetState(event.target)
+}
+function resetState(target) {
+  if (target.classList.value === "white-key") {
+    target.style.backgroundColor = "white"
+  } else if (target.classList.value === "black-key") {
+    target.style.backgroundColor = "black"
+  }
+}
 </script>
 
 <template>
-  <div class="octave-box">
+  <div class="octave-box" ref="octaveBoxRef">
     <div class="upper-tetra-chord tetra-chord">
       <div class="white-key-block">
-        <div class="white-key">B</div>
-        <div class="white-key">A</div>
-        <div class="white-key">G</div>
-        <div class="white-key">F</div>
+        <div class="white-key" :data-note-name="`B${props.octaveIndex}`">B</div>
+        <div class="white-key" :data-note-name="`A${props.octaveIndex}`">A</div>
+        <div class="white-key" :data-note-name="`G${props.octaveIndex}`">G</div>
+        <div class="white-key" :data-note-name="`F${props.octaveIndex}`">F</div>
       </div>
       <div class="black-key-block">
-        <div class="black-key">A#</div>
-        <div class="black-key">G#</div>
-        <div class="black-key">F#</div>
+        <div class="black-key" :data-note-name="`A#${props.octaveIndex}`">
+          A#
+        </div>
+        <div class="black-key" :data-note-name="`G#${props.octaveIndex}`">
+          G#
+        </div>
+        <div class="black-key" :data-note-name="`F#${props.octaveIndex}`">
+          F#
+        </div>
       </div>
     </div>
     <div class="lower-tetra-chord tetra-chord">
       <div class="white-key-block">
-        <div class="white-key">E</div>
-        <div class="white-key">D</div>
-        <div class="white-key">{{ `${octaveName}` }}</div>
+        <div class="white-key" :data-note-name="`E${props.octaveIndex}`">E</div>
+        <div class="white-key" :data-note-name="`D${props.octaveIndex}`">D</div>
+        <div class="white-key" :data-note-name="`C${props.octaveIndex}`">
+          {{ `${octaveName}` }}
+        </div>
       </div>
 
       <div class="black-key-block">
-        <div class="black-key">D#</div>
-        <div class="black-key">C#</div>
+        <div class="black-key" :data-note-name="`D#${props.octaveIndex}`">
+          D#
+        </div>
+        <div class="black-key" :data-note-name="`C#${props.octaveIndex}`">
+          C#
+        </div>
       </div>
     </div>
   </div>
@@ -63,6 +140,7 @@ const blackKeyHeight = computed(() => {
   width: 100%;
   height: fit-content;
   background-color: antiquewhite;
+  user-select: none;
 }
 
 .tetra-chord {
