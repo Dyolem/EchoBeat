@@ -155,6 +155,7 @@ function resetState(target) {
   display: flex;
   flex-direction: column;
   gap: calc(var(--white-key-height) - var(--black-key-height));
+  pointer-events: none;
 }
 
 .white-key {
@@ -168,11 +169,14 @@ function resetState(target) {
   font-size: 12px;
 }
 .black-key {
+  overflow: hidden;
   box-sizing: border-box;
   width: calc(var(--white-key-width) * 0.618);
   height: 10px;
+  line-height: 10px;
   background-color: black;
   color: white;
-  font-size: 12px;
+  font-size: 10px;
+  pointer-events: auto;
 }
 </style>
