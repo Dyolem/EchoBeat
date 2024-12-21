@@ -104,14 +104,18 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   function noteItemTemplate({ x, y } = {}, insertToSpecifiedPitchName) {
     const count = noteItemsMap.value.get(insertToSpecifiedPitchName).noteItems
       .length
-    const [snappedX, snappedY] = snapToOtherPitchNameTrack({ x, y })
-
+    const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack({
+      x,
+      y,
+    })
+    const { snappedX, snappedY } = snappedPosition
     return {
       id: `${insertToSpecifiedPitchName}-${count}`,
       width: noteWidth.value,
       height: noteHeight.value,
       x: snappedX,
       y: snappedY,
+      pitchName: snappedPitchName,
       backGroundColor: "lightblue",
     }
   }
@@ -179,15 +183,14 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       { x, y },
       pitchNameMappedToArea.value,
     )
-
+    let snappedX = 0
+    let snappedY = 0
     if (mousedownPositionInNote.length === 0) {
       //insert logic
-      const snappedY = noteItemsMap.value.get(expectedInsertToPitchName)
-        ?.scaleY[0]
-      const snappedX =
+      snappedY = noteItemsMap.value.get(expectedInsertToPitchName)?.scaleY[0]
+      snappedX =
         Math.floor(x / editorGridParametersStore.minGridHorizontalMovement) *
         editorGridParametersStore.minGridHorizontalMovement
-      return [snappedX, snappedY]
     } else {
       //update logic
       const [mousedownXInNote, mousedownYInNote] = mousedownPositionInNote
@@ -203,7 +206,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
        * 这就违反了移动位置x是网格值的整数倍时的规则，而bug的产生原因在于减去的mousedownXInNote值，被提前进行了取整。
        * 然而减去mousedownXInNote的值是必须，因此可以单独对mousedownXInNote值进行取整，然后将取整的两个值相减。
        * */
-      const snappedX =
+      snappedX =
         Math.floor(x / editorGridParametersStore.minGridHorizontalMovement) *
           editorGridParametersStore.minGridHorizontalMovement -
         Math.floor(
@@ -211,18 +214,24 @@ export const useNoteItemStore = defineStore("noteItem", () => {
             editorGridParametersStore.minGridHorizontalMovement,
         ) *
           editorGridParametersStore.minGridHorizontalMovement
-      const snappedY =
+      snappedY =
         Math.floor(y / editorGridParametersStore.minGridVerticalMovement) *
           editorGridParametersStore.minGridVerticalMovement -
         Math.floor(
           mousedownYInNote / editorGridParametersStore.minGridVerticalMovement,
         ) *
           editorGridParametersStore.minGridVerticalMovement
-
-      return [snappedX, snappedY]
+    }
+    return {
+      snappedPosition: {
+        snappedX,
+        snappedY,
+      },
+      snappedPitchName: expectedInsertToPitchName,
     }
   }
 
+  let updatedY = -1
   function updateNoteItemPosition(
     id,
     pitchName,
@@ -236,18 +245,42 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       .noteItems.find((item) => item.id === id)
     if (updateNoteTarget === undefined) return
 
+    const oldNoteTarget = { ...updateNoteTarget }
     const [x, y] = position
     const [mousedownXInNote] = mousedownPositionInNote
-    const [snappedX, snappedY] = snapToOtherPitchNameTrack(
+    const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack(
       { x, y },
       mousedownPositionInNote,
     )
+    const { snappedX, snappedY } = snappedPosition
     if (isSnappedToHorizontalGrid.value) {
       updateNoteTarget.x = snappedX
     } else {
       updateNoteTarget.x = x - mousedownXInNote
     }
     updateNoteTarget.y = snappedY
+    updateNoteTarget.pitchName = snappedPitchName
+    if (updatedY === -1) {
+      updatedY = snappedY
+    }
+    if (updatedY !== snappedY) {
+      updateNoteItemsMap(updateNoteTarget, oldNoteTarget)
+      updatedY = -1
+    }
+
+    return [updateNoteTarget, oldNoteTarget]
+  }
+  function updateNoteItemsMap(newNoteTarget, oldNoteTarget) {
+    if (!newNoteTarget || !oldNoteTarget) return
+    const oldPitchName = oldNoteTarget.pitchName
+    const newPitchName = newNoteTarget.pitchName
+    const oldTargetArr = noteItemsMap.value.get(oldPitchName).noteItems
+    const newTargetArr = noteItemsMap.value.get(newPitchName).noteItems
+    const oldTargetIndex = oldTargetArr.findIndex((item) => {
+      return item === newNoteTarget
+    })
+    oldTargetArr.splice(1, oldTargetIndex)
+    newTargetArr.push(newNoteTarget)
   }
 
   function stretchNoteWidth({
@@ -384,6 +417,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     deleteNoteItem,
     isExistNoteItem,
     updateNoteItemPosition,
+    updateNoteItemsMap,
     stretchNoteWidth,
     patchUpdateNoteItems,
   }

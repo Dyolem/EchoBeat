@@ -1,8 +1,10 @@
 <script setup>
-import { onMounted, useTemplateRef, watch } from "vue"
+import { onMounted, useTemplateRef, watch, watchEffect } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
+import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 const noteItemMap = useNoteItemStore()
+const audioGenerator = useAudioGeneratorStore()
 
 const editorNoteRef = useTemplateRef("editorNoteRef")
 const props = defineProps({
@@ -47,6 +49,9 @@ const noteMainSelectedId = defineModel("noteMainSelectedId", {
   type: String,
   default: "",
 })
+watchEffect(() => {
+  audioGenerator.generateAudio(props.belongedPitchName)
+})
 onMounted(() => {
   watch(
     () => props.notePosition,
@@ -59,6 +64,7 @@ onMounted(() => {
     { deep: true, immediate: true },
   )
 })
+
 let translateXDistance = 0
 let translateYDistance = 0
 function isLegalTranslateDistance(translateXDistance, translateYDistance) {
