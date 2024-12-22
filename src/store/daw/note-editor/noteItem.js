@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { computed, ref, watch } from "vue"
+import { computed, ref, watch, watchEffect } from "vue"
 import {
   EDITOR_MODE_ENUM,
   TENSILE_ADSORPTION_GRID_THRESHOLD,
@@ -7,9 +7,11 @@ import {
   NOTE_ELEMENT_MIN_SIZE,
 } from "@/constants/daw/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
+import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
+  const audioGenerator = useAudioGeneratorStore()
   const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
   const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
 
@@ -101,16 +103,27 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return insertToSpecifiedPitchName
   }
 
-  function noteItemTemplate({ x, y } = {}, insertToSpecifiedPitchName) {
-    const count = noteItemsMap.value.get(insertToSpecifiedPitchName).noteItems
+  function getId(
+    insertToSpecifiedPitchName,
+    NOTE_ITEMS_MAP = noteItemsMap.value,
+  ) {
+    if (insertToSpecifiedPitchName === undefined) return
+    const count = NOTE_ITEMS_MAP.get(insertToSpecifiedPitchName).noteItems
       .length
+    const date = new Date()
+    const fetchTime = date.getTime()
+    return `${insertToSpecifiedPitchName}-${count}-${fetchTime}`
+  }
+  function noteItemTemplate({ x, y } = {}, insertToSpecifiedPitchName) {
+    const id = getId(insertToSpecifiedPitchName)
+
     const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack({
       x,
       y,
     })
     const { snappedX, snappedY } = snappedPosition
     return {
-      id: `${insertToSpecifiedPitchName}-${count}`,
+      id: id,
       width: noteWidth.value,
       height: noteHeight.value,
       x: snappedX,
@@ -161,7 +174,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     if (x === undefined || y === undefined) return
     const template = noteItemTemplate({ x, y }, insertToSpecifiedPitchName)
     noteItemsMap.value.get(insertToSpecifiedPitchName)?.noteItems.push(template)
-
+    audioGenerator.generateAudio(insertToSpecifiedPitchName)
     return template.id
   }
 
@@ -240,12 +253,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   ) {
     if (id === undefined || pitchName === undefined || position.length !== 2)
       return
+
     const updateNoteTarget = noteItemsMap.value
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
     if (updateNoteTarget === undefined) return
 
-    const oldNoteTarget = { ...updateNoteTarget }
     const [x, y] = position
     const [mousedownXInNote] = mousedownPositionInNote
     const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack(
@@ -260,27 +273,22 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
     updateNoteTarget.y = snappedY
     updateNoteTarget.pitchName = snappedPitchName
-    if (updatedY === -1) {
-      updatedY = snappedY
-    }
-    if (updatedY !== snappedY) {
-      updateNoteItemsMap(updateNoteTarget, oldNoteTarget)
-      updatedY = -1
-    }
 
-    return [updateNoteTarget, oldNoteTarget]
+    return getId(snappedPitchName)
   }
-  function updateNoteItemsMap(newNoteTarget, oldNoteTarget) {
-    if (!newNoteTarget || !oldNoteTarget) return
-    const oldPitchName = oldNoteTarget.pitchName
-    const newPitchName = newNoteTarget.pitchName
+
+  function updateNoteItemsMap(oldId, newId, oldPitchName, newPitchName) {
+    // if (!newNoteTarget || !oldNoteTarget) return
+    // const oldPitchName = oldNoteTarget.pitchName
+    // const newPitchName = newNoteTarget.pitchName
     const oldTargetArr = noteItemsMap.value.get(oldPitchName).noteItems
     const newTargetArr = noteItemsMap.value.get(newPitchName).noteItems
     const oldTargetIndex = oldTargetArr.findIndex((item) => {
-      return item === newNoteTarget
+      return item.id === oldId
     })
-    oldTargetArr.splice(1, oldTargetIndex)
-    newTargetArr.push(newNoteTarget)
+    oldTargetArr[oldTargetIndex].id = newId
+    newTargetArr.push(oldTargetArr[oldTargetIndex])
+    oldTargetArr.splice(oldTargetIndex, 1)
   }
 
   function stretchNoteWidth({

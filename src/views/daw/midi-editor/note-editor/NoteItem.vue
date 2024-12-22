@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, useTemplateRef, watch, watchEffect } from "vue"
+import { onMounted, onUnmounted, useTemplateRef, watch, watchEffect } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
@@ -14,6 +14,7 @@ const props = defineProps({
   },
   belongedPitchName: {
     type: String,
+    default: "",
     required: true,
   },
   noteWidth: {
@@ -49,10 +50,19 @@ const noteMainSelectedId = defineModel("noteMainSelectedId", {
   type: String,
   default: "",
 })
-watchEffect(() => {
-  audioGenerator.generateAudio(props.belongedPitchName)
-})
+// watchEffect(() => {
+//   audioGenerator.generateAudio(props.belongedPitchName)
+// })
+
+watch(
+  () => props.belongedPitchName,
+  (newVal) => {
+    audioGenerator.generateAudio(newVal)
+  },
+)
+
 onMounted(() => {
+  // audioGenerator.generateAudio(props.belongedPitchName)
   watch(
     () => props.notePosition,
     (newPosition) => {
@@ -82,12 +92,15 @@ function getMovementInNoteEditorRegion(event) {
     y: event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top,
   }
 }
+
 function draggableRegionHandler(event) {
   // 'insert' editor mode prohibit to drag note element
   if (noteItemMap.isInsertMode) return
   if (noteMainSelectedId.value !== props.id) noteMainSelectedId.value = props.id
 
   const selectionController = clearSelection()
+  const id = props.id
+  const belongedPitchName = props.belongedPitchName
   const mousedownX =
     event.clientX - editorNoteRef.value.getBoundingClientRect().left
   const mousedownY =
@@ -97,6 +110,7 @@ function draggableRegionHandler(event) {
    * const mousedownY = event.clientY - editorNoteRef.value.getBoundingClientRect().top
    * */
 
+  let newId = ""
   function mouseMoveHandler(event) {
     translateXDistance =
       event.clientX - props.noteEditorRegionRef.getBoundingClientRect().left
@@ -105,9 +119,9 @@ function draggableRegionHandler(event) {
       event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      noteItemMap.updateNoteItemPosition(
-        props.id,
-        props.belongedPitchName,
+      newId = noteItemMap.updateNoteItemPosition(
+        id,
+        belongedPitchName,
         [translateXDistance, translateYDistance],
         [mousedownX, mousedownY],
       )
@@ -119,6 +133,13 @@ function draggableRegionHandler(event) {
     () => {
       document.removeEventListener("mousemove", mouseMoveHandler)
       selectionController.abort()
+      if (!newId) return
+      noteItemMap.updateNoteItemsMap(
+        id,
+        newId,
+        belongedPitchName,
+        props.belongedPitchName,
+      )
     },
     {
       once: true,

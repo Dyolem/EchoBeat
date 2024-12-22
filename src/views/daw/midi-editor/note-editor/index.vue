@@ -116,7 +116,7 @@ watch(
         v-for="noteItem in noteTrack.noteItems"
         :key="noteItem.id"
         :id="noteItem.id"
-        :belonged-pitch-name="pitchName"
+        :belonged-pitch-name="noteItem.pitchName"
         :note-width="noteItem.width"
         :note-height="noteHeight"
         :note-pad-width="notePadWidth"
