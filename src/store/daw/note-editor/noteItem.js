@@ -244,7 +244,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
   }
 
-  let updatedY = -1
   function updateNoteItemPosition(
     id,
     pitchName,
@@ -278,9 +277,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }
 
   function updateNoteItemsMap(oldId, newId, oldPitchName, newPitchName) {
-    // if (!newNoteTarget || !oldNoteTarget) return
-    // const oldPitchName = oldNoteTarget.pitchName
-    // const newPitchName = newNoteTarget.pitchName
     const oldTargetArr = noteItemsMap.value.get(oldPitchName).noteItems
     const newTargetArr = noteItemsMap.value.get(newPitchName).noteItems
     const oldTargetIndex = oldTargetArr.findIndex((item) => {
