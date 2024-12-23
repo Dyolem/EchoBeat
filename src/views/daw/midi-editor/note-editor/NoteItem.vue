@@ -140,6 +140,7 @@ function draggableRegionHandler(event) {
         belongedPitchName,
         props.belongedPitchName,
       )
+      noteMainSelectedId.value = newId
     },
     {
       once: true,
@@ -251,8 +252,7 @@ function noteMainMousedownHandler(event) {
     class="editor-note"
     :class="{
       'is-edited': noteMainSelectedId === id,
-      'is-selected':
-        noteMainSelectedId === id && noteItemMap.editorMode === 'select',
+      'is-selected': noteMainSelectedId === id && noteItemMap.isSelectMode,
     }"
     ref="editorNoteRef"
     @click.stop="() => {}"
