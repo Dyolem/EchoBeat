@@ -204,10 +204,12 @@ function noteMainMousedownHandler(event) {
     if (noteItemMap.isInsertMode) {
       noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
       noteMainSelectedId.value = ""
+    } else {
+      /*
+       * In selected mode, a single click will play the corresponding sound name
+       * */
+      audioGenerator.generateAudio(props.belongedPitchName)
     }
-    /*
-     * For select editing mode, there is no logic that needs to be executed with a single click
-     * */
   }
   //The second click(double click) should execute the logic
   if (timeInterval > 0 && timeInterval < 300) {
