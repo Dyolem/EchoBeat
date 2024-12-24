@@ -4,8 +4,10 @@ import NotePad from "@/views/daw/midi-editor/note-editor/NotePad.vue"
 import NoteItem from "@/views/daw/midi-editor/note-editor/NoteItem.vue"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
+import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 const editorGridParametersStore = useEditorGridParametersStore()
 const noteItems = useNoteItemStore()
+const audioGenerator = useAudioGeneratorStore()
 
 const OCTAVE_KEY_COUNT = 12
 const OCTAVE_WHITE_KEY_COUNT = 7
@@ -59,28 +61,33 @@ const getCursorPositionInNoteEditorRegion = (event) => {
     event.clientY - noteEditorRegionRef.value.getBoundingClientRect().top
   return { x, y }
 }
+function insertNote(event) {
+  if (!event) return
+  const { x: insertX, y: insertY } = getCursorPositionInNoteEditorRegion(event)
+  const insertedItemInfo = noteItems.insertNoteItem(
+    {
+      x: insertX,
+      y: insertY,
+    },
+    true,
+  )
+  noteMainSelectedId.value = insertedItemInfo.id
+
+  audioGenerator.generateAudio(insertedItemInfo.pitchName)
+  noteItems.simulatePlaySpecifiedNote(insertedItemInfo.pitchName)
+}
 function noteEditorClickHandler(event) {
   if (noteItems.isSelectMode) {
     if (noteMainSelectedId.value !== "") {
       noteMainSelectedId.value = ""
     }
   } else if (noteItems.isInsertMode) {
-    const { x: insertX, y: insertY } =
-      getCursorPositionInNoteEditorRegion(event)
-    noteMainSelectedId.value = noteItems.insertNoteItem({
-      x: insertX,
-      y: insertY,
-    })
+    insertNote(event)
   }
 }
 function noteEditorDblClickHandler(event) {
   if (noteItems.isSelectMode) {
-    const { x: insertX, y: insertY } =
-      getCursorPositionInNoteEditorRegion(event)
-    noteMainSelectedId.value = noteItems.insertNoteItem({
-      x: insertX,
-      y: insertY,
-    })
+    insertNote(event)
   }
 }
 watch(

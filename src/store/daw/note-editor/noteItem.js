@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { computed, ref, watch, watchEffect } from "vue"
+import { computed, ref, watch } from "vue"
 import {
   EDITOR_MODE_ENUM,
   TENSILE_ADSORPTION_GRID_THRESHOLD,
@@ -7,11 +7,9 @@ import {
   NOTE_ELEMENT_MIN_SIZE,
 } from "@/constants/daw/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
-import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
-  const audioGenerator = useAudioGeneratorStore()
   const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
   const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
 
@@ -34,7 +32,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
   const NATURAL_SEMITONE = ["E", "B"]
   const isSnappedToHorizontalGrid = ref(true)
-  const editorMode = ref(EDITOR_MODE_ENUM.SELECT)
+  const octaveContainerInstance = ref(null)
+  const editorMode = ref(EDITOR_MODE_ENUM.INSERT)
 
   const isInsertMode = computed(
     () => editorMode.value === EDITOR_MODE_ENUM.INSERT,
@@ -165,17 +164,17 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     )
   }
   function insertNoteItem(
-    { x, y } = {},
-    insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
-      { x, y },
-      pitchNameMappedToArea.value,
-    ),
+    { x, y, insertToSpecifiedPitchName } = {},
+    returnInsertedItemFullInfo = false,
   ) {
     if (x === undefined || y === undefined) return
-    const template = noteItemTemplate({ x, y }, insertToSpecifiedPitchName)
-    noteItemsMap.value.get(insertToSpecifiedPitchName)?.noteItems.push(template)
-    audioGenerator.generateAudio(insertToSpecifiedPitchName)
-    return template.id
+    const specifiedPitchName =
+      insertToSpecifiedPitchName ??
+      getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
+
+    const template = noteItemTemplate({ x, y }, specifiedPitchName)
+    noteItemsMap.value.get(specifiedPitchName)?.noteItems.push(template)
+    return returnInsertedItemFullInfo ? template : template.id
   }
 
   function deleteNoteItem(id, deleteFromSpecifiedPitchName) {
@@ -273,7 +272,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteTarget.y = snappedY
     updateNoteTarget.pitchName = snappedPitchName
 
-    return getId(snappedPitchName)
+    return {
+      newNoteId: getId(snappedPitchName),
+      newPitchName: snappedPitchName,
+    }
   }
 
   function updateNoteItemsMap(oldId, newId, oldPitchName, newPitchName) {
@@ -409,7 +411,18 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       })
     })
   }
+
+  function simulatePlaySpecifiedNote(pitchName) {
+    octaveContainerInstance.value?.dispatchEvent(
+      new CustomEvent("play-sample", {
+        detail: {
+          pitchName,
+        },
+      }),
+    )
+  }
   return {
+    octaveContainerInstance,
     editorMode,
     isInsertMode,
     isSelectMode,
@@ -424,6 +437,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteItemsMap,
     stretchNoteWidth,
     patchUpdateNoteItems,
+    simulatePlaySpecifiedNote,
   }
 })
 

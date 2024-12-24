@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, useTemplateRef, watch, watchEffect } from "vue"
+import { onMounted, useTemplateRef, watch } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
@@ -50,19 +50,16 @@ const noteMainSelectedId = defineModel("noteMainSelectedId", {
   type: String,
   default: "",
 })
-// watchEffect(() => {
-//   audioGenerator.generateAudio(props.belongedPitchName)
-// })
 
 watch(
   () => props.belongedPitchName,
   (newVal) => {
     audioGenerator.generateAudio(newVal)
+    noteItemMap.simulatePlaySpecifiedNote(newVal)
   },
 )
 
 onMounted(() => {
-  // audioGenerator.generateAudio(props.belongedPitchName)
   watch(
     () => props.notePosition,
     (newPosition) => {
@@ -119,12 +116,13 @@ function draggableRegionHandler(event) {
       event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      newId = noteItemMap.updateNoteItemPosition(
+      const { newNoteId } = noteItemMap.updateNoteItemPosition(
         id,
         belongedPitchName,
         [translateXDistance, translateYDistance],
         [mousedownX, mousedownY],
       )
+      newId = newNoteId
     }
   }
   document.addEventListener("mousemove", mouseMoveHandler)
@@ -209,6 +207,8 @@ function noteMainMousedownHandler(event) {
        * In selected mode, a single click will play the corresponding sound name
        * */
       audioGenerator.generateAudio(props.belongedPitchName)
+      noteItemMap.simulatePlaySpecifiedNote(props.belongedPitchName)
+      // noteItemMap.currentEditedNotePitchName = props.belongedPitchName
     }
   }
   //The second click(double click) should execute the logic
