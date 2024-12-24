@@ -76,7 +76,7 @@ function insertNote(event) {
   audioGenerator.generateAudio(insertedItemInfo.pitchName)
   noteItems.simulatePlaySpecifiedNote(insertedItemInfo.pitchName)
 }
-function noteEditorClickHandler(event) {
+function noteEditorMousedownHandler(event) {
   if (noteItems.isSelectMode) {
     if (noteMainSelectedId.value !== "") {
       noteMainSelectedId.value = ""
@@ -106,11 +106,11 @@ watch(
   ></note-pad>
   <div
     class="note-editor-region"
-    @click="noteEditorClickHandler"
     @dblclick="noteEditorDblClickHandler"
+    @mousedown="noteEditorMousedownHandler"
     ref="noteEditorRegionRef"
     :class="{
-      'is-inserted': noteItems.editorMode === 'insert',
+      'is-inserted': noteItems.isInsertMode,
     }"
   >
     <template
