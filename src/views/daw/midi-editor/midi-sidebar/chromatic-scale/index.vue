@@ -67,7 +67,7 @@ onMounted(() => {
 function playNote(target) {
   target.style.backgroundColor = "purple"
   const noteName = target.dataset["noteName"]
-  audioGenerator.generateAudio(noteName)
+  return audioGenerator.generateAudio(noteName)
 }
 function isNoteElement(elementTarget) {
   return (
@@ -80,9 +80,10 @@ function playPianoAudioTrack(event) {
   if (!target) return
   const noteController = new AbortController()
   let emittedTarget = null
+  let emittedAudioController = null
   if (isNoteElement(target)) {
-    playNote(target)
     emittedTarget = target
+    emittedAudioController = playNote(target)
   }
   document.addEventListener(
     "mousemove",
@@ -90,12 +91,27 @@ function playPianoAudioTrack(event) {
       const nextNote = event.target
       if (!isNoteElement(nextNote)) {
         resetState(emittedTarget)
+        emittedAudioController
+          ?.then((controller) => {
+            controller.abort()
+          })
+          .catch((error) => {
+            console.error("Failed to abort emittedAudioController:", error)
+          })
         return
       }
       if (nextNote !== emittedTarget) {
         resetState(emittedTarget)
-        playNote(nextNote)
+        emittedAudioController
+          ?.then((controller) => {
+            controller.abort()
+          })
+          .catch((error) => {
+            console.error("Failed to abort emittedAudioController:", error)
+          })
+
         emittedTarget = nextNote
+        emittedAudioController = playNote(nextNote)
       }
     },
     {
@@ -107,6 +123,13 @@ function playPianoAudioTrack(event) {
     (event) => {
       resetState(event.target)
       noteController.abort()
+      emittedAudioController
+        ?.then((controller) => {
+          controller.abort()
+        })
+        .catch((error) => {
+          console.error("Failed to abort emittedAudioController:", error)
+        })
     },
     {
       once: true,

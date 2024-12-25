@@ -118,6 +118,7 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
 
     // 播放样本
     function playSample(buffer, midiNumber) {
+      const playSampleController = new AbortController()
       const source = audioContext.createBufferSource()
       source.buffer = buffer
 
@@ -136,16 +137,34 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
       // 使用 playbackRate 来调整音高
       source.playbackRate.value = Math.pow(2, semitoneDifference / 12)
 
-      source.connect(audioContext.destination)
+      const gainNode = audioContext.createGain()
+      source.connect(gainNode).connect(audioContext.destination)
       source.start()
+
+      playSampleController.signal.addEventListener(
+        "abort",
+        () => {
+          stopAudio(source, gainNode)
+        },
+        { once: true },
+      )
+      return playSampleController
+    }
+
+    //以淡出方式停止音频
+    function stopAudio(source, gainNode) {
+      const currentTime = audioContext.currentTime
+      gainNode.gain.setValueAtTime(gainNode.gain.value, currentTime) // 保持当前音量
+      gainNode.gain.linearRampToValueAtTime(0, currentTime + 0.5) // 0.5 秒内淡出
+      source.stop(currentTime + 0.5) // 延迟停止音频
     }
 
     // 获取样本 URL
     const sampleUrl = getSampleUrl(midiNumber)
 
     // 加载并播放样本
-    loadSample(sampleUrl).then((buffer) => {
-      playSample(buffer, midiNumber)
+    return loadSample(sampleUrl).then((buffer) => {
+      return playSample(buffer, midiNumber)
     })
   }
 
