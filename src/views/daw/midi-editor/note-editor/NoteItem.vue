@@ -157,7 +157,7 @@ function draggableRegionHandler(event) {
   )
 }
 
-function stretchEditorNoteLength(event, stretchSide) {
+function stretchEditorNoteLength(event) {
   if (noteMainSelectedId.value !== props.id) noteMainSelectedId.value = props.id
   const selectionController = clearSelection()
   const { x: mousedownStartX } = getMovementInNoteEditorRegion(event)
@@ -275,7 +275,7 @@ function noteMainMousedownHandler(event) {
       class="editor-note-left draggable-region"
       @mousedown.stop="
         (event) => {
-          stretchEditorNoteLength(event, 'left')
+          stretchEditorNoteLength(event)
         }
       "
     ></div>
@@ -284,7 +284,7 @@ function noteMainMousedownHandler(event) {
       class="editor-note-right draggable-region"
       @mousedown.stop="
         (event) => {
-          stretchEditorNoteLength(event, 'right')
+          stretchEditorNoteLength(event)
         }
       "
     ></div>
