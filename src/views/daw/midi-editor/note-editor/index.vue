@@ -73,7 +73,11 @@ function insertNote(event) {
   )
   noteMainSelectedId.value = insertedItemInfo.id
 
-  audioGenerator.generateAudio(insertedItemInfo.pitchName)
+  audioGenerator
+    .generateAudio(insertedItemInfo.pitchName)
+    .then((controller) => {
+      controller?.abort()
+    })
   noteItems.simulatePlaySpecifiedNote(insertedItemInfo.pitchName)
 }
 function noteEditorMousedownHandler(event) {

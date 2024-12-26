@@ -54,8 +54,8 @@ const noteMainSelectedId = defineModel("noteMainSelectedId", {
 watch(
   () => props.belongedPitchName,
   (newVal) => {
-    audioGenerator.generateAudio(newVal)
     noteItemMap.simulatePlaySpecifiedNote(newVal)
+    playNoteAudio(newVal)
   },
 )
 
@@ -88,6 +88,17 @@ function getMovementInNoteEditorRegion(event) {
     x: event.clientX - props.noteEditorRegionRef.getBoundingClientRect().left,
     y: event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top,
   }
+}
+
+function playNoteAudio(pitchName) {
+  audioGenerator
+    .generateAudio(pitchName)
+    .then((audioController) => {
+      audioController?.abort()
+    })
+    .catch((error) => {
+      console.error("Failed to abort audioController:", error)
+    })
 }
 
 function draggableRegionHandler(event) {
@@ -206,9 +217,8 @@ function noteMainMousedownHandler(event) {
       /*
        * In selected mode, a single click will play the corresponding sound name
        * */
-      audioGenerator.generateAudio(props.belongedPitchName)
       noteItemMap.simulatePlaySpecifiedNote(props.belongedPitchName)
-      // noteItemMap.currentEditedNotePitchName = props.belongedPitchName
+      playNoteAudio(props.belongedPitchName)
     }
   }
   //The second click(double click) should execute the logic
