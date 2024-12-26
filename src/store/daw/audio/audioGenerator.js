@@ -116,9 +116,21 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
         .then((data) => audioContext.decodeAudioData(data))
     }
 
+    const MAX_CONCURRENT_PLAYBACKS = 10 // 设置最大并发数量
+    const activeControllers = new Set()
     // 播放样本
     function playSample(buffer, midiNumber) {
+      if (activeControllers.size > MAX_CONCURRENT_PLAYBACKS) {
+        console.warn("Too many concurrent playbacks, ignoring...")
+        // 超过限制时，取出 LRU 缓存的第一个元素并关闭
+        const [oldestController] = activeControllers
+        oldestController.abort()
+        activeControllers.delete(oldestController)
+        return null
+      }
       const playSampleController = new AbortController()
+      activeControllers.add(playSampleController)
+
       const source = audioContext.createBufferSource()
       source.buffer = buffer
 
@@ -148,6 +160,10 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
         },
         { once: true },
       )
+      source.onended = () => {
+        activeControllers.delete(playSampleController)
+      }
+
       return playSampleController
     }
 
