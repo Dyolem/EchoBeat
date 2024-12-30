@@ -20,6 +20,8 @@ import { DEFAULT_ZOOM_RATIO } from "@/constants/daw/index.js"
 
 const trackRulerStore = useTrackRulerStore()
 const BEATS_NUMBER = 95
+const INIT_BPM = 120
+
 const BASE_GRID_WIDTH = 20
 const MIN_GRID_WIDTH = 20
 const BASE_GRID_HEIGHT = 90
@@ -34,11 +36,10 @@ const MAX_DRAWER_EDITOR_WIDTH = 1600
 const INIT_DRAWER_EDITOR_HEIGHT = 400
 const INIT_DRAWER_EDITOR_WIDTH = 1600
 
-const id = useId()
 const trackZoomRatio = ref(TRACK_ZOOM_RATIO)
 const trackAmount = ref(10)
-const beatsNumber = ref(BEATS_NUMBER)
 const minGridWidth = ref(MIN_GRID_WIDTH)
+
 const gridWidth = computed(() => {
   return trackZoomRatio.value * BASE_GRID_WIDTH
 })
@@ -62,11 +63,23 @@ const canvasContentHeight = computed(() => {
   else return gridHeight.value * trackAmount.value
 })
 
+const beatsNumber = ref(BEATS_NUMBER)
+const bpm = ref(INIT_BPM)
+const secondsPerBeat = computed(() => {
+  return 60 / bpm.value
+})
+const totalTime = computed(() => {
+  return secondsPerBeat.value * beatsNumber.value
+})
+
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
 const editorContentRef = useTemplateRef("editorContentRef")
 provide("editorContentContainerRef", editorContentContainerRef)
 
 const props = defineProps({
+  id: {
+    type: String,
+  },
   editorViewHeight: {
     type: Number,
     default: INIT_DRAWER_EDITOR_HEIGHT,
@@ -104,6 +117,9 @@ const props = defineProps({
     default: true,
   },
 })
+const id = computed(() => {
+  return props.id ?? useId()
+})
 const emit = defineEmits([
   "update:editorViewWidth",
   "update:editorViewHeight",
@@ -115,10 +131,8 @@ const { resizableEditorWidthRange, resizableEditorHeightRange } = toRefs(props)
 const controller = new AbortController()
 
 onMounted(() => {
-  trackRulerStore.editorViewWidth =
-    editorContentContainerRef.value.getBoundingClientRect().width
   watch(
-    () => trackRulerStore.timeLineInstanceMap.get(id).scrollLeft,
+    () => trackRulerStore.timeLineInstanceMap.get(id.value).scrollLeft,
     (newVal) => {
       editorContentContainerRef.value.scrollLeft = newVal
     },
@@ -327,6 +341,7 @@ onUnmounted(() => {
           :timeline-height="canvasContentHeight"
           :parent-container="editorContentContainerRef"
           :track-ruler-width="canvasContentWidth"
+          :track-ruler-view-width="editorViewWidth"
           :track-zoom-ratio="trackZoomRatio"
         ></TimeLine>
       </div>

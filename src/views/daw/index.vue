@@ -4,7 +4,11 @@ import EditorHeader from "@/views/daw/header/index.vue"
 import Editor from "@/views/daw/editor-template/index.vue"
 import DrawerEditor from "@/views/daw/drawer-editor/index.vue"
 import MidiEditor from "@/views/daw/midi-editor/index.vue"
+
 import { computed, onMounted, onUnmounted, ref, watchEffect } from "vue"
+import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
+
+const trackRulerStore = useTrackRulerStore()
 const HEADER_HEIGHT = 100
 const FOOTER_HEIGHT = 50
 const headerHeight = ref(HEADER_HEIGHT)
@@ -16,6 +20,9 @@ const controller = new AbortController()
 const exceptEditorHeight = computed(() => {
   return headerHeight.value + footerHeight.value
 })
+
+const mainEditorId = ref("main-editor")
+trackRulerStore.mainEditorId = mainEditorId.value
 
 const mainEditorViewWidth = ref(window.innerWidth - editorSideBarWidth.value)
 const mainEditorViewHeight = ref(window.innerHeight - exceptEditorHeight.value)
@@ -50,6 +57,7 @@ onUnmounted(() => {
     <main class="editor-main">
       <div class="editor-side-bar"></div>
       <Editor
+        :id="mainEditorId"
         :editor-view-height="mainEditorViewHeight"
         :editor-view-width="mainEditorViewWidth"
       />

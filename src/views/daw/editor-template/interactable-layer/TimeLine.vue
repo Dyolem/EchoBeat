@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, useTemplateRef, watch } from "vue"
+import { computed, onMounted, useTemplateRef, watchEffect } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
 const timelineRef = useTemplateRef("timelineRef")
@@ -18,6 +18,10 @@ const props = defineProps({
   },
   trackRulerWidth: {
     type: Number,
+    default: 0,
+  },
+  trackRulerViewWidth: {
+    type: Number,
   },
   trackZoomRatio: {
     type: Number,
@@ -26,17 +30,28 @@ const props = defineProps({
 })
 
 trackRulerStore.timeLineInstanceMap.set(props.id, {
+  trackRulerWidth: props.trackRulerWidth,
+  trackRulerViewWidth: props.trackRulerViewWidth,
   translateXDistance: 0,
   scrollLeft: 0,
   trackZoomRatio: props.trackZoomRatio,
 })
+
+watchEffect(() => {
+  const timeLineInstance = trackRulerStore.timeLineInstanceMap.get(props.id)
+  timeLineInstance.trackRulerWidth = props.trackRulerWidth
+  timeLineInstance.trackRulerViewWidth = props.trackRulerViewWidth
+  timeLineInstance.trackZoomRatio = props.trackZoomRatio
+})
+
 const timeLineTranslateDistance = computed(() => {
   return trackRulerStore.timeLineInstanceMap.get(props.id).translateXDistance
 })
+
 onMounted(() => {
   if (!timelineRef.value) return
   let translateXDistance = 0
-  trackRulerStore.timelineStateReset()
+  // trackRulerStore.timelineStateReset()
   timelineRef.value.addEventListener("mousedown", () => {
     const selectionController = new AbortController()
     document.addEventListener(
@@ -60,19 +75,17 @@ onMounted(() => {
       const left =
         event.clientX - props.parentContainer.getBoundingClientRect().left
       translateXDistance = props.parentContainer.scrollLeft + left
+      const scrollLeft = translateXDistance - left
       if (
         translateXDistance >= 0 &&
         translateXDistance <= props.trackRulerWidth
       ) {
         trackRulerStore.SynchronizeState(props.id, {
+          trackRulerViewWidth: props.trackRulerViewWidth,
           translateXDistance,
-          scrollLeft: translateXDistance - left,
+          scrollLeft,
           trackZoomRatio: props.trackZoomRatio,
         })
-
-        // props.parentContainer.scrollLeft = translateXDistance - left
-        // console.log(translateXDistance - left)
-        // timelineRef.value.style.transform = `translateX(${translateXDistance}px)`
       }
     }
     document.addEventListener("mousemove", mousemoveHandler, {
