@@ -9,8 +9,11 @@ export const useEditorGridParametersStore = defineStore(
     const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
     const minGridHorizontalMovement = ref(baseWidth)
     const minGridVerticalMovement = ref(baseHeight)
+    const editorWidth = ref(0)
+    const editorHeight = ref(0)
 
     return {
+      editorWidth,
       trackZoomRatio,
       minGridHorizontalMovement,
       minGridVerticalMovement,

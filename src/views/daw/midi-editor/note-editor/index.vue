@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, ref, useTemplateRef, watch } from "vue"
+import { computed, inject, ref, useTemplateRef, watch, watchEffect } from "vue"
 import NotePad from "@/views/daw/midi-editor/note-editor/NotePad.vue"
 import NoteItem from "@/views/daw/midi-editor/note-editor/NoteItem.vue"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
@@ -47,6 +47,9 @@ watch(
   },
   { immediate: true },
 )
+watchEffect(() => {
+  editorGridParametersStore.editorWidth = props.notePadWidth
+})
 
 const noteMainSelectedId = ref("")
 const getNotePosition = (x, y) => {

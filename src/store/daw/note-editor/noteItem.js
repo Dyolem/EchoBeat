@@ -7,9 +7,14 @@ import {
   NOTE_ELEMENT_MIN_SIZE,
 } from "@/constants/daw/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
+import { useAudioStore } from "@/store/daw/audio/index.js"
+import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
+  const trackRulerStore = useTrackRulerStore()
+  const audioStore = useAudioStore()
+
   const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
   const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
 
@@ -33,7 +38,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const NATURAL_SEMITONE = ["E", "B"]
   const isSnappedToHorizontalGrid = ref(true)
   const octaveContainerInstance = ref(null)
-  const editorMode = ref(EDITOR_MODE_ENUM.INSERT)
+  const editorMode = ref(EDITOR_MODE_ENUM.SELECT)
 
   const isInsertMode = computed(
     () => editorMode.value === EDITOR_MODE_ENUM.INSERT,
@@ -113,6 +118,17 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const fetchTime = date.getTime()
     return `${insertToSpecifiedPitchName}-${count}-${fetchTime}`
   }
+  function getStartTime(x) {
+    return (
+      (x / editorGridParametersStore.editorWidth) * trackRulerStore.totalTime
+    )
+  }
+  function getLastTime(noteWidth) {
+    return (
+      (noteWidth / editorGridParametersStore.editorWidth) *
+      trackRulerStore.totalTime
+    )
+  }
   function noteItemTemplate({ x, y } = {}, insertToSpecifiedPitchName) {
     const id = getId(insertToSpecifiedPitchName)
 
@@ -121,6 +137,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       y,
     })
     const { snappedX, snappedY } = snappedPosition
+    const startTime = getStartTime(snappedX)
+    const duration = getLastTime(noteWidth.value)
     return {
       id: id,
       width: noteWidth.value,
@@ -129,6 +147,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       y: snappedY,
       pitchName: snappedPitchName,
       backGroundColor: "lightblue",
+      startTime,
+      duration,
+      audioContext: audioStore.audioContext,
     }
   }
   const getSpecifiedNote = (id, pitchName) => {
@@ -173,7 +194,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
 
     const template = noteItemTemplate({ x, y }, specifiedPitchName)
-    noteItemsMap.value.get(specifiedPitchName)?.noteItems.push(template)
+    const noteItems = noteItemsMap.value.get(specifiedPitchName)?.noteItems
+    noteItems?.push(template)
+    audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
   }
 
@@ -188,6 +211,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const deleteIndex = deleteTargetArr.findIndex((item) => item.id === id)
     if (deleteIndex === -1) return
     deleteTargetArr.splice(deleteIndex, 1)
+    audioStore.removeNodeFromPitchName(id, deleteFromSpecifiedPitchName)
   }
 
   function snapToOtherPitchNameTrack({ x, y }, mousedownPositionInNote = []) {
@@ -271,9 +295,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
     updateNoteTarget.y = snappedY
     updateNoteTarget.pitchName = snappedPitchName
+    const newNoteId = getId(snappedPitchName)
 
     return {
-      newNoteId: getId(snappedPitchName),
+      newNoteId,
       newPitchName: snappedPitchName,
     }
   }
@@ -284,9 +309,21 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const oldTargetIndex = oldTargetArr.findIndex((item) => {
       return item.id === oldId
     })
+    const newStartTime = getStartTime(oldTargetArr[oldTargetIndex].x)
+    const newDuration = getLastTime(oldTargetArr[oldTargetIndex].width)
     oldTargetArr[oldTargetIndex].id = newId
     newTargetArr.push(oldTargetArr[oldTargetIndex])
     oldTargetArr.splice(oldTargetIndex, 1)
+
+    const audioContext = audioStore.audioContext
+    audioStore.adjustNodeStartAndLastTime({
+      id: oldId,
+      newId,
+      pitchName: newPitchName,
+      startTime: newStartTime,
+      duration: newDuration,
+      audioContext,
+    })
   }
 
   function stretchNoteWidth({
@@ -356,6 +393,17 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       updateNoteTarget.x = newX
       updateNoteTarget.width = newWidth
       nextInsertedNoteWidth.value = newWidth
+
+      const newStartTime = getStartTime(newX)
+      const newDuration = getLastTime(newWidth)
+      const audioContext = audioStore.audioContext
+      audioStore.adjustNodeStartAndLastTime({
+        id,
+        pitchName,
+        startTime: newStartTime,
+        duration: newDuration,
+        audioContext,
+      })
     } else {
       //right side drag
       const maxWidth = maxMovementRegionWidth - initX
@@ -393,6 +441,18 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
       updateNoteTarget.width = newWidth
       nextInsertedNoteWidth.value = newWidth
+
+      const newStartTime = getStartTime(updateNoteTarget.x)
+      const newDuration = getLastTime(newWidth)
+      const audioContext = audioStore.audioContext
+      console.log("right")
+      audioStore.adjustNodeStartAndLastTime({
+        id,
+        startTime: newStartTime,
+        duration: newDuration,
+        pitchName,
+        audioContext,
+      })
     }
   }
   function patchUpdateNoteItems(newTrackZoomRatio, oldTrackZoomRatio) {
@@ -449,6 +509,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 //       scaleY: [20,40],
 //       noteItems: [
 //         {
+//           pitchName:"c4",
 //           id: "c4-1",
 //           width: 20,
 //           height: 10,

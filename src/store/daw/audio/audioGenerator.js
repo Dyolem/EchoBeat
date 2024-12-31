@@ -1,4 +1,5 @@
 import { defineStore } from "pinia"
+import { computed } from "vue"
 // import { NOTE_FREQUENCY_MAP } from "@/constants/daw/index.js"
 
 export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
@@ -12,6 +13,14 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
   const pathTemplate = (midiNumber) =>
     `/public/soundbanks/studio-grand/${midiNumber >= 100 ? "" : 0}${midiNumber}-StudioGrand.wav`
 
+  const sampleMap = computed(() => {
+    return generateSampleMap(
+      startMidiNumber,
+      penultimateMidiNumber,
+      lastMidiNumber,
+      interval,
+    )
+  })
   function generateSampleMap(
     startMidiNumber,
     penultimateMidiNumber,
@@ -59,130 +68,147 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
     return sampleMap
   }
 
-  function generateAudio(noteName) {
-    const sampleMap = generateSampleMap(
-      startMidiNumber,
-      penultimateMidiNumber,
-      lastMidiNumber,
-      interval,
+  // 将音符名称（如 C4, D#3）转化为 MIDI 编号
+  function noteToMidi(noteName) {
+    const noteToMIDI = {
+      C: 0,
+      "C#": 1,
+      D: 2,
+      "D#": 3,
+      E: 4,
+      F: 5,
+      "F#": 6,
+      G: 7,
+      "G#": 8,
+      A: 9,
+      "A#": 10,
+      B: 11,
+    }
+    const match = noteName.match(/^([A-Ga-g#b]+)(\d+)$/)
+    if (!match) {
+      throw new Error("Invalid note name")
+    }
+    const pitch = match[1].toUpperCase()
+    const octave = parseInt(match[2], 10)
+    return (octave + 1) * 12 + noteToMIDI[pitch] // MIDI 号码
+  }
+
+  // 找到与 MIDI 编号最接近的样本
+  function getSampleUrl(midiNumber, sampleMap) {
+    const midiNumbers = Object.keys(sampleMap).map(Number)
+
+    // 查找最接近的 MIDI 编号
+    let closestMidi = midiNumbers.reduce((prev, curr) =>
+      Math.abs(curr - midiNumber) < Math.abs(prev - midiNumber) ? curr : prev,
     )
 
-    // 将音符名称（如 C4, D#3）转化为 MIDI 编号
-    function noteToMidi(noteName) {
-      const noteToMIDI = {
-        C: 0,
-        "C#": 1,
-        D: 2,
-        "D#": 3,
-        E: 4,
-        F: 5,
-        "F#": 6,
-        G: 7,
-        "G#": 8,
-        A: 9,
-        "A#": 10,
-        B: 11,
-      }
-      const match = noteName.match(/^([A-Ga-g#b]+)(\d+)$/)
-      if (!match) {
-        throw new Error("Invalid note name")
-      }
-      const pitch = match[1].toUpperCase()
-      const octave = parseInt(match[2], 10)
-      return (octave + 1) * 12 + noteToMIDI[pitch] // MIDI 号码
+    // 如果没有找到对应样本，则使用最近的样本
+    return sampleMap[closestMidi]
+  }
+
+  // 加载样本
+  function loadSample(url, audioContext) {
+    console.log(url)
+    return fetch(url)
+      .then((response) => response.arrayBuffer())
+      .then((data) => audioContext.decodeAudioData(data))
+  }
+
+  //以淡出方式停止音频
+  function stopAudio(source, gainNode) {
+    const currentTime = audioContext.currentTime
+    gainNode.gain.setValueAtTime(gainNode.gain.value, currentTime) // 保持当前音量
+    gainNode.gain.linearRampToValueAtTime(0, currentTime + 0.5) // 0.5 秒内淡出
+    source.stop(currentTime + 0.5) // 延迟停止音频
+  }
+
+  function adjustPitch(source, midiNumber, sampleMap) {
+    // 改为使用 detune 来调整音高，可以保持时长不变
+    const targetMidiNumber = midiNumber
+    const closestMidiNumber = Object.keys(sampleMap)
+      .map(Number)
+      .reduce((prev, curr) =>
+        Math.abs(curr - targetMidiNumber) < Math.abs(prev - targetMidiNumber)
+          ? curr
+          : prev,
+      )
+
+    const semitoneDifference = targetMidiNumber - closestMidiNumber
+    console.log(targetMidiNumber, closestMidiNumber)
+
+    source.detune.value = semitoneDifference * 100
+    // 使用 playbackRate 来调整音高
+    // source.playbackRate.value = Math.pow(2, semitoneDifference / 12)
+  }
+
+  const MAX_CONCURRENT_PLAYBACKS = 10 // 设置最大并发数量
+  const activeControllers = new Set()
+  // 播放样本
+  function playSample(buffer, midiNumber, sampleMap) {
+    if (activeControllers.size > MAX_CONCURRENT_PLAYBACKS) {
+      console.warn("Too many concurrent playbacks, ignoring...")
+      // 超过限制时，取出 LRU 缓存的第一个元素并关闭
+      const [oldestController] = activeControllers
+      oldestController.abort()
+      activeControllers.delete(oldestController)
     }
+    const playSampleController = new AbortController()
+    activeControllers.add(playSampleController)
+
+    const source = audioContext.createBufferSource()
+    source.buffer = buffer
+    adjustPitch(source, midiNumber, sampleMap)
+    const gainNode = audioContext.createGain()
+    source.connect(gainNode).connect(audioContext.destination)
+    source.start()
+
+    playSampleController.signal.addEventListener(
+      "abort",
+      () => {
+        stopAudio(source, gainNode)
+      },
+      { once: true },
+    )
+    source.onended = () => {
+      activeControllers.delete(playSampleController)
+    }
+
+    return playSampleController
+  }
+
+  function generateAudio(noteName) {
+    const _sampleMap = sampleMap.value
 
     // 音符转 MIDI 编号
     const midiNumber = noteToMidi(noteName)
 
-    // 找到与 MIDI 编号最接近的样本
-    function getSampleUrl(midiNumber) {
-      const midiNumbers = Object.keys(sampleMap).map(Number)
-
-      // 查找最接近的 MIDI 编号
-      let closestMidi = midiNumbers.reduce((prev, curr) =>
-        Math.abs(curr - midiNumber) < Math.abs(prev - midiNumber) ? curr : prev,
-      )
-
-      // 如果没有找到对应样本，则使用最近的样本
-      return sampleMap[closestMidi]
-    }
-
-    // 加载样本
-    function loadSample(url) {
-      console.log(url)
-      return fetch(url)
-        .then((response) => response.arrayBuffer())
-        .then((data) => audioContext.decodeAudioData(data))
-    }
-
-    const MAX_CONCURRENT_PLAYBACKS = 10 // 设置最大并发数量
-    const activeControllers = new Set()
-    // 播放样本
-    function playSample(buffer, midiNumber) {
-      if (activeControllers.size > MAX_CONCURRENT_PLAYBACKS) {
-        console.warn("Too many concurrent playbacks, ignoring...")
-        // 超过限制时，取出 LRU 缓存的第一个元素并关闭
-        const [oldestController] = activeControllers
-        oldestController.abort()
-        activeControllers.delete(oldestController)
-        return null
-      }
-      const playSampleController = new AbortController()
-      activeControllers.add(playSampleController)
-
-      const source = audioContext.createBufferSource()
-      source.buffer = buffer
-
-      // 调整音高：通过 playbackRate 改变播放速度来生成不同的音高
-      const targetMidiNumber = midiNumber
-      const closestMidiNumber = Object.keys(sampleMap)
-        .map(Number)
-        .reduce((prev, curr) =>
-          Math.abs(curr - targetMidiNumber) < Math.abs(prev - targetMidiNumber)
-            ? curr
-            : prev,
-        )
-
-      const semitoneDifference = targetMidiNumber - closestMidiNumber
-
-      // 使用 playbackRate 来调整音高
-      source.playbackRate.value = Math.pow(2, semitoneDifference / 12)
-
-      const gainNode = audioContext.createGain()
-      source.connect(gainNode).connect(audioContext.destination)
-      source.start()
-
-      playSampleController.signal.addEventListener(
-        "abort",
-        () => {
-          stopAudio(source, gainNode)
-        },
-        { once: true },
-      )
-      source.onended = () => {
-        activeControllers.delete(playSampleController)
-      }
-
-      return playSampleController
-    }
-
-    //以淡出方式停止音频
-    function stopAudio(source, gainNode) {
-      const currentTime = audioContext.currentTime
-      gainNode.gain.setValueAtTime(gainNode.gain.value, currentTime) // 保持当前音量
-      gainNode.gain.linearRampToValueAtTime(0, currentTime + 0.5) // 0.5 秒内淡出
-      source.stop(currentTime + 0.5) // 延迟停止音频
-    }
-
     // 获取样本 URL
-    const sampleUrl = getSampleUrl(midiNumber)
+    const sampleUrl = getSampleUrl(midiNumber, _sampleMap)
 
     // 加载并播放样本
-    return loadSample(sampleUrl).then((buffer) => {
-      return playSample(buffer, midiNumber)
+    return loadSample(sampleUrl, audioContext).then((buffer) => {
+      return playSample(buffer, midiNumber, _sampleMap)
     })
   }
+  function fetchPitchNameSample(
+    noteName,
+    audioContext,
+    _sampleMap = sampleMap.value,
+  ) {
+    if (noteName === undefined || !(audioContext instanceof AudioContext))
+      return
+    // 音符转 MIDI 编号
+    const midiNumber = noteToMidi(noteName)
 
-  return { generateAudio }
+    // 获取样本 URL
+    const sampleUrl = getSampleUrl(midiNumber, _sampleMap)
+    return loadSample(sampleUrl, audioContext)
+  }
+  return {
+    sampleMap,
+    noteToMidi,
+    generateAudio,
+    fetchPitchNameSample,
+    adjustPitch,
+  }
 })
