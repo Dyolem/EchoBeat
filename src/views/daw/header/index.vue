@@ -122,15 +122,14 @@ function pause(audioContext, controller) {
   if (!audioContext) return
   isPlaying.value = false
   audioContext.suspend()
+  audioStore.stopAllNodes()
   controller.abort()
-  audioStore.audioContext.suspend()
 }
 function resume(audioContext, maxTime) {
   if (!audioContext) return
   isPlaying.value = true
   const suspendTime = audioContext.currentTime
   audioContext.resume()
-  audioStore.audioContext.resume()
   controller = new AbortController()
   queryCurrentTime(
     audioContext,

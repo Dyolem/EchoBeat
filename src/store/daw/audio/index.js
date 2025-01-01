@@ -37,7 +37,7 @@ export const useAudioStore = defineStore("audio", () => {
   const audioTrackMap = new Map([
     [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, instrumentsAudioNodeMap],
   ])
-
+  audioGeneratorStore.preCreateBuffer(audioContext.value)
   const gainNodesMap = ref(new Map()) // 存储每个 pitchName 对应的 GainNode，会有多个noteBufferToGainNode来链接一个GainNode
   const noteBufferSourceMap = ref(new Map()) //单个音符对应的音频节点映射表
   const noteBufferToGainMap = ref(new Map()) //用于处理单个音符尾音淡出的增益节点的映射表
@@ -45,10 +45,7 @@ export const useAudioStore = defineStore("audio", () => {
   const audioBufferSourceNodeMap = new Map()
 
   async function createBufferSourceNode({ id, pitchName, audioContext }) {
-    const audioBuffer = await audioGeneratorStore.fetchPitchNameSample(
-      pitchName,
-      audioContext,
-    )
+    const audioBuffer = audioGeneratorStore.fetchPreLoadedBuffer(pitchName)
     const audioBufferSourceNode = audioContext.createBufferSource()
     audioBufferSourceNode.buffer = audioBuffer
     const midiNumber = audioGeneratorStore.noteToMidi(pitchName)
@@ -80,6 +77,12 @@ export const useAudioStore = defineStore("audio", () => {
       duration,
       audioContext,
     })
+    const audioBufferSourceNode = await createBufferSourceNode({
+      id,
+      pitchName,
+      audioContext,
+    })
+    audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
   }
 
   async function generateAudioNode(
@@ -97,13 +100,7 @@ export const useAudioStore = defineStore("audio", () => {
         duration: _duration,
         audioContext,
       } = noteBufferSourceInstance
-      const audioBufferSourceNode = await createBufferSourceNode({
-        id,
-        pitchName,
-        audioContext,
-      })
-      audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
-      // console.log(_startTime, _duration, audioContext, audioContext.currentTime)
+
       if (timelinePlayTime > _startTime + _duration) continue
       else if (
         timelinePlayTime >= _startTime &&
@@ -116,6 +113,12 @@ export const useAudioStore = defineStore("audio", () => {
         startTime = _startTime - timelinePlayTime
         duration = _duration
       }
+      const audioBufferSourceNode = await createBufferSourceNode({
+        id,
+        pitchName,
+        audioContext,
+      })
+      audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
       const fadeGainNode = noteBufferToGainMap.get(id)
       const fadeDuration = 0.1 // 淡出持续时间（秒）
       const fadeOutStartTime =
@@ -196,7 +199,16 @@ export const useAudioStore = defineStore("audio", () => {
       audioBufferSourceNode.disconnect()
     }
   }
+  function stopAllNodes() {
+    for (const [
+      id,
+      audioBufferSourceNode,
+    ] of audioBufferSourceNodeMap.entries()) {
+      audioBufferSourceNode.stop()
+    }
 
+    audioBufferSourceNodeMap.clear()
+  }
   return {
     audioContext,
     gainNodesMap,
@@ -204,6 +216,7 @@ export const useAudioStore = defineStore("audio", () => {
     noteBufferToGainMap,
     // updateInstrumentAudioNode,
     generateAudioNode,
+    stopAllNodes,
     removeNodeFromPitchName,
     adjustNodeStartAndLastTime,
     insertSourceNodeAndGainNode,
