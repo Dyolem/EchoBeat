@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 import { computed } from "vue"
-// import { NOTE_FREQUENCY_MAP } from "@/constants/daw/index.js"
+import { NOTE_FREQUENCY_MAP } from "@/constants/daw/index.js"
 
 export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
@@ -204,11 +204,25 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
     const sampleUrl = getSampleUrl(midiNumber, _sampleMap)
     return loadSample(sampleUrl, audioContext)
   }
+
+  const audioSourceNodeBuffer = new Map()
+  async function preCreateBuffer(audioContext) {
+    for (const pitchName of NOTE_FREQUENCY_MAP.keys()) {
+      fetchPitchNameSample(pitchName, audioContext).then((buffer) => {
+        audioSourceNodeBuffer.set(pitchName, buffer)
+      })
+    }
+  }
+  function fetchPreLoadedBuffer(pitchName) {
+    return audioSourceNodeBuffer.get(pitchName)
+  }
   return {
     sampleMap,
     noteToMidi,
     generateAudio,
+    preCreateBuffer,
     fetchPitchNameSample,
+    fetchPreLoadedBuffer,
     adjustPitch,
   }
 })
