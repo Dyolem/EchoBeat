@@ -16,7 +16,7 @@ import {
 } from "vue"
 import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
-import { DEFAULT_ZOOM_RATIO } from "@/constants/daw/index.js"
+import { DEFAULT_ZOOM_RATIO, ZIndex } from "@/constants/daw/index.js"
 
 const trackRulerStore = useTrackRulerStore()
 const BEATS_NUMBER = 95
@@ -125,7 +125,8 @@ const emit = defineEmits([
   "update:editorViewHeight",
   "update:editorScrollTop",
 ])
-
+const trackRulerZIndex = ref(ZIndex.TRACK_RULER)
+const editorContentZIndex = ref(ZIndex.EDITOR_CONTENT)
 const { resizableEditorWidthRange, resizableEditorHeightRange } = toRefs(props)
 
 const controller = new AbortController()
@@ -362,6 +363,8 @@ onUnmounted(() => {
               name="default-interactable-layer"
               :interactableLayerWidth="canvasContentWidth"
               :interactableLayerHeight="canvasContentHeight"
+              :editorViewWidth="editorViewWidth"
+              :editorViewHeight="editorViewHeight - trackRulerHeight"
               :zoomRatio="trackZoomRatio"
             >
             </slot>
@@ -390,12 +393,14 @@ onUnmounted(() => {
 .track-ruler-container {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: v-bind(trackRulerZIndex);
 }
 .editor-content {
+  position: relative;
   width: v-bind(canvasContentWidth + "px");
   height: v-bind(canvasContentHeight + "px");
   flex-grow: 1;
   background-color: black;
+  z-index: v-bind(editorContentZIndex);
 }
 </style>

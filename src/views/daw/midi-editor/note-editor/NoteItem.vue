@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, useTemplateRef, watch } from "vue"
+import { onMounted, ref, useTemplateRef, watch } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
+import { ZIndex } from "@/constants/daw/index.js"
 const noteItemMap = useNoteItemStore()
 const audioGenerator = useAudioGeneratorStore()
 
@@ -45,7 +46,7 @@ const props = defineProps({
     required: true,
   },
 })
-
+const editorNoteZIndex = ref(ZIndex.EDITOR_NOTE)
 const noteMainSelectedId = defineModel("noteMainSelectedId", {
   type: String,
   default: "",
@@ -303,6 +304,7 @@ function noteMainMousedownHandler(event) {
   padding: 0 2px;
   background-color: var(--note-background-color);
   border-radius: 2px;
+  z-index: v-bind(editorNoteZIndex);
 }
 .editor-note-main {
   flex-grow: 1;
@@ -323,6 +325,5 @@ function noteMainMousedownHandler(event) {
 }
 .is-edited {
   border: 1px solid #fff;
-  z-index: 1;
 }
 </style>

@@ -112,9 +112,9 @@ onMounted(() => {
 <style scoped>
 .timeline {
   --enlarge-hover-size: 3px;
+  box-sizing: content-box;
   position: absolute;
   left: calc(-0px - var(--enlarge-hover-size));
-  z-index: 10;
   width: 2px;
   height: v-bind(timelineHeight + "px");
   background-color: red;

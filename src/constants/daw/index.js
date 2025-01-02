@@ -10,6 +10,19 @@ export const NOTE_ELEMENT_SIZE = {
   baseHeight: 9.3,
 }
 
+export const ZIndex = {
+  TRACK_RULER: 100,
+  EDITOR_CONTENT: 10,
+  EDITOR_CANVAS: 1,
+  INTERACTABLE_LAYER: 10,
+  NOTE_EDITOR_WORKSPACE_CONTAINER_PLACEHOLDER: 20,
+  EDITOR_NOTE: 30,
+  CONTEXT_MENU: 100,
+  PANEL: 110,
+  MODAL: 210,
+  TOAST: 220,
+}
+
 export const DEFAULT_ZOOM_RATIO = 1
 export const ZOOM_THRESHOLD = 0.1
 export const MAX_ZOOM = 6

@@ -75,7 +75,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <svg :width="notePadWidth" :height="svgHeight">
+  <svg :width="notePadWidth" :height="svgHeight" class="midi-grid-svg">
     <defs>
       <pattern
         id="note-grid-pad"
@@ -97,4 +97,9 @@ watchEffect(() => {
   </svg>
 </template>
 
-<style scoped></style>
+<style scoped>
+.midi-grid-svg {
+  position: absolute;
+  z-index: -1;
+}
+</style>

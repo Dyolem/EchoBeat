@@ -43,7 +43,7 @@ const beatInfo = computed(() => {
 
 <template>
   <ContextMenu>
-    <div class="track-ruler-container">
+    <div class="track-ruler">
       <span
         class="beat"
         v-for="item in beatInfo"
@@ -66,7 +66,7 @@ const beatInfo = computed(() => {
 </template>
 
 <style scoped>
-.track-ruler-container {
+.track-ruler {
   width: v-bind(trackRulerWidth + "px");
   height: v-bind(trackRulerHeight + "px");
   background-color: #f0f0f0;

@@ -18,9 +18,11 @@
 <script setup>
 import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
 import { useMouse } from "@/composable/useMouse.js"
+import { ZIndex } from "@/constants/daw/index.js"
 const { x: mouseX, y: mouseY } = useMouse("client")
 const contextMenuRef = useTemplateRef("contextMenuRef")
 const menuContainerRef = useTemplateRef("menuContainerRef")
+const contextMenuZIndex = ref(ZIndex.CONTEXT_MENU)
 const visible = ref(false)
 const props = defineProps()
 const controller = new AbortController()
@@ -81,6 +83,6 @@ onUnmounted(() => {
   max-width: 250px;
   max-height: 600px;
   overflow: scroll;
-  z-index: 1000;
+  z-index: v-bind(contextMenuZIndex);
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { inject, onMounted, onUnmounted, useTemplateRef, watch } from "vue"
+import { inject, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
 import { debounce } from "@/utils/debounce.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import {
@@ -7,6 +7,7 @@ import {
   MIN_ZOOM,
   MAX_ZOOM,
   DEFAULT_ZOOM_RATIO,
+  ZIndex,
 } from "@/constants/daw/index.js"
 
 const trackRulerStore = useTrackRulerStore()
@@ -48,7 +49,8 @@ const props = defineProps({
     default: true,
   },
 })
-
+const interactableLayerZIndex = ref(ZIndex.INTERACTABLE_LAYER)
+const editorCanvas = ref(ZIndex.EDITOR_CANVAS)
 watch(
   () => [props.canvasWidth, props.canvasHeight],
   ([newCanvasWidth, newCanvasHeight]) => {
@@ -104,7 +106,7 @@ function defaultDrawGrid(
   if (!target) return
   const ctx = target.getContext("2d")
   target.width = canvasWidth
-  target.height = canvasHeight + 1
+  target.height = canvasHeight
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
@@ -147,7 +149,7 @@ onMounted(() => {
 
   drawGrid(canvas, {
     canvasWidth: props.canvasWidth,
-    canvasHeight: props.canvasHeight + 1,
+    canvasHeight: props.canvasHeight,
     gridWidth: props.gridWidth,
     gridHeight: props.gridHeight,
   })
@@ -236,16 +238,18 @@ onUnmounted(() => {
     ref="interactableContainerRef"
     tabindex="-1"
   >
-    <canvas
-      id="background"
-      ref="canvasBackgroundRef"
-      style="position: absolute; top: 0; left: 0; z-index: 1"
-    ></canvas>
+    <canvas id="editor-canvas" ref="canvasBackgroundRef"></canvas>
     <div id="interactable-layer"><slot name="interactable-layer"> </slot></div>
   </div>
 </template>
 
 <style scoped>
+#editor-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: v-bind(editorCanvas);
+}
 .interactable-container {
   position: relative;
   width: v-bind(canvasWidth + "px");
@@ -253,6 +257,6 @@ onUnmounted(() => {
 }
 #interactable-layer {
   position: absolute;
-  z-index: 10;
+  z-index: v-bind(interactableLayerZIndex);
 }
 </style>
