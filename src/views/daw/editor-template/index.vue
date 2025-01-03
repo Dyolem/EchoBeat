@@ -105,9 +105,6 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-  editorScrollTop: {
-    type: Number,
-  },
   canvasContentHeightProp: {
     type: Number,
     default: undefined,
@@ -120,17 +117,34 @@ const props = defineProps({
 const id = computed(() => {
   return props.id ?? useId()
 })
-const emit = defineEmits([
-  "update:editorViewWidth",
-  "update:editorViewHeight",
-  "update:editorScrollTop",
-])
+const emit = defineEmits(["update:editorViewWidth", "update:editorViewHeight"])
 const trackRulerZIndex = ref(ZIndex.TRACK_RULER)
 const editorContentZIndex = ref(ZIndex.EDITOR_CONTENT)
 const { resizableEditorWidthRange, resizableEditorHeightRange } = toRefs(props)
 
 const controller = new AbortController()
 
+const _scrollMovement = ref({
+  scrollTop: 0,
+  scrollLeft: 0,
+})
+function _updateScrollMovement({ scrollTop, scrollLeft }) {
+  _scrollMovement.value.scrollTop = scrollTop
+  _scrollMovement.value.scrollLeft = scrollLeft
+}
+const { scrollMovement, updateScrollMovement } = inject("scrollMovement", {
+  scrollMovement: _scrollMovement,
+  updateScrollMovement: _updateScrollMovement,
+})
+
+watch(
+  scrollMovement,
+  (newScrollMovement) => {
+    editorContentContainerRef.value.scrollTop = newScrollMovement.scrollTop
+    editorContentContainerRef.value.scrollLeft = newScrollMovement.scrollLeft
+  },
+  { deep: true },
+)
 onMounted(() => {
   watch(
     () => trackRulerStore.timeLineInstanceMap.get(id.value).scrollLeft,
@@ -314,8 +328,11 @@ onMounted(() => {
 })
 function scrollHandler(event) {
   const editorScrollTop = event.target.scrollTop
-  if (props.editorScrollTop === editorScrollTop) return
-  emit("update:editorScrollTop", editorScrollTop)
+  const editorScrollLeft = event.target.scrollLeft
+  updateScrollMovement({
+    scrollTop: editorScrollTop,
+    scrollLeft: editorScrollLeft,
+  })
 }
 onUnmounted(() => {
   controller.abort()
@@ -365,6 +382,7 @@ onUnmounted(() => {
               :interactableLayerHeight="canvasContentHeight"
               :editorViewWidth="editorViewWidth"
               :editorViewHeight="editorViewHeight - trackRulerHeight"
+              :trackRulerHeight="trackRulerHeight"
               :zoomRatio="trackZoomRatio"
             >
             </slot>

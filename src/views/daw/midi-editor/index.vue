@@ -33,24 +33,21 @@ provide("chromaticInfo", chromaticInfo)
 function enlargeKeySize() {
   pianoKeySize.value.whiteKeyHeight += 3
 }
-const scrollTop = ref({
-  chromaticScaleScrollTop: 0,
-  noteEditorScrollTop: 0,
-})
-function reallocation(computationalFunc) {
-  computationalFunc(scrollTop)
-}
-provide("reallocationScrollTop", { scrollTop, reallocation })
 
-const editorScrollTop = ref(0)
-const chromaticScaleScrollTop = ref(0)
-function updateEditorScrollTopHandler(editorScrollTop) {
-  // emit("update:editorScrollTop", editorScrollTop)
-  chromaticScaleScrollTop.value = editorScrollTop
+const scrollMovement = ref({
+  scrollTop: 0,
+  scrollLeft: 0,
+})
+function updateScrollMovement({ scrollTop, scrollLeft }) {
+  scrollMovement.value.scrollTop = scrollTop
+  scrollMovement.value.scrollLeft = scrollLeft
+  chromaticScaleScrollTop.value = scrollTop
 }
+provide("scrollMovement", { scrollMovement, updateScrollMovement })
+
+const chromaticScaleScrollTop = ref(0)
 function updateChromaticScaleScrollTopHandler(chromaticScaleScrollTop) {
-  editorScrollTop.value = chromaticScaleScrollTop
-  // emit("update:chromaticScaleScrollTop", chromaticScaleScrollTop)
+  scrollMovement.value.scrollTop = chromaticScaleScrollTop
 }
 const canvasContentHeight = ref(20)
 function updateCanvasContentHeight(height) {
@@ -98,9 +95,7 @@ function drawNotePadGrid(
 <template>
   <DrawerEditor
     :canvas-content-height-prop="canvasContentHeight"
-    :editor-scroll-top="editorScrollTop"
     :draw-drawer-editor-grid-handler="drawNotePadGrid"
-    @update:editor-scroll-top="updateEditorScrollTopHandler"
   >
     <template #editor-sidebar="{ editorSidebarWidth, editorSidebarHeight }">
       <div
@@ -121,13 +116,19 @@ function drawNotePadGrid(
       #custom-editor-layer="{
         interactableLayerWidth,
         interactableLayerHeight,
+        editorViewWidth,
+        editorViewHeight,
+        trackRulerHeight,
         zoomRatio,
       }"
     >
       <NoteEditor
         :note-pad-width="interactableLayerWidth"
         :note-pad-height="interactableLayerHeight"
+        :editor-view-width="editorViewWidth"
+        :editor-view-height="editorViewHeight"
         :zoom-ratio="zoomRatio"
+        :track-ruler-height="trackRulerHeight"
       ></NoteEditor>
     </template>
   </DrawerEditor>

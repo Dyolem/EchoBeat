@@ -32,9 +32,6 @@ const initDrawerEditorWidth = ref(INIT_DRAWER_EDITOR_WIDTH)
 const initDrawerEditorHeight = ref(INIT_DRAWER_EDITOR_HEIGHT)
 
 const props = defineProps({
-  editorScrollTop: {
-    type: Number,
-  },
   canvasContentHeightProp: {
     type: Number,
     default: undefined,
@@ -44,7 +41,7 @@ const props = defineProps({
   },
 })
 provide("drawGrid", props.drawDrawerEditorGridHandler)
-const emit = defineEmits(["update:editorScrollTop"])
+
 const drawerEditorViewHeight = computed({
   get: () => {
     return initDrawerEditorHeight.value
@@ -103,9 +100,6 @@ function updateEditorViewWidthHandler(newViewWidthVal) {
   drawerEditorSideBarWidth.value = window.innerWidth - newViewWidthVal
   console.log(drawerEditorSideBarWidth.value)
 }
-function updateEditorScrollTopHandler(editorScrollTop) {
-  emit("update:editorScrollTop", editorScrollTop)
-}
 
 onUnmounted(() => {
   controller.abort()
@@ -129,8 +123,6 @@ onUnmounted(() => {
       :resize-direction="['n', 's', 'w', 'e', 'nw']"
       :resizable-editor-height-range="heightRange"
       :resizable-editor-width-range="widthRange"
-      :editor-scroll-top="editorScrollTop"
-      @update:editor-scroll-top="updateEditorScrollTopHandler"
       :canvas-content-height-prop="canvasContentHeightProp"
       :modify-timeline-by-click="false"
     >
@@ -138,6 +130,9 @@ onUnmounted(() => {
         #default-interactable-layer="{
           interactableLayerWidth,
           interactableLayerHeight,
+          editorViewWidth,
+          editorViewHeight,
+          trackRulerHeight,
           zoomRatio,
         }"
       >
@@ -145,6 +140,9 @@ onUnmounted(() => {
           name="custom-editor-layer"
           :interactableLayerWidth="interactableLayerWidth"
           :interactableLayerHeight="interactableLayerHeight"
+          :editorViewWidth="editorViewWidth"
+          :editorViewHeight="editorViewHeight"
+          :trackRulerHeight="trackRulerHeight"
           :zoomRatio="zoomRatio"
         >
         </slot>
