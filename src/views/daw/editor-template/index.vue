@@ -129,8 +129,12 @@ const _scrollMovement = ref({
   scrollLeft: 0,
 })
 function _updateScrollMovement({ scrollTop, scrollLeft }) {
-  _scrollMovement.value.scrollTop = scrollTop
-  _scrollMovement.value.scrollLeft = scrollLeft
+  if (scrollTop !== undefined) {
+    _scrollMovement.value.scrollTop = scrollTop
+  }
+  if (scrollLeft !== undefined) {
+    _scrollMovement.value.scrollLeft = scrollLeft
+  }
 }
 const { scrollMovement, updateScrollMovement } = inject("scrollMovement", {
   scrollMovement: _scrollMovement,

@@ -33,14 +33,20 @@ provide("chromaticInfo", chromaticInfo)
 function enlargeKeySize() {
   pianoKeySize.value.whiteKeyHeight += 3
 }
+const workspacePlaceHolderHeight = ref(20)
+provide("workspacePlaceHolderHeight", workspacePlaceHolderHeight)
 
 const scrollMovement = ref({
   scrollTop: 0,
   scrollLeft: 0,
 })
 function updateScrollMovement({ scrollTop, scrollLeft }) {
-  scrollMovement.value.scrollTop = scrollTop
-  scrollMovement.value.scrollLeft = scrollLeft
+  if (scrollTop !== undefined) {
+    scrollMovement.value.scrollTop = scrollTop
+  }
+  if (scrollLeft !== undefined) {
+    scrollMovement.value.scrollLeft = scrollLeft
+  }
   chromaticScaleScrollTop.value = scrollTop
 }
 provide("scrollMovement", { scrollMovement, updateScrollMovement })
