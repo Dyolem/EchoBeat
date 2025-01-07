@@ -1,8 +1,9 @@
 <script setup>
-import { computed, inject, ref, useTemplateRef } from "vue"
+import { computed, inject, ref, useTemplateRef, watch } from "vue"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import NoteItem from "@/views/daw/midi-editor/note-editor/NoteItem.vue"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
+import WorkspaceHandle from "@/views/daw/midi-editor/note-editor/WorkspaceHandle.vue"
 const noteItemStore = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
 
@@ -15,6 +16,9 @@ const props = defineProps({
     type: Number,
   },
   editorCanvasWidth: {
+    type: Number,
+  },
+  editorViewHeight: {
     type: Number,
   },
   zoomRatio: {
@@ -36,7 +40,6 @@ const props = defineProps({
     type: Object,
   },
 })
-console.log(props.noteItemsMap)
 const noteEditorWorkspaceContainerRef = useTemplateRef(
   "noteEditorWorkspaceContainerRef",
 )
@@ -63,10 +66,21 @@ const noteHeight = computed(() => {
     ).toFixed(3),
   )
 })
-const workspaceTranslateX = defineModel("workspaceTranslateX", {
-  type: Number,
-  default: 0,
-})
+
+const { scrollMovement, updateScrollMovement } = inject("scrollMovement")
+const noteEditorWorkspaceRef = useTemplateRef("noteEditorWorkspaceRef")
+watch(
+  scrollMovement,
+  (newScrollMovement) => {
+    noteEditorWorkspaceRef.value.scrollTop = newScrollMovement.scrollTop
+  },
+  { deep: true },
+)
+function scrollHandler(event) {
+  const scrollTop = event.target.scrollTop
+  const scrollLeft = event.target.scrollLeft
+  updateScrollMovement({ scrollTop, scrollLeft })
+}
 </script>
 
 <template>
@@ -74,45 +88,72 @@ const workspaceTranslateX = defineModel("workspaceTranslateX", {
     class="note-editor-workspace-container"
     ref="noteEditorWorkspaceContainerRef"
   >
-    <div class="note-editor-workspace">
-      <template
-        class="note-editor-track"
-        v-for="[pitchName, noteTrack] in noteItemsMap"
-        :style="{ transform: `translateY(${noteTrack.positionY}px)` }"
-        :id="pitchName"
-      >
-        <note-item
-          v-for="noteItem in noteTrack.noteItems"
-          :key="noteItem.id"
-          :id="noteItem.id"
-          :belonged-pitch-name="noteItem.pitchName"
-          :note-width="noteItem.width"
-          :note-height="noteHeight"
-          :note-pad-width="editorCanvasWidth"
-          :note-pad-height="editorCanvasHeight"
-          :note-position="getNotePosition(noteItem.x, noteItem.y)"
-          v-model:note-main-selected-id="noteMainSelectedId"
-          :noteEditorRegionRef="noteEditorRegionRef"
-        ></note-item>
-      </template>
+    <div class="workspace-handle">
+      <WorkspaceHandle
+        :id="id"
+        :zoom-ratio="zoomRatio"
+        :noteEditorRegionRef="noteEditorRegionRef"
+        :note-pad-width="editorCanvasWidth"
+        :start-position="startPosition"
+        :workspace-container-width="workspaceContainerWidth"
+      ></WorkspaceHandle>
+    </div>
+    <div
+      class="note-editor-workspace"
+      ref="noteEditorWorkspaceRef"
+      @scroll="scrollHandler"
+    >
+      <div class="workspace-scroll-zone">
+        <template
+          class="note-editor-track"
+          v-for="[pitchName, noteTrack] in noteItemsMap"
+          :style="{ transform: `translateY(${noteTrack.positionY}px)` }"
+          :id="pitchName"
+        >
+          <note-item
+            v-for="noteItem in noteTrack.noteItems"
+            :key="noteItem.id"
+            :id="noteItem.id"
+            :workspace-id="id"
+            :belonged-pitch-name="noteItem.pitchName"
+            :note-width="noteItem.width"
+            :note-height="noteHeight"
+            :note-pad-width="editorCanvasWidth"
+            :note-pad-height="editorCanvasHeight"
+            :note-position="getNotePosition(noteItem.x, noteItem.y)"
+            v-model:note-main-selected-id="noteMainSelectedId"
+            :noteEditorRegionRef="noteEditorRegionRef"
+          ></note-item>
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .note-editor-workspace-container {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
   width: v-bind(workspaceContainerWidth + "px");
-  height: v-bind(editorCanvasHeight + "px");
+  height: v-bind(editorViewHeight + "px");
   pointer-events: none;
   transform: v-bind("`translateX(${startPosition}px)`");
+  scrollbar-width: none;
+}
+.workspace-handle {
+  width: v-bind(workspaceContainerWidth + "px");
+  height: 20px;
+  background-color: #000000;
 }
 .note-editor-workspace {
+  overflow: auto;
+  scrollbar-width: none;
   width: 100%;
-  flex-grow: 1;
+  height: v-bind(editorViewHeight + "px");
   background-color: rgba(97, 9, 138, 0.3);
   pointer-events: initial;
+}
+.workspace-scroll-zone {
+  position: relative;
+  width: 100%;
+  height: v-bind(editorCanvasHeight + "px");
 }
 </style>

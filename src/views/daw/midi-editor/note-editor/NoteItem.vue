@@ -13,6 +13,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  workspaceId: {
+    type: String,
+    required: true,
+  },
   belongedPitchName: {
     type: String,
     default: "",

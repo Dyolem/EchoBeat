@@ -1,7 +1,9 @@
 import { defineStore } from "pinia"
-import { computed, ref, watchEffect } from "vue"
+import { computed, ref } from "vue"
 
 export const useTrackRulerStore = defineStore("dawTrackRulerTimeLine", () => {
+  const BEAT_GRID_RATIO = 4
+  const BASE_GRID_WIDTH = 20
   const BEATS_NUMBER = 95
   const INIT_BPM = 120
   const beatsNumber = ref(BEATS_NUMBER)
@@ -11,6 +13,9 @@ export const useTrackRulerStore = defineStore("dawTrackRulerTimeLine", () => {
   })
   const totalTime = computed(() => {
     return secondsPerBeat.value * beatsNumber.value
+  })
+  const dynamicBeatWidth = computed(() => {
+    return BASE_GRID_WIDTH * BEAT_GRID_RATIO
   })
 
   const mainEditorId = ref("")
@@ -30,9 +35,7 @@ export const useTrackRulerStore = defineStore("dawTrackRulerTimeLine", () => {
       ],
     ]),
   )
-  watchEffect(() => {
-    console.log(timeLineInstanceMap.value)
-  })
+
   const timelineCurrentTime = ref(0)
 
   const _getUnnecessaryFields = (id, field) => {

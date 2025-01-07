@@ -37,6 +37,7 @@ export const NOTE_ELEMENT_MIN_SIZE = {
 }
 export const BEATS_NUMBER = 95
 export const BASE_GRID_WIDTH = 20
+export const BEAT_GRID_RATIO = 4
 export const MIN_GRID_WIDTH = BASE_GRID_WIDTH * MIN_ZOOM
 export const BASE_GRID_HEIGHT = 90
 

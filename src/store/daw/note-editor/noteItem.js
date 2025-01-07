@@ -9,11 +9,13 @@ import {
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
+import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
   const trackRulerStore = useTrackRulerStore()
   const audioStore = useAudioStore()
+  const workspaceStore = useWorkspaceStore()
 
   const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
   const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
@@ -80,6 +82,16 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return pitchNameMappedToAreaArr
   })
 
+  function createNoteItemsMap() {
+    const noteItemsMap = new Map()
+    noteItemsMap.clear()
+    for (const pitchNameMappedToAreaElement of pitchNameMappedToArea.value) {
+      const { pitchName, scale } = pitchNameMappedToAreaElement
+      const template = { pitchName, scaleY: scale, noteItems: [] }
+      noteItemsMap.set(pitchName, template)
+    }
+    return noteItemsMap
+  }
   const initNoteItemsMap = computed(() => {
     const noteItemsMap = new Map()
     noteItemsMap.clear()
@@ -184,17 +196,68 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       }) ?? false
     )
   }
+
+  function getWorkspaceInitialInfo(template) {
+    const restWidthSpace =
+      editorGridParametersStore.widthPerBeat - template.width
+    const leftSpace = Math.max(0, restWidthSpace / 2)
+    const startPosition = template.x - leftSpace
+    const width = editorGridParametersStore.widthPerBeat
+
+    const type = "instruments"
+    const _noteItemsMap = createNoteItemsMap()
+
+    return {
+      type,
+      width,
+      startPosition,
+      noteItemsMap: _noteItemsMap,
+    }
+  }
   function insertNoteItem(
-    { x, y, insertToSpecifiedPitchName } = {},
+    { workspaceId, x, y, insertToSpecifiedPitchName } = {},
     returnInsertedItemFullInfo = false,
   ) {
     if (x === undefined || y === undefined) return
+
     const specifiedPitchName =
       insertToSpecifiedPitchName ??
       getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
 
     const template = noteItemTemplate({ x, y }, specifiedPitchName)
-    const noteItems = noteItemsMap.value.get(specifiedPitchName)?.noteItems
+    // const noteItems = noteItemsMap.value.get(specifiedPitchName)?.noteItems
+
+    let workspaceNoteItemsMap = null
+    if (workspaceStore.workspaceMap.size === 0) {
+      const workspaceInfo = getWorkspaceInitialInfo(template)
+      workspaceNoteItemsMap =
+        workspaceStore.createWorkspace(workspaceInfo).noteItemsMap
+    } else {
+      for (const [workspaceId, workspace] of workspaceStore.workspaceMap) {
+        const { startPosition, width } = workspace
+        if (x >= startPosition && x <= startPosition + width) {
+          workspaceNoteItemsMap = workspace.noteItemsMap
+          break
+        } else if (
+          editorGridParametersStore.shouldCreateNewWorkspace(startPosition, x)
+        ) {
+          const workspaceInfo = getWorkspaceInitialInfo(template)
+          workspaceNoteItemsMap =
+            workspaceStore.createWorkspace(workspaceInfo).noteItemsMap
+          break
+        } else {
+          const expandRatio = Math.ceil(
+            (x - startPosition - workspace.width) /
+              editorGridParametersStore.widthPerBeat,
+          )
+          workspace.width *= expandRatio
+          workspaceNoteItemsMap = workspace.noteItemsMap
+          break
+        }
+      }
+    }
+
+    const noteItems = workspaceNoteItemsMap.get(specifiedPitchName)?.noteItems
     noteItems?.push(template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
@@ -455,14 +518,14 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       })
     }
   }
-  function patchUpdateNoteItems(newTrackZoomRatio, oldTrackZoomRatio) {
+  function patchUpdateNoteItemsWidth(newTrackZoomRatio, oldTrackZoomRatio) {
     if (
       newTrackZoomRatio === oldTrackZoomRatio ||
       newTrackZoomRatio === undefined ||
       oldTrackZoomRatio === undefined
     )
       return
-
+    editorGridParametersStore.trackZoomRatio = newTrackZoomRatio
     noteItemsMap.value.forEach((pitchNameObj, pitchName) => {
       pitchNameObj.noteItems.forEach((noteItem) => {
         noteItem.x = (noteItem.x / oldTrackZoomRatio) * newTrackZoomRatio
@@ -471,7 +534,18 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       })
     })
   }
+  function patchUpdateNoteItemsPosition(workspaceOffsetX, oldWorkspaceOffsetX) {
+    if (!workspaceOffsetX) return
 
+    noteItemsMap.value.forEach((pitchNameObj, pitchName) => {
+      pitchNameObj.noteItems.forEach((noteItem) => {
+        const movementX = workspaceOffsetX - oldWorkspaceOffsetX
+        console.log(workspaceOffsetX, oldWorkspaceOffsetX)
+        console.log(workspaceOffsetX - oldWorkspaceOffsetX)
+        noteItem.x += movementX
+      })
+    })
+  }
   function simulatePlaySpecifiedNote(pitchName) {
     octaveContainerInstance.value?.dispatchEvent(
       new CustomEvent("play-sample", {
@@ -496,7 +570,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteItemPosition,
     updateNoteItemsMap,
     stretchNoteWidth,
-    patchUpdateNoteItems,
+    patchUpdateNoteItemsWidth,
+    patchUpdateNoteItemsPosition,
     simulatePlaySpecifiedNote,
   }
 })
@@ -516,6 +591,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 //           x: 10,
 //           y: 20,
 //           backGroundColor: "lightblue",
+//           startTime,
+//           duration,
+//           audioContext: audioStore.audioContext,
 //         },
 //         {
 //           id: "c4-2",
@@ -524,6 +602,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 //           x: 40,
 //           y: 60,
 //           backGroundColor: "lightblue",
+//           backGroundColor: "lightblue",
+//           startTime,
+//           duration,
+//           audioContext: audioStore.audioContext,
 //         },
 //       ],
 //     },

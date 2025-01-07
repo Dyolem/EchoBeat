@@ -13,6 +13,7 @@ const props = defineProps({
   },
 })
 const emit = defineEmits(["update:chromaticScaleScrollTop"])
+const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
 const octaveContainerRef = useTemplateRef("octaveContainerRef")
 watch(
   () => props.chromaticScaleScrollTop,
@@ -150,6 +151,7 @@ function resetState(target) {
 <template>
   <div class="chromatic-scale-container scrollbar-settings">
     <div class="fold-button">Fold</div>
+    <span class="workspace-placeHolder"></span>
     <div
       class="octave-container beatified-scrollbar"
       @scroll="scrollHandler"
@@ -177,6 +179,11 @@ function resetState(target) {
   background-color: antiquewhite;
   display: flex;
   flex-direction: column;
+}
+.workspace-placeHolder {
+  width: 100%;
+  height: v-bind(workspacePlaceHolderHeight + "px");
+  flex-shrink: 0;
 }
 .fold-button {
   width: 100%;
