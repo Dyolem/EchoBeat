@@ -109,7 +109,6 @@ const isMovementHandleActive = ref(false)
   border-radius: 4px;
   display: flex;
   align-items: center;
-  user-select: none;
 }
 .grabbing-workspace-handle-active {
   cursor: grabbing;
