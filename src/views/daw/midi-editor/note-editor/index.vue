@@ -1,5 +1,13 @@
 <script setup>
-import { computed, inject, ref, useTemplateRef, watch, watchEffect } from "vue"
+import {
+  computed,
+  inject,
+  provide,
+  ref,
+  useTemplateRef,
+  watch,
+  watchEffect,
+} from "vue"
 import NotePad from "@/views/daw/midi-editor/note-editor/NotePad.vue"
 import EditorWorkspace from "@/views/daw/midi-editor/note-editor/EditorWorkspace.vue"
 
@@ -7,7 +15,6 @@ import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
-import { BASE_GRID_WIDTH, BEAT_GRID_RATIO } from "@/constants/daw/index.js"
 
 const editorGridParametersStore = useEditorGridParametersStore()
 const noteItems = useNoteItemStore()
@@ -36,6 +43,10 @@ const props = defineProps({
   trackRulerHeight: {
     type: Number,
     default: 50,
+  },
+  workspaceBadgeName: {
+    type: String,
+    default: "Instruments",
   },
 })
 const noteEditorRegionRef = useTemplateRef("noteEditorRegionRef")
@@ -68,7 +79,10 @@ watchEffect(() => {
 })
 
 const noteMainSelectedId = ref("")
-
+function updateNoteMainSelectedId(newVal) {
+  noteMainSelectedId.value = newVal
+}
+provide("noteMainSelectedId", { noteMainSelectedId, updateNoteMainSelectedId })
 const getCursorPositionInNoteEditorRegion = (event) => {
   if (!event) return
   const x =
@@ -117,11 +131,7 @@ watch(
   },
 )
 
-const workspaceContainerWidth = computed(() => {
-  return props.zoomRatio * BEAT_GRID_RATIO * BASE_GRID_WIDTH
-})
 const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
-const workspaceTranslateX = ref(0)
 </script>
 
 <template>
@@ -139,6 +149,7 @@ const workspaceTranslateX = ref(0)
         :workspace-container-width="workspace.width"
         :start-position="workspace.startPosition"
         :note-items-map="workspace.noteItemsMap"
+        :workspace-badge-name="workspaceBadgeName"
       ></EditorWorkspace>
     </div>
     <div
@@ -186,6 +197,7 @@ const workspaceTranslateX = ref(0)
 .workplace-track-placeholder {
   position: sticky;
   top: v-bind(trackRulerHeight + "px");
+  display: flex;
   width: 100%;
   height: v-bind(workspacePlaceHolderHeight + "px");
   background-color: #000000;

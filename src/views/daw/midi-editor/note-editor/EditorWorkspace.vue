@@ -39,15 +39,18 @@ const props = defineProps({
   noteItemsMap: {
     type: Object,
   },
+  workspaceBadgeName: {
+    type: String,
+    default: "Instrument",
+  },
 })
 const noteEditorWorkspaceContainerRef = useTemplateRef(
   "noteEditorWorkspaceContainerRef",
 )
 
-const noteMainSelectedId = ref("")
 const getNotePosition = (x, y) => {
   if (x === undefined || y === undefined) return
-  return ref([x - workspaceStore.workspaceStartPosition, y])
+  return ref([x, y])
 }
 const chromaticInfo = inject("chromaticInfo")
 const pianoKeySize = inject("pianoKeySize")
@@ -121,7 +124,7 @@ function scrollHandler(event) {
             :note-pad-width="editorCanvasWidth"
             :note-pad-height="editorCanvasHeight"
             :note-position="getNotePosition(noteItem.x, noteItem.y)"
-            v-model:note-main-selected-id="noteMainSelectedId"
+            :workspace-start-position="startPosition"
             :noteEditorRegionRef="noteEditorRegionRef"
           ></note-item>
         </template>
@@ -132,6 +135,7 @@ function scrollHandler(event) {
 
 <style scoped>
 .note-editor-workspace-container {
+  position: absolute;
   width: v-bind(workspaceContainerWidth + "px");
   height: v-bind(editorViewHeight + "px");
   pointer-events: none;

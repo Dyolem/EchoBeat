@@ -197,13 +197,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     )
   }
 
-  function getWorkspaceInitialInfo(template) {
-    const restWidthSpace =
-      editorGridParametersStore.widthPerBeat - template.width
-    const leftSpace = Math.max(0, restWidthSpace / 2)
-    const startPosition = template.x - leftSpace
+  function getWorkspaceInitialInfo({ createPosition }) {
+    const startPosition = createPosition
     const width = editorGridParametersStore.widthPerBeat
-
     const type = "instruments"
     const _noteItemsMap = createNoteItemsMap()
 
@@ -225,11 +221,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
 
     const template = noteItemTemplate({ x, y }, specifiedPitchName)
-    // const noteItems = noteItemsMap.value.get(specifiedPitchName)?.noteItems
-
     let workspaceNoteItemsMap = null
     if (workspaceStore.workspaceMap.size === 0) {
-      const workspaceInfo = getWorkspaceInitialInfo(template)
+      const workspaceInfo = getWorkspaceInitialInfo({
+        createPosition: x,
+      })
       workspaceNoteItemsMap =
         workspaceStore.createWorkspace(workspaceInfo).noteItemsMap
     } else {
@@ -238,20 +234,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
         if (x >= startPosition && x <= startPosition + width) {
           workspaceNoteItemsMap = workspace.noteItemsMap
           break
-        } else if (
-          editorGridParametersStore.shouldCreateNewWorkspace(startPosition, x)
-        ) {
-          const workspaceInfo = getWorkspaceInitialInfo(template)
+        } else {
+          const workspaceInfo = getWorkspaceInitialInfo({ createPosition: x })
           workspaceNoteItemsMap =
             workspaceStore.createWorkspace(workspaceInfo).noteItemsMap
-          break
-        } else {
-          const expandRatio = Math.ceil(
-            (x - startPosition - workspace.width) /
-              editorGridParametersStore.widthPerBeat,
-          )
-          workspace.width *= expandRatio
-          workspaceNoteItemsMap = workspace.noteItemsMap
           break
         }
       }
@@ -564,6 +550,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     isSnappedToHorizontalGrid,
     noteHeight,
     noteItemsMap,
+    createNoteItemsMap,
     insertNoteItem,
     deleteNoteItem,
     isExistNoteItem,
