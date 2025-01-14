@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, useTemplateRef, watch } from "vue"
+import { inject, onMounted, ref, useTemplateRef, watch } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
@@ -49,12 +49,14 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  workspaceStartPosition: {
+    type: Number,
+    default: 0,
+  },
 })
 const editorNoteZIndex = ref(ZIndex.EDITOR_NOTE)
-const noteMainSelectedId = defineModel("noteMainSelectedId", {
-  type: String,
-  default: "",
-})
+const { noteMainSelectedId, updateNoteMainSelectedId } =
+  inject("noteMainSelectedId")
 
 watch(
   () => props.belongedPitchName,
@@ -67,10 +69,12 @@ watch(
 onMounted(() => {
   watch(
     () => props.notePosition,
-    (newPosition) => {
+    (newPosition, oldPosition) => {
       const [newX, newY] = newPosition.value
+      const [oldX, oldY] = oldPosition?.value ?? []
+      if (oldPosition && newX === oldX && newY === oldY) return
       if (isLegalTranslateDistance(newX, newY) && editorNoteRef.value) {
-        editorNoteRef.value.style.transform = `translate(${newX}px,${newY}px)`
+        editorNoteRef.value.style.transform = `translate(${newX - props.workspaceStartPosition}px,${newY}px)`
       }
     },
     { deep: true, immediate: true },
@@ -109,7 +113,7 @@ function playNoteAudio(pitchName) {
 function draggableRegionHandler(event) {
   // 'insert' editor mode prohibit to drag note element
   if (noteItemMap.isInsertMode) return
-  if (noteMainSelectedId.value !== props.id) noteMainSelectedId.value = props.id
+  if (noteMainSelectedId.value !== props.id) updateNoteMainSelectedId(props.id)
 
   const selectionController = clearSelection()
   const id = props.id
@@ -154,7 +158,7 @@ function draggableRegionHandler(event) {
         belongedPitchName,
         props.belongedPitchName,
       )
-      noteMainSelectedId.value = newId
+      updateNoteMainSelectedId(newId)
     },
     {
       once: true,
@@ -163,7 +167,7 @@ function draggableRegionHandler(event) {
 }
 
 function stretchEditorNoteLength(event) {
-  if (noteMainSelectedId.value !== props.id) noteMainSelectedId.value = props.id
+  if (noteMainSelectedId.value !== props.id) updateNoteMainSelectedId(props.id)
   const selectionController = clearSelection()
   const { x: mousedownStartX } = getMovementInNoteEditorRegion(event)
   const initWidth = props.noteWidth
@@ -217,7 +221,7 @@ function noteMainMousedownHandler(event) {
   if (timeInterval === 0) {
     if (noteItemMap.isInsertMode) {
       noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
-      noteMainSelectedId.value = ""
+      updateNoteMainSelectedId("")
     } else {
       /*
        * In selected mode, a single click will play the corresponding sound name
