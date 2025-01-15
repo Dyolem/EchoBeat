@@ -43,6 +43,10 @@ const props = defineProps({
     type: String,
     default: "Instrument",
   },
+  getCursorPositionInNoteEditorRegion: {
+    type: Function,
+    required: true,
+  },
 })
 const noteEditorWorkspaceContainerRef = useTemplateRef(
   "noteEditorWorkspaceContainerRef",
@@ -84,6 +88,26 @@ function scrollHandler(event) {
   const scrollLeft = event.target.scrollLeft
   updateScrollMovement({ scrollTop, scrollLeft })
 }
+function triggerCustomizedInsertEvent(event) {
+  const eventType = event.type
+  if (
+    (noteItemStore.isSelectMode && eventType === "dblclick") ||
+    (noteItemStore.isInsertMode && eventType === "mousedown")
+  ) {
+    const { x, y } = props.getCursorPositionInNoteEditorRegion(event)
+    noteEditorWorkspaceRef.value.dispatchEvent(
+      new CustomEvent("insert-note", {
+        detail: {
+          insertPosition: {
+            x,
+            y,
+          },
+        },
+        bubbles: true,
+      }),
+    )
+  }
+}
 </script>
 
 <template>
@@ -105,6 +129,8 @@ function scrollHandler(event) {
       class="note-editor-workspace"
       ref="noteEditorWorkspaceRef"
       @scroll="scrollHandler"
+      @mousedown="triggerCustomizedInsertEvent"
+      @dblclick="triggerCustomizedInsertEvent"
     >
       <div class="workspace-scroll-zone">
         <template

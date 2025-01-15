@@ -244,6 +244,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
 
     const noteItems = workspaceNoteItemsMap.get(specifiedPitchName)?.noteItems
+    console.log(noteItems, template)
     noteItems?.push(template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id

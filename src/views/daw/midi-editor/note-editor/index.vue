@@ -2,6 +2,8 @@
 import {
   computed,
   inject,
+  onMounted,
+  onUnmounted,
   provide,
   ref,
   useTemplateRef,
@@ -49,6 +51,7 @@ const props = defineProps({
     default: "Instruments",
   },
 })
+const noteEditorContainerRef = useTemplateRef("noteEditorContainerRef")
 const noteEditorRegionRef = useTemplateRef("noteEditorRegionRef")
 const chromaticInfo = inject("chromaticInfo")
 const pianoKeySize = inject("pianoKeySize")
@@ -66,6 +69,23 @@ const noteHeight = computed(() => {
   )
 })
 
+const controller = new AbortController()
+onMounted(() => {
+  if (!noteEditorContainerRef.value) return
+  noteEditorContainerRef.value.addEventListener(
+    "insert-note",
+    (event) => {
+      const { x: insertX, y: insertY } = event.detail.insertPosition
+      insertNote({ x: insertX, y: insertY })
+    },
+    {
+      signal: controller.signal,
+    },
+  )
+})
+onUnmounted(() => {
+  controller.abort()
+})
 watch(
   noteHeight,
   (newVal) => {
@@ -91,9 +111,8 @@ const getCursorPositionInNoteEditorRegion = (event) => {
     event.clientY - noteEditorRegionRef.value.getBoundingClientRect().top
   return { x, y }
 }
-function insertNote(event) {
-  if (!event) return
-  const { x: insertX, y: insertY } = getCursorPositionInNoteEditorRegion(event)
+function insertNote({ x: insertX, y: insertY }) {
+  if (insertX === undefined || insertY === undefined) return
   const insertedItemInfo = noteItems.insertNoteItem(
     {
       x: insertX,
@@ -110,18 +129,34 @@ function insertNote(event) {
     })
   noteItems.simulatePlaySpecifiedNote(insertedItemInfo.pitchName)
 }
+function triggerCustomizedInsertEvent({ x, y }) {
+  noteEditorRegionRef.value.dispatchEvent(
+    new CustomEvent("insert-note", {
+      detail: {
+        insertPosition: {
+          x,
+          y,
+        },
+      },
+      bubbles: true,
+    }),
+  )
+}
 function noteEditorMousedownHandler(event) {
+  console.log(event)
   if (noteItems.isSelectMode) {
     if (noteMainSelectedId.value !== "") {
       noteMainSelectedId.value = ""
     }
   } else if (noteItems.isInsertMode) {
-    insertNote(event)
+    const { x, y } = getCursorPositionInNoteEditorRegion(event)
+    triggerCustomizedInsertEvent({ x, y })
   }
 }
 function noteEditorDblClickHandler(event) {
   if (noteItems.isSelectMode) {
-    insertNote(event)
+    const { x, y } = getCursorPositionInNoteEditorRegion(event)
+    triggerCustomizedInsertEvent({ x, y })
   }
 }
 watch(
@@ -139,7 +174,7 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
 </script>
 
 <template>
-  <div class="note-editor-container">
+  <div class="note-editor-container" ref="noteEditorContainerRef">
     <div class="workplace-track-placeholder">
       <EditorWorkspace
         v-for="[workspaceId, workspace] in workspaceStore.workspaceMap"
@@ -154,6 +189,9 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
         :start-position="workspace.startPosition"
         :note-items-map="workspace.noteItemsMap"
         :workspace-badge-name="workspaceBadgeName"
+        :get-cursor-position-in-note-editor-region="
+          getCursorPositionInNoteEditorRegion
+        "
       ></EditorWorkspace>
     </div>
     <div
