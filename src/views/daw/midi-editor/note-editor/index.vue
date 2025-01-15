@@ -128,6 +128,10 @@ watch(
   () => props.zoomRatio,
   (newTrackZoomRatio, oldTrackZoomRatio) => {
     noteItems.patchUpdateNoteItemsWidth(newTrackZoomRatio, oldTrackZoomRatio)
+    workspaceStore.patchUpdateWorkspaceWithZoomRatio(
+      newTrackZoomRatio,
+      oldTrackZoomRatio,
+    )
   },
 )
 

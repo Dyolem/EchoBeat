@@ -189,5 +189,22 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       return workspaceContent
     }
   }
-  return { workspaceMap, createWorkspace, workspaceStartPosition }
+  function patchUpdateWorkspaceWithZoomRatio(newZoomRatio, oldZoomRatio) {
+    if (
+      newZoomRatio === oldZoomRatio ||
+      newZoomRatio === undefined ||
+      oldZoomRatio === undefined
+    )
+      return
+    for (const workspace of workspaceMap.value.values()) {
+      workspace.width *= newZoomRatio / oldZoomRatio
+      workspace.startPosition *= newZoomRatio / oldZoomRatio
+    }
+  }
+  return {
+    workspaceMap,
+    createWorkspace,
+    workspaceStartPosition,
+    patchUpdateWorkspaceWithZoomRatio,
+  }
 })
