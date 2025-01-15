@@ -249,10 +249,16 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return returnInsertedItemFullInfo ? template : template.id
   }
 
-  function deleteNoteItem(id, deleteFromSpecifiedPitchName) {
-    if (id === undefined || deleteFromSpecifiedPitchName === undefined) return
-
-    const deleteTargetArr = noteItemsMap.value.get(
+  function deleteNoteItem(id, workspaceId, deleteFromSpecifiedPitchName) {
+    if (
+      id === undefined ||
+      workspaceId === undefined ||
+      deleteFromSpecifiedPitchName === undefined
+    )
+      return
+    const noteItemsMap =
+      workspaceStore.workspaceMap.get(workspaceId).noteItemsMap
+    const deleteTargetArr = noteItemsMap.get(
       deleteFromSpecifiedPitchName,
     ).noteItems
     if (!deleteTargetArr) return
@@ -318,14 +324,17 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
   function updateNoteItemPosition(
     id,
+    workspaceId,
     pitchName,
     position,
     mousedownPositionInNote,
   ) {
     if (id === undefined || pitchName === undefined || position.length !== 2)
       return
-
-    const updateNoteTarget = noteItemsMap.value
+    const noteItemsMap =
+      workspaceStore.workspaceMap.get(workspaceId).noteItemsMap
+    console.log(noteItemsMap)
+    const updateNoteTarget = noteItemsMap
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
     if (updateNoteTarget === undefined) return
@@ -352,9 +361,17 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
   }
 
-  function updateNoteItemsMap(oldId, newId, oldPitchName, newPitchName) {
-    const oldTargetArr = noteItemsMap.value.get(oldPitchName).noteItems
-    const newTargetArr = noteItemsMap.value.get(newPitchName).noteItems
+  function updateNoteItemsMap(
+    oldId,
+    newId,
+    workspaceId,
+    oldPitchName,
+    newPitchName,
+  ) {
+    const noteItemsMap =
+      workspaceStore.workspaceMap.get(workspaceId).noteItemsMap
+    const oldTargetArr = noteItemsMap.get(oldPitchName).noteItems
+    const newTargetArr = noteItemsMap.get(newPitchName).noteItems
     const oldTargetIndex = oldTargetArr.findIndex((item) => {
       return item.id === oldId
     })
@@ -377,6 +394,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
   function stretchNoteWidth({
     id,
+    workspaceId,
     pitchName,
     stretchXLength,
     initWidth,
@@ -386,6 +404,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }) {
     if (
       id === undefined ||
+      workspaceId === undefined ||
       pitchName === undefined ||
       stretchXLength === undefined ||
       initWidth === undefined ||
@@ -394,8 +413,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       maxMovementRegionWidth === undefined
     )
       return
-
-    const updateNoteTarget = noteItemsMap.value
+    const noteItemsMap =
+      workspaceStore.workspaceMap.get(workspaceId).noteItemsMap
+    const updateNoteTarget = noteItemsMap
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
 
@@ -512,13 +532,16 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     )
       return
     editorGridParametersStore.trackZoomRatio = newTrackZoomRatio
-    noteItemsMap.value.forEach((pitchNameObj, pitchName) => {
-      pitchNameObj.noteItems.forEach((noteItem) => {
-        noteItem.x = (noteItem.x / oldTrackZoomRatio) * newTrackZoomRatio
-        noteItem.width =
-          (noteItem.width / oldTrackZoomRatio) * newTrackZoomRatio
+
+    for (const { noteItemsMap } of workspaceStore.workspaceMap.values()) {
+      noteItemsMap.forEach((pitchNameObj, pitchName) => {
+        pitchNameObj.noteItems.forEach((noteItem) => {
+          noteItem.x = (noteItem.x / oldTrackZoomRatio) * newTrackZoomRatio
+          noteItem.width =
+            (noteItem.width / oldTrackZoomRatio) * newTrackZoomRatio
+        })
       })
-    })
+    }
   }
   function patchUpdateNoteItemsPosition(workspaceOffsetX, oldWorkspaceOffsetX) {
     if (!workspaceOffsetX) return

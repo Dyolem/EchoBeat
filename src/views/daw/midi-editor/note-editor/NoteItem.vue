@@ -138,6 +138,7 @@ function draggableRegionHandler(event) {
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
       const { newNoteId } = noteItemMap.updateNoteItemPosition(
         id,
+        props.workspaceId,
         belongedPitchName,
         [translateXDistance, translateYDistance],
         [mousedownX, mousedownY],
@@ -155,6 +156,7 @@ function draggableRegionHandler(event) {
       noteItemMap.updateNoteItemsMap(
         id,
         newId,
+        props.workspaceId,
         belongedPitchName,
         props.belongedPitchName,
       )
@@ -178,6 +180,7 @@ function stretchEditorNoteLength(event) {
 
     const moveInfo = {
       id: props.id,
+      workspaceId: props.workspaceId,
       pitchName: props.belongedPitchName,
       stretchXLength: stretchXLength,
       initWidth: initWidth,
@@ -220,7 +223,11 @@ function noteMainMousedownHandler(event) {
   //A single click should execute the logic
   if (timeInterval === 0) {
     if (noteItemMap.isInsertMode) {
-      noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
+      noteItemMap.deleteNoteItem(
+        props.id,
+        props.workspaceId,
+        props.belongedPitchName,
+      )
       updateNoteMainSelectedId("")
     } else {
       /*
@@ -255,7 +262,11 @@ function noteMainMousedownHandler(event) {
       "mouseup",
       () => {
         if (!isMoved) {
-          noteItemMap.deleteNoteItem(props.id, props.belongedPitchName)
+          noteItemMap.deleteNoteItem(
+            props.id,
+            props.workspaceId,
+            props.belongedPitchName,
+          )
         } else {
           isMoved = false
         }
