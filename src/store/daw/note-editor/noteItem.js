@@ -270,7 +270,18 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     deleteTargetArr.splice(deleteIndex, 1)
     audioStore.removeNodeFromPitchName(id, deleteFromSpecifiedPitchName)
   }
-
+  function leftJustifyingGrid(x) {
+    return (
+      Math.floor(x / editorGridParametersStore.minGridHorizontalMovement) *
+      editorGridParametersStore.minGridHorizontalMovement
+    )
+  }
+  function topJustifyingGrid(y) {
+    return (
+      Math.floor(y / editorGridParametersStore.minGridVerticalMovement) *
+      editorGridParametersStore.minGridVerticalMovement
+    )
+  }
   function snapToOtherPitchNameTrack({ x, y }, mousedownPositionInNote = []) {
     const expectedInsertToPitchName = getInsertToSpecifiedPitchName(
       { x, y },
@@ -281,9 +292,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     if (mousedownPositionInNote.length === 0) {
       //insert logic
       snappedY = noteItemsMap.value.get(expectedInsertToPitchName)?.scaleY[0]
-      snappedX =
-        Math.floor(x / editorGridParametersStore.minGridHorizontalMovement) *
-        editorGridParametersStore.minGridHorizontalMovement
+      snappedX = leftJustifyingGrid(x)
     } else {
       //update logic
       const [mousedownXInNote, mousedownYInNote] = mousedownPositionInNote
@@ -299,21 +308,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
        * 这就违反了移动位置x是网格值的整数倍时的规则，而bug的产生原因在于减去的mousedownXInNote值，被提前进行了取整。
        * 然而减去mousedownXInNote的值是必须，因此可以单独对mousedownXInNote值进行取整，然后将取整的两个值相减。
        * */
-      snappedX =
-        Math.floor(x / editorGridParametersStore.minGridHorizontalMovement) *
-          editorGridParametersStore.minGridHorizontalMovement -
-        Math.floor(
-          mousedownXInNote /
-            editorGridParametersStore.minGridHorizontalMovement,
-        ) *
-          editorGridParametersStore.minGridHorizontalMovement
-      snappedY =
-        Math.floor(y / editorGridParametersStore.minGridVerticalMovement) *
-          editorGridParametersStore.minGridVerticalMovement -
-        Math.floor(
-          mousedownYInNote / editorGridParametersStore.minGridVerticalMovement,
-        ) *
-          editorGridParametersStore.minGridVerticalMovement
+      snappedX = leftJustifyingGrid(x) - leftJustifyingGrid(mousedownXInNote)
+      snappedY = topJustifyingGrid(y) - topJustifyingGrid(mousedownYInNote)
     }
     return {
       snappedPosition: {
@@ -573,6 +569,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     isSelectMode,
     isVelocityMode,
     isSnappedToHorizontalGrid,
+    leftJustifyingGrid,
+    topJustifyingGrid,
     noteHeight,
     noteItemsMap,
     createNoteItemsMap,
