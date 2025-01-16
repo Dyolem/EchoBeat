@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, ref, useTemplateRef, watch } from "vue"
+import { computed, inject, onMounted, ref, useTemplateRef, watch } from "vue"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import NoteItem from "@/views/daw/midi-editor/note-editor/NoteItem.vue"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
@@ -84,13 +84,16 @@ const noteHeight = computed(() => {
 
 const { scrollMovement, updateScrollMovement } = inject("scrollMovement")
 const noteEditorWorkspaceRef = useTemplateRef("noteEditorWorkspaceRef")
-watch(
-  scrollMovement,
-  (newScrollMovement) => {
-    noteEditorWorkspaceRef.value.scrollTop = newScrollMovement.scrollTop
-  },
-  { deep: true },
-)
+onMounted(() => {
+  watch(
+    scrollMovement,
+    (newScrollMovement) => {
+      noteEditorWorkspaceRef.value.scrollTop = newScrollMovement.scrollTop
+    },
+    { deep: true, immediate: true },
+  )
+})
+
 function scrollHandler(event) {
   const scrollTop = event.target.scrollTop
   updateScrollMovement({ scrollTop })
