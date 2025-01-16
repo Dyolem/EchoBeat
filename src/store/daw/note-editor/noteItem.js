@@ -542,18 +542,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       })
     }
   }
-  function patchUpdateNoteItemsPosition(workspaceOffsetX, oldWorkspaceOffsetX) {
-    if (!workspaceOffsetX) return
-
-    noteItemsMap.value.forEach((pitchNameObj, pitchName) => {
-      pitchNameObj.noteItems.forEach((noteItem) => {
-        const movementX = workspaceOffsetX - oldWorkspaceOffsetX
-        console.log(workspaceOffsetX, oldWorkspaceOffsetX)
-        console.log(workspaceOffsetX - oldWorkspaceOffsetX)
-        noteItem.x += movementX
-      })
-    })
-  }
   function simulatePlaySpecifiedNote(pitchName) {
     octaveContainerInstance.value?.dispatchEvent(
       new CustomEvent("play-sample", {
@@ -583,7 +571,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteItemsMap,
     stretchNoteWidth,
     patchUpdateNoteItemsWidth,
-    patchUpdateNoteItemsPosition,
     simulatePlaySpecifiedNote,
   }
 })
