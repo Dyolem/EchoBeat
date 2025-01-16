@@ -85,8 +85,7 @@ watch(
 )
 function scrollHandler(event) {
   const scrollTop = event.target.scrollTop
-  const scrollLeft = event.target.scrollLeft
-  updateScrollMovement({ scrollTop, scrollLeft })
+  updateScrollMovement({ scrollTop })
 }
 function triggerCustomizedInsertEvent(event) {
   const eventType = event.type
