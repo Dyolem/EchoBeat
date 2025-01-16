@@ -222,12 +222,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
     const template = noteItemTemplate({ x, y }, specifiedPitchName)
     let workspaceNoteItemsMap = null
+    let createdWorkspace = null
     if (workspaceStore.workspaceMap.size === 0) {
       const workspaceInfo = getWorkspaceInitialInfo({
         createPosition: x,
       })
-      workspaceNoteItemsMap =
-        workspaceStore.createWorkspace(workspaceInfo).noteItemsMap
+      createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
+      workspaceNoteItemsMap = createdWorkspace.noteItemsMap
     } else {
       for (const [workspaceId, workspace] of workspaceStore.workspaceMap) {
         const { startPosition, width } = workspace
@@ -236,15 +237,15 @@ export const useNoteItemStore = defineStore("noteItem", () => {
           break
         } else {
           const workspaceInfo = getWorkspaceInitialInfo({ createPosition: x })
-          workspaceNoteItemsMap =
-            workspaceStore.createWorkspace(workspaceInfo).noteItemsMap
+          createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
+          workspaceNoteItemsMap = createdWorkspace.noteItemsMap
           break
         }
       }
     }
 
     const noteItems = workspaceNoteItemsMap.get(specifiedPitchName)?.noteItems
-    console.log(noteItems, template)
+    template.workspaceStartPosition = createdWorkspace.startPosition
     noteItems?.push(template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
@@ -575,6 +576,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     noteHeight,
     noteItemsMap,
     createNoteItemsMap,
+    getStartTime,
     insertNoteItem,
     deleteNoteItem,
     isExistNoteItem,

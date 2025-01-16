@@ -55,7 +55,10 @@ function workspaceGrabbingHandler(e) {
         movementX >= 0 &&
         movementX <= props.notePadWidth - props.workspaceContainerWidth
       ) {
-        workspaceStore.workspaceMap.get(props.id).startPosition = movementX
+        workspaceStore.updateWorkspacePosition({
+          workspaceId: props.id,
+          movement: movementX,
+        })
       }
     },
     {

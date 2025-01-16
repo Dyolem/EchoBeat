@@ -1,9 +1,13 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
+import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
+import { useAudioStore } from "@/store/daw/audio/index.js"
 
 export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
+  const noteItemStore = useNoteItemStore()
+  const audioStore = useAudioStore()
   const workspaceMap = ref(new Map())
   const workspaceStartPosition = ref(0)
   function shouldCreateWorkspace(
@@ -201,10 +205,32 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       workspace.startPosition *= newZoomRatio / oldZoomRatio
     }
   }
+  function updateWorkspacePosition({ workspaceId, movement }) {
+    const workspace = workspaceMap.value.get(workspaceId)
+    if (!workspace) return
+    workspace.startPosition = movement
+    const noteItemsMap = workspace.noteItemsMap
+    for (const { noteItems } of noteItemsMap.values()) {
+      for (const noteItem of noteItems) {
+        const newStartTime = noteItemStore.getStartTime(
+          noteItem.x - noteItem.workspaceStartPosition + movement,
+        )
+        noteItem.startTime = newStartTime
+        audioStore.adjustNodeStartAndLastTime({
+          id: noteItem.id,
+          startTime: newStartTime,
+          duration: noteItem.duration,
+          pitchName: noteItem.pitchName,
+          audioContext: noteItem.audioContext,
+        })
+      }
+    }
+  }
   return {
     workspaceMap,
     createWorkspace,
     workspaceStartPosition,
+    updateWorkspacePosition,
     patchUpdateWorkspaceWithZoomRatio,
   }
 })
