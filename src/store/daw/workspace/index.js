@@ -205,19 +205,22 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       workspace.startPosition *= newZoomRatio / oldZoomRatio
     }
   }
-  function updateWorkspacePosition({ workspaceId, movement }) {
+  function updateWorkspacePosition({ workspaceId, startPosition }) {
     const workspace = workspaceMap.value.get(workspaceId)
     if (!workspace) return
-    workspace.startPosition = noteItemStore.isSnappedToHorizontalGrid
-      ? noteItemStore.leftJustifyingGrid(movement)
-      : movement
+
+    const snapJudgedStartPosition = noteItemStore.isSnappedToHorizontalGrid
+      ? noteItemStore.leftJustifyingGrid(startPosition)
+      : startPosition
 
     const noteItemsMap = workspace.noteItemsMap
     for (const { noteItems } of noteItemsMap.values()) {
       for (const noteItem of noteItems) {
-        const newStartTime = noteItemStore.getStartTime(
-          noteItem.x - noteItem.workspaceStartPosition + movement,
-        )
+        const newX =
+          noteItem.x - workspace.startPosition + snapJudgedStartPosition
+        noteItem.x = newX
+        const newStartTime = noteItemStore.getStartTime(newX)
+
         noteItem.startTime = newStartTime
         audioStore.adjustNodeStartAndLastTime({
           id: noteItem.id,
@@ -228,6 +231,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         })
       }
     }
+    workspace.startPosition = snapJudgedStartPosition
   }
   return {
     workspaceMap,

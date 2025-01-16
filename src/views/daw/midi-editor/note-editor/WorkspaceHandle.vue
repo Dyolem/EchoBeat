@@ -46,18 +46,19 @@ function workspaceGrabbingHandler(e) {
   document.addEventListener(
     "mousemove",
     (event) => {
-      const movementX =
+      const workspaceStartPosition =
         event.clientX -
         props.noteEditorRegionRef.getBoundingClientRect().left -
         mousedownPositionXInWorkSpace
 
       if (
-        movementX >= 0 &&
-        movementX <= props.notePadWidth - props.workspaceContainerWidth
+        workspaceStartPosition >= 0 &&
+        workspaceStartPosition <=
+          props.notePadWidth - props.workspaceContainerWidth
       ) {
         workspaceStore.updateWorkspacePosition({
           workspaceId: props.id,
-          movement: movementX,
+          startPosition: workspaceStartPosition,
         })
       }
     },
@@ -110,8 +111,9 @@ const isMovementHandleActive = ref(false)
   height: fit-content;
   padding: 2px 6px;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .grabbing-workspace-handle-active {
   cursor: grabbing;
