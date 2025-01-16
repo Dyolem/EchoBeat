@@ -56,7 +56,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     return {
       isCreateNewWorkspace: true,
       workspaceInfo: {
-        startPosition,
+        startPosition: noteItemStore.leftJustifyingGrid(startPosition),
         width,
       },
     }
@@ -208,7 +208,10 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   function updateWorkspacePosition({ workspaceId, movement }) {
     const workspace = workspaceMap.value.get(workspaceId)
     if (!workspace) return
-    workspace.startPosition = movement
+    workspace.startPosition = noteItemStore.isSnappedToHorizontalGrid
+      ? noteItemStore.leftJustifyingGrid(movement)
+      : movement
+
     const noteItemsMap = workspace.noteItemsMap
     for (const { noteItems } of noteItemsMap.values()) {
       for (const noteItem of noteItems) {
