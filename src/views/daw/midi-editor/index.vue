@@ -122,8 +122,8 @@ function drawNotePadGrid(
       #custom-editor-layer="{
         interactableLayerWidth,
         interactableLayerHeight,
-        editorViewWidth,
-        editorViewHeight,
+        editableViewWidth,
+        editableViewHeight,
         trackRulerHeight,
         zoomRatio,
       }"
@@ -131,8 +131,8 @@ function drawNotePadGrid(
       <NoteEditor
         :note-pad-width="interactableLayerWidth"
         :note-pad-height="interactableLayerHeight"
-        :editor-view-width="editorViewWidth"
-        :editor-view-height="editorViewHeight"
+        :editable-view-width="editableViewWidth"
+        :editable-view-height="editableViewHeight"
         :zoom-ratio="zoomRatio"
         :track-ruler-height="trackRulerHeight"
       ></NoteEditor>

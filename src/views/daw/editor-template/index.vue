@@ -16,7 +16,11 @@ import {
 } from "vue"
 import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
-import { DEFAULT_ZOOM_RATIO, ZIndex } from "@/constants/daw/index.js"
+import {
+  DEFAULT_ZOOM_RATIO,
+  SCROLLBAR_WIDTH,
+  ZIndex,
+} from "@/constants/daw/index.js"
 
 const trackRulerStore = useTrackRulerStore()
 const BEATS_NUMBER = 95
@@ -50,8 +54,6 @@ const {
   updateCanvasContentHeight = null,
 } = inject("canvasContentHeight", {})
 
-const trackRulerHeight = ref(50)
-provide("trackRulerHeight", trackRulerHeight)
 const canvasContentWidth = computed(() => {
   return gridWidth.value * beatsNumber.value * 4
 })
@@ -88,6 +90,10 @@ const props = defineProps({
     type: Number,
     default: INIT_DRAWER_EDITOR_WIDTH,
   },
+  trackRulerHeight: {
+    type: Number,
+    default: 50,
+  },
   resizable: {
     type: Boolean,
     default: false,
@@ -116,6 +122,17 @@ const props = defineProps({
 })
 const id = computed(() => {
   return props.id ?? useId()
+})
+const trackRulerHeight = computed(() => {
+  return props.trackRulerHeight
+})
+const scrollbarWidth = ref(SCROLLBAR_WIDTH)
+provide("trackRulerHeight", trackRulerHeight)
+const editableViewWidth = computed(() => {
+  return props.editorViewWidth
+})
+const editableViewHeight = computed(() => {
+  return props.editorViewHeight - trackRulerHeight.value - scrollbarWidth.value
 })
 const emit = defineEmits(["update:editorViewWidth", "update:editorViewHeight"])
 const trackRulerZIndex = ref(ZIndex.TRACK_RULER)
@@ -384,8 +401,8 @@ onUnmounted(() => {
               name="default-interactable-layer"
               :interactableLayerWidth="canvasContentWidth"
               :interactableLayerHeight="canvasContentHeight"
-              :editorViewWidth="editorViewWidth"
-              :editorViewHeight="editorViewHeight - trackRulerHeight"
+              :editableViewWidth="editableViewWidth"
+              :editableViewHeight="editableViewHeight"
               :trackRulerHeight="trackRulerHeight"
               :zoomRatio="trackZoomRatio"
             >

@@ -89,3 +89,4 @@ export function generateNoteFrequencyMap(notes = NOTES_TABLE) {
   return noteFrequencyMap
 }
 export const NOTE_FREQUENCY_MAP = generateNoteFrequencyMap()
+export const SCROLLBAR_WIDTH = 10

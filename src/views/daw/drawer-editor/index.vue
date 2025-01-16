@@ -130,8 +130,8 @@ onUnmounted(() => {
         #default-interactable-layer="{
           interactableLayerWidth,
           interactableLayerHeight,
-          editorViewWidth,
-          editorViewHeight,
+          editableViewWidth,
+          editableViewHeight,
           trackRulerHeight,
           zoomRatio,
         }"
@@ -140,8 +140,8 @@ onUnmounted(() => {
           name="custom-editor-layer"
           :interactableLayerWidth="interactableLayerWidth"
           :interactableLayerHeight="interactableLayerHeight"
-          :editorViewWidth="editorViewWidth"
-          :editorViewHeight="editorViewHeight"
+          :editableViewWidth="editableViewWidth"
+          :editableViewHeight="editableViewHeight"
           :trackRulerHeight="trackRulerHeight"
           :zoomRatio="zoomRatio"
         >

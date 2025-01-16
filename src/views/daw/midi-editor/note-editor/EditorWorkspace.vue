@@ -18,8 +18,12 @@ const props = defineProps({
   editorCanvasWidth: {
     type: Number,
   },
-  editorViewHeight: {
+  editableViewHeight: {
     type: Number,
+  },
+  workspaceHandleHeight: {
+    type: Number,
+    default: 20,
   },
   zoomRatio: {
     type: Number,
@@ -47,6 +51,10 @@ const props = defineProps({
     type: Function,
     required: true,
   },
+})
+
+const workspaceScrollContainerHeight = computed(() => {
+  return props.editableViewHeight - props.workspaceHandleHeight
 })
 const noteEditorWorkspaceContainerRef = useTemplateRef(
   "noteEditorWorkspaceContainerRef",
@@ -162,21 +170,21 @@ function triggerCustomizedInsertEvent(event) {
 .note-editor-workspace-container {
   position: absolute;
   width: v-bind(workspaceContainerWidth + "px");
-  height: v-bind(editorViewHeight + "px");
+  height: v-bind(editableViewHeight + "px");
   pointer-events: none;
   transform: v-bind("`translateX(${startPosition}px)`");
   scrollbar-width: none;
 }
 .workspace-handle {
   width: v-bind(workspaceContainerWidth + "px");
-  height: 20px;
+  height: v-bind(workspaceHandleHeight + "px");
   background-color: #000000;
 }
 .note-editor-workspace {
   overflow: auto;
   scrollbar-width: none;
   width: 100%;
-  height: v-bind(editorViewHeight + "px");
+  height: v-bind(workspaceScrollContainerHeight + "px");
   background-color: rgba(97, 9, 138, 0.3);
   pointer-events: initial;
 }

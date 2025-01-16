@@ -36,10 +36,10 @@ const props = defineProps({
     type: Number,
     default: 1,
   },
-  editorViewWidth: {
+  editableViewWidth: {
     type: Number,
   },
-  editorViewHeight: {
+  editableViewHeight: {
     type: Number,
   },
   trackRulerHeight: {
@@ -180,9 +180,10 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
         v-for="[workspaceId, workspace] in workspaceStore.workspaceMap"
         :key="workspaceId"
         :id="workspaceId"
-        :editor-view-height="editorViewHeight"
+        :editable-view-height="editableViewHeight"
         :editor-canvas-height="notePadHeight"
         :editor-canvas-width="notePadWidth"
+        :workspace-handle-height="workspacePlaceHolderHeight"
         :zoom-ratio="zoomRatio"
         :noteEditorRegionRef="noteEditorRegionRef"
         :workspace-container-width="workspace.width"
