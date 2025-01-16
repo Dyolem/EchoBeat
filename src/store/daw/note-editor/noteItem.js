@@ -233,6 +233,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       for (const [workspaceId, workspace] of workspaceStore.workspaceMap) {
         const { startPosition, width } = workspace
         if (x >= startPosition && x <= startPosition + width) {
+          createdWorkspace = workspace
           workspaceNoteItemsMap = workspace.noteItemsMap
           break
         } else {
