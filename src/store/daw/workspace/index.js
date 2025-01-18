@@ -9,32 +9,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const noteItemStore = useNoteItemStore()
   const audioStore = useAudioStore()
   const workspaceMap = ref(new Map())
-  const workspaceStartPosition = ref(0)
-  function shouldCreateWorkspace(
-    x,
-    { leftWorkspaceStartPosition, rightWorkspaceStartPosition },
-  ) {
-    if (
-      leftWorkspaceStartPosition === undefined &&
-      rightWorkspaceStartPosition !== undefined
-    )
-      return true
-    if (
-      leftWorkspaceStartPosition === undefined &&
-      rightWorkspaceStartPosition === undefined
-    )
-      return true
-    if (leftWorkspaceStartPosition !== undefined) {
-      return (
-        x >
-        editorGridParametersStore.widthPerBeat * 3 + leftWorkspaceStartPosition
-      )
-    }
 
-    // if(leftWorkspaceStartPosition !==undefined && rightWorkspaceStartPosition!==undefined) {
-    //   return x>editorGridParametersStore.widthPerBeat *3 + leftWorkspaceStartPosition
-    // }
-  }
   function createNewWorkspaceAtLeftSide({
     createPosition,
     rightWorkspace,
@@ -167,12 +142,11 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       }
     }
   }
-  function createWorkspace({ type, width, startPosition, noteItemsMap }) {
+  function createWorkspace({ type, startPosition, noteItemsMap }) {
     const { isCreateNewWorkspace, workspaceInfo } =
       computedStartPosition(startPosition)
     if (isCreateNewWorkspace) {
       const { startPosition, width } = workspaceInfo
-      workspaceStartPosition.value = startPosition
       const date = new Date()
       const id = `${workspaceMap.value.size + 1}${date.getTime()}`
       const workspaceContent = {
@@ -188,7 +162,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       const { width, modifiedWorkspaceId } = workspaceInfo
       const workspaceContent = workspaceMap.value.get(modifiedWorkspaceId)
       workspaceContent.width = width
-      workspaceStartPosition.value = workspaceContent.startPosition
+      // workspaceStartPosition.value = workspaceContent.startPosition
 
       return workspaceContent
     }
@@ -236,7 +210,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   return {
     workspaceMap,
     createWorkspace,
-    workspaceStartPosition,
     updateWorkspacePosition,
     patchUpdateWorkspaceWithZoomRatio,
   }

@@ -195,11 +195,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       audioContext: audioStore.audioContext,
     }
   }
-  const getSpecifiedNote = (id, pitchName) => {
-    return noteItemsMap.value
-      .get(pitchName)
-      .noteItems.find((item) => item.id === id)
-  }
+
   function isExistNoteItem(
     { x, y } = {},
     isSnappedToHorizontalGrid,
@@ -230,13 +226,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
   function getWorkspaceInitialInfo({ createPosition }) {
     const startPosition = createPosition
-    const width = editorGridParametersStore.widthPerBeat
     const type = "instruments"
     const _noteItemsMap = createNoteItemsMap()
 
     return {
       type,
-      width,
       startPosition,
       noteItemsMap: _noteItemsMap,
     }
@@ -260,11 +254,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
       workspaceNoteItemsMap = createdWorkspace.noteItemsMap
     } else {
-      for (const [workspaceId, workspace] of workspaceStore.workspaceMap) {
-        const { startPosition, width } = workspace
+      for (const workspace of workspaceStore.workspaceMap.values()) {
+        const { startPosition, width, noteItemsMap } = workspace
         if (x >= startPosition && x <= startPosition + width) {
           createdWorkspace = workspace
-          workspaceNoteItemsMap = workspace.noteItemsMap
+          workspaceNoteItemsMap = noteItemsMap
           break
         } else {
           const workspaceInfo = getWorkspaceInitialInfo({ createPosition: x })
@@ -593,7 +587,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     editorGridParametersStore.trackZoomRatio = newTrackZoomRatio
 
     for (const { noteItemsMap } of workspaceStore.workspaceMap.values()) {
-      noteItemsMap.forEach((pitchNameObj, pitchName) => {
+      noteItemsMap.forEach((pitchNameObj) => {
         pitchNameObj.noteItems.forEach((noteItem) => {
           noteItem.x = (noteItem.x / oldTrackZoomRatio) * newTrackZoomRatio
           noteItem.width =
@@ -622,7 +616,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     topJustifyingGrid,
     noteHeight,
     noteItemsMap,
-    createNoteItemsMap,
     getStartTime,
     insertNoteItem,
     deleteNoteItem,
