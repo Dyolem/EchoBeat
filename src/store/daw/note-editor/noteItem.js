@@ -141,7 +141,30 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       trackRulerStore.totalTime
     )
   }
-  function noteItemTemplate({ x, y } = {}, insertToSpecifiedPitchName) {
+
+  function getLegalNoteStartPositionAndWidthInWorkspace(
+    { noteHorizontalStartPosition, noteWidth },
+    workspace,
+  ) {
+    const { startPosition, width: workspaceWidth } = workspace
+    const legalNoteStartPosition =
+      Math.min(
+        Math.max(noteHorizontalStartPosition, startPosition) + noteWidth,
+        workspace.startPosition + workspaceWidth,
+      ) - noteWidth
+    const maxNoteWidth = startPosition + workspaceWidth - legalNoteStartPosition
+    const legalNoteWidth = Math.min(maxNoteWidth, noteWidth)
+    return {
+      legalNoteStartPosition,
+      legalNoteWidth,
+    }
+  }
+
+  function noteItemTemplate(
+    { x, y } = {},
+    insertToSpecifiedPitchName,
+    newWorkspace,
+  ) {
     const id = getId(insertToSpecifiedPitchName)
 
     const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack({
@@ -149,13 +172,21 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       y,
     })
     const { snappedX, snappedY } = snappedPosition
-    const startTime = getStartTime(snappedX)
-    const duration = getLastTime(noteWidth.value)
+    const { legalNoteStartPosition, legalNoteWidth } =
+      getLegalNoteStartPositionAndWidthInWorkspace(
+        {
+          noteHorizontalStartPosition: snappedX,
+          noteWidth: noteWidth.value,
+        },
+        newWorkspace,
+      )
+    const startTime = getStartTime(legalNoteStartPosition)
+    const duration = getLastTime(legalNoteWidth)
     return {
       id: id,
-      width: noteWidth.value,
+      width: legalNoteWidth,
       height: noteHeight.value,
-      x: snappedX,
+      x: legalNoteStartPosition,
       y: snappedY,
       pitchName: snappedPitchName,
       backGroundColor: "lightblue",
@@ -220,7 +251,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       insertToSpecifiedPitchName ??
       getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
 
-    const template = noteItemTemplate({ x, y }, specifiedPitchName)
     let workspaceNoteItemsMap = null
     let createdWorkspace = null
     if (workspaceStore.workspaceMap.size === 0) {
@@ -244,9 +274,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
         }
       }
     }
-
+    const template = noteItemTemplate(
+      { x, y },
+      specifiedPitchName,
+      createdWorkspace,
+    )
     const noteItems = workspaceNoteItemsMap.get(specifiedPitchName)?.noteItems
-    template.workspaceStartPosition = createdWorkspace.startPosition
     noteItems?.push(template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
@@ -328,11 +361,21 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     position,
     mousedownPositionInNote,
   ) {
-    if (id === undefined || pitchName === undefined || position.length !== 2)
+    const isCoordinateAxisArray = (arr) => {
+      return Array.isArray(arr) && arr.length === 2
+    }
+    if (
+      id === undefined ||
+      workspaceId === undefined ||
+      pitchName === undefined ||
+      !isCoordinateAxisArray(position) ||
+      !isCoordinateAxisArray(mousedownPositionInNote)
+    )
       return
-    const noteItemsMap =
-      workspaceStore.workspaceMap.get(workspaceId).noteItemsMap
-    console.log(noteItemsMap)
+
+    const workspace = workspaceStore.workspaceMap.get(workspaceId)
+    const noteItemsMap = workspace.noteItemsMap
+
     const updateNoteTarget = noteItemsMap
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
@@ -346,9 +389,25 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     )
     const { snappedX, snappedY } = snappedPosition
     if (isSnappedToHorizontalGrid.value) {
-      updateNoteTarget.x = snappedX
+      const { legalNoteStartPosition } =
+        getLegalNoteStartPositionAndWidthInWorkspace(
+          {
+            noteHorizontalStartPosition: snappedX,
+            noteWidth: updateNoteTarget.width,
+          },
+          workspace,
+        )
+      updateNoteTarget.x = legalNoteStartPosition
     } else {
-      updateNoteTarget.x = x - mousedownXInNote
+      const { legalNoteStartPosition } =
+        getLegalNoteStartPositionAndWidthInWorkspace(
+          {
+            noteHorizontalStartPosition: x - mousedownXInNote,
+            noteWidth: updateNoteTarget.width,
+          },
+          workspace,
+        )
+      updateNoteTarget.x = legalNoteStartPosition
     }
     updateNoteTarget.y = snappedY
     updateNoteTarget.pitchName = snappedPitchName
@@ -391,6 +450,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     })
   }
 
+  function getLegalNoteWidthInWorkspace() {}
   function stretchNoteWidth({
     id,
     workspaceId,
@@ -412,8 +472,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       maxMovementRegionWidth === undefined
     )
       return
-    const noteItemsMap =
-      workspaceStore.workspaceMap.get(workspaceId).noteItemsMap
+    const workspace = workspaceStore.workspaceMap.get(workspaceId)
+    const noteItemsMap = workspace.noteItemsMap
     const updateNoteTarget = noteItemsMap
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
@@ -456,7 +516,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
         }
       }
 
-      const maxWidth = initX + initWidth
+      const maxWidth = initX + initWidth - workspace.startPosition
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
       updateNoteTarget.x = newX
       updateNoteTarget.width = newWidth
@@ -474,7 +534,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       })
     } else {
       //right side drag
-      const maxWidth = maxMovementRegionWidth - initX
+      const maxWidth = workspace.startPosition + workspace.width - initX
       newWidth = initWidth + stretchXLength
 
       /*
