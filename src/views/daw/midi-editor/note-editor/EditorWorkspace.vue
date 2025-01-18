@@ -184,7 +184,7 @@ function triggerCustomizedInsertEvent(event) {
   background-color: #000000;
 }
 .note-editor-workspace {
-  overflow: auto;
+  overflow: hidden auto;
   scrollbar-width: none;
   width: 100%;
   height: v-bind(workspaceScrollContainerHeight + "px");
