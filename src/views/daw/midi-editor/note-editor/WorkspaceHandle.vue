@@ -51,16 +51,11 @@ function workspaceGrabbingHandler(e) {
         props.noteEditorRegionRef.getBoundingClientRect().left -
         mousedownPositionXInWorkSpace
 
-      if (
-        workspaceStartPosition >= 0 &&
-        workspaceStartPosition <=
-          props.notePadWidth - props.workspaceContainerWidth
-      ) {
-        workspaceStore.updateWorkspacePosition({
-          workspaceId: props.id,
-          startPosition: workspaceStartPosition,
-        })
-      }
+      workspaceStore.updateWorkspacePosition({
+        workspaceId: props.id,
+        startPosition: workspaceStartPosition,
+        positionScale: [0, props.notePadWidth - props.workspaceContainerWidth],
+      })
     },
     {
       signal: controller.signal,

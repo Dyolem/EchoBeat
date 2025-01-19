@@ -1,5 +1,13 @@
 <script setup>
-import { inject, onMounted, ref, useTemplateRef, watch } from "vue"
+import {
+  computed,
+  inject,
+  onMounted,
+  ref,
+  useTemplateRef,
+  watch,
+  watchEffect,
+} from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
@@ -66,19 +74,10 @@ watch(
   },
 )
 
-onMounted(() => {
-  watch(
-    () => props.notePosition,
-    (newPosition, oldPosition) => {
-      const [newX, newY] = newPosition.value
-      const [oldX, oldY] = oldPosition?.value ?? []
-      if (oldPosition && newX === oldX && newY === oldY) return
-      if (isLegalTranslateDistance(newX, newY) && editorNoteRef.value) {
-        editorNoteRef.value.style.transform = `translate(${newX - props.workspaceStartPosition}px,${newY}px)`
-      }
-    },
-    { deep: true, immediate: true },
-  )
+watchEffect(() => {
+  if (editorNoteRef.value) {
+    editorNoteRef.value.style.transform = `translate(${props.notePosition.value[0] - props.workspaceStartPosition}px,${props.notePosition.value[1]}px)`
+  }
 })
 
 let translateXDistance = 0

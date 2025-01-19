@@ -4,6 +4,7 @@ import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import NoteItem from "@/views/daw/midi-editor/note-editor/NoteItem.vue"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import WorkspaceHandle from "@/views/daw/midi-editor/note-editor/WorkspaceHandle.vue"
+import clearSelection from "@/utils/clearSelection.js"
 const noteItemStore = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
 
@@ -118,6 +119,76 @@ function triggerCustomizedInsertEvent(event) {
     )
   }
 }
+
+const isStretchable = ref(false)
+const workspaceScrollZoneRef = useTemplateRef("workspaceScrollZoneRef")
+function stretchableJudgement(event) {
+  // 鼠标触发区域的边缘宽度
+  const edgeWidth = 10
+  const workspace = workspaceStore.workspaceMap.get(props.id)
+  let mousemoveXInWorkspace =
+    event.clientX -
+    noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
+  if (
+    mousemoveXInWorkspace > edgeWidth &&
+    mousemoveXInWorkspace < workspace.width - edgeWidth
+  ) {
+    isStretchable.value = false
+    workspaceScrollZoneRef.value.style.cursor = "auto"
+  } else {
+    isStretchable.value = true
+    workspaceScrollZoneRef.value.style.cursor = "col-resize"
+  }
+}
+
+function stretchWorkspaceWidth(event) {
+  if (!isStretchable.value) return
+
+  const controller = new AbortController()
+  const selectionController = clearSelection()
+  const workspace = workspaceStore.workspaceMap.get(props.id)
+  const initWorkspaceStartPosition = workspace.startPosition
+  const initWorkspaceWidth = workspace.width
+  const { x: stretchStart } = props.getCursorPositionInNoteEditorRegion(event)
+  const mousedownXInNoteEditorWorkspaceContainer =
+    event.clientX -
+    noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
+
+  document.addEventListener(
+    "mousemove",
+    (event) => {
+      const { x: stretchEnd } = props.getCursorPositionInNoteEditorRegion(event)
+      workspaceStore.updateWorkspaceWidth({
+        workspaceId: props.id,
+        maxWidth: props.editorCanvasWidth,
+        minWidth: noteItemStore.noteWidth,
+        initWorkspaceStartPosition,
+        initWorkspaceWidth,
+        mousedownX: mousedownXInNoteEditorWorkspaceContainer,
+        stretchStart,
+        stretchEnd: stretchEnd,
+        stretchableDirection: {
+          leftSide: { positive: false, negative: true },
+          rightSide: { positive: true, negative: true },
+        },
+      })
+    },
+    {
+      signal: controller.signal,
+    },
+  )
+
+  document.addEventListener(
+    "mouseup",
+    () => {
+      controller.abort()
+      selectionController.abort()
+    },
+    {
+      once: true,
+    },
+  )
+}
 </script>
 
 <template>
@@ -142,7 +213,12 @@ function triggerCustomizedInsertEvent(event) {
       @mousedown="triggerCustomizedInsertEvent"
       @dblclick="triggerCustomizedInsertEvent"
     >
-      <div class="workspace-scroll-zone">
+      <div
+        class="workspace-scroll-zone"
+        ref="workspaceScrollZoneRef"
+        @mousemove="stretchableJudgement"
+        @mousedown="stretchWorkspaceWidth"
+      >
         <template
           class="note-editor-track"
           v-for="[pitchName, noteTrack] in noteItemsMap"

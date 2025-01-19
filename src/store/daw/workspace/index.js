@@ -179,38 +179,121 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       workspace.startPosition *= newZoomRatio / oldZoomRatio
     }
   }
-  function updateWorkspacePosition({ workspaceId, startPosition }) {
+  function updateWorkspacePosition({
+    workspaceId,
+    startPosition,
+    positionScale,
+    stretchableUpdate = false,
+  }) {
+    let oldWorkspacePosition = 0
+    let newWorkspacePosition = 0
+    const [minPosition, maxPosition] = positionScale
+    if (startPosition < minPosition || startPosition > maxPosition)
+      return [newWorkspacePosition, oldWorkspacePosition]
     const workspace = workspaceMap.value.get(workspaceId)
-    if (!workspace) return
+    if (!workspace) return [newWorkspacePosition, oldWorkspacePosition]
 
+    oldWorkspacePosition = workspace.startPosition
     const snapJudgedStartPosition = noteItemStore.isSnappedToHorizontalGrid
       ? noteItemStore.leftJustifyingGrid(startPosition)
       : startPosition
+    newWorkspacePosition = snapJudgedStartPosition
 
-    const noteItemsMap = workspace.noteItemsMap
-    for (const { noteItems } of noteItemsMap.values()) {
-      for (const noteItem of noteItems) {
-        const newX =
-          noteItem.x - workspace.startPosition + snapJudgedStartPosition
-        noteItem.x = newX
-        const newStartTime = noteItemStore.getStartTime(newX)
+    if (newWorkspacePosition === oldWorkspacePosition)
+      return [newWorkspacePosition, oldWorkspacePosition]
 
-        noteItem.startTime = newStartTime
-        audioStore.adjustNodeStartAndLastTime({
-          id: noteItem.id,
-          startTime: newStartTime,
-          duration: noteItem.duration,
-          pitchName: noteItem.pitchName,
-          audioContext: noteItem.audioContext,
-        })
+    if (!stretchableUpdate) {
+      const noteItemsMap = workspace.noteItemsMap
+      for (const { noteItems } of noteItemsMap.values()) {
+        for (const noteItem of noteItems) {
+          let newX = noteItem.x - oldWorkspacePosition + snapJudgedStartPosition
+
+          noteItem.x = newX
+          const newStartTime = noteItemStore.getStartTime(newX)
+          noteItem.startTime = newStartTime
+          audioStore.adjustNodeStartAndLastTime({
+            id: noteItem.id,
+            startTime: newStartTime,
+            duration: noteItem.duration,
+            pitchName: noteItem.pitchName,
+            audioContext: noteItem.audioContext,
+          })
+        }
       }
     }
     workspace.startPosition = snapJudgedStartPosition
+    return [newWorkspacePosition, oldWorkspacePosition]
+  }
+
+  function updateWorkspaceWidth({
+    workspaceId,
+    maxWidth,
+    minWidth,
+    initWorkspaceStartPosition,
+    initWorkspaceWidth,
+    mousedownX,
+    stretchStart,
+    stretchEnd,
+    stretchableDirection = {
+      leftSide: { positive: true, negative: true },
+      rightSide: { positive: true, negative: true },
+    },
+  }) {
+    const workspace = workspaceMap.value.get(workspaceId)
+    const { leftSide, rightSide } = stretchableDirection
+    const middlePoint = initWorkspaceWidth / 2
+    let newWidth = workspace.width
+    let newX = initWorkspaceStartPosition
+    const stretchedLength = stretchEnd - stretchStart
+    const edgeTriggerWidth = 2
+    //由于拖拽吸附是左对齐，光标移动过快会导致缺失关键点判断，比如在40px像素时，note需要从20吸附至40，如果光标移动过快，
+    //光标的两次判断是39像素和41像素判断一次，39像素未达到吸附阈值，而41像素虽然达到，但是由于下面的判断语句，如果不加上额外的缓冲值就会结束本次应该吸附的判断
+    //如果后续拖拽吸附可能改为右对齐，需要重新梳理这里的逻辑
+    if (mousedownX < middlePoint) {
+      //left side stretch
+      if (
+        leftSide.positive === stretchedLength >= -edgeTriggerWidth ||
+        leftSide.negative === stretchedLength <= edgeTriggerWidth
+      ) {
+        newX = initWorkspaceStartPosition + stretchedLength
+
+        const [newWorkspacePosition, oldWorkspacePosition] =
+          updateWorkspacePosition({
+            workspaceId,
+            startPosition: newX,
+            positionScale: [0, maxWidth - initWorkspaceWidth],
+            stretchableUpdate: true,
+          })
+
+        if (newWorkspacePosition !== oldWorkspacePosition) {
+          newWidth = Math.min(
+            Math.max(
+              newWidth - (newWorkspacePosition - oldWorkspacePosition),
+              minWidth,
+            ),
+            maxWidth,
+          )
+        }
+      }
+    } else {
+      //right side stretch
+      if (
+        rightSide.positive === stretchedLength >= -edgeTriggerWidth ||
+        rightSide.negative === stretchedLength <= edgeTriggerWidth
+      ) {
+        newWidth = Math.min(
+          Math.max(initWorkspaceWidth + stretchedLength, minWidth),
+          maxWidth,
+        )
+      }
+    }
+    workspace.width = newWidth
   }
   return {
     workspaceMap,
     createWorkspace,
     updateWorkspacePosition,
+    updateWorkspaceWidth,
     patchUpdateWorkspaceWithZoomRatio,
   }
 })
