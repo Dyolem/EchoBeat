@@ -444,7 +444,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     })
   }
 
-  function getLegalNoteWidthInWorkspace() {}
   function stretchNoteWidth({
     id,
     workspaceId,
@@ -453,7 +452,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     initWidth,
     mousedownStartX,
     initX,
-    maxMovementRegionWidth,
   }) {
     if (
       id === undefined ||
@@ -462,8 +460,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       stretchXLength === undefined ||
       initWidth === undefined ||
       initX === undefined ||
-      mousedownStartX === undefined ||
-      maxMovementRegionWidth === undefined
+      mousedownStartX === undefined
     )
       return
     const workspace = workspaceStore.workspaceMap.get(workspaceId)
@@ -614,6 +611,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     isSnappedToHorizontalGrid,
     leftJustifyingGrid,
     topJustifyingGrid,
+    noteWidth,
     noteHeight,
     noteItemsMap,
     getStartTime,
