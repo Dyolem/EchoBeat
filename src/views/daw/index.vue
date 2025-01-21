@@ -1,9 +1,8 @@
 <script setup>
 import { debounce } from "@/utils/debounce.js"
 import EditorHeader from "@/views/daw/header/index.vue"
-import Editor from "@/views/daw/editor-template/index.vue"
-import DrawerEditor from "@/views/daw/drawer-editor/index.vue"
 import MidiEditor from "@/views/daw/midi-editor/index.vue"
+import MixTrackEditor from "@/views/daw/mix-track-editor/index.vue"
 
 import { computed, onMounted, onUnmounted, ref, watchEffect } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
@@ -56,11 +55,11 @@ onUnmounted(() => {
     </header>
     <main class="editor-main">
       <div class="editor-side-bar"></div>
-      <Editor
-        :id="mainEditorId"
-        :editor-view-height="mainEditorViewHeight"
-        :editor-view-width="mainEditorViewWidth"
-      />
+      <MixTrackEditor
+        :main-editor-id="mainEditorId"
+        :main-editor-view-width="mainEditorViewWidth"
+        :main-editor-view-height="mainEditorViewHeight"
+      ></MixTrackEditor>
     </main>
     <footer class="footer">
       <button @click="isOpenDrawerEditor = !isOpenDrawerEditor">
