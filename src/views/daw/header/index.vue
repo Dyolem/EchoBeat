@@ -84,7 +84,7 @@ async function playAudio() {
     }
     await audioStore.generateAudioNode(
       audioStore.noteBufferSourceMap,
-      audioStore.noteBufferToGainMap,
+      audioStore.fadeGainNodeMap,
       accurateTime.value,
     )
   } else {

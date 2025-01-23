@@ -40,9 +40,9 @@ export const useAudioStore = defineStore("audio", () => {
   audioGeneratorStore.preCreateBuffer(audioContext.value)
   const gainNodesMap = ref(new Map()) // 存储每个 pitchName 对应的 GainNode，会有多个noteBufferToGainNode来链接一个GainNode
   const noteBufferSourceMap = ref(new Map()) //单个音符对应的音频节点映射表
-  const noteBufferToGainMap = ref(new Map()) //用于处理单个音符尾音淡出的增益节点的映射表
+  const fadeGainNodeMap = ref(new Map()) //用于处理单个音符尾音淡出的增益节点的映射表
 
-  const audioBufferSourceNodeMap = new Map()
+  const audioBufferSourceNodeMap = new Map() //根据note的id存储所有对应的音频节点
 
   async function createBufferSourceNode({ id, pitchName, audioContext }) {
     const audioBuffer = audioGeneratorStore.fetchPreLoadedBuffer(pitchName)
@@ -54,7 +54,7 @@ export const useAudioStore = defineStore("audio", () => {
       midiNumber,
       audioGeneratorStore.sampleMap,
     )
-    const fadeGainNode = noteBufferToGainMap.value.get(id)
+    const fadeGainNode = fadeGainNodeMap.value.get(id)
     audioBufferSourceNode.connect(fadeGainNode)
     return audioBufferSourceNode
   }
@@ -62,6 +62,7 @@ export const useAudioStore = defineStore("audio", () => {
     const { id, pitchName, startTime, duration, audioContext } = noteInfo
     const gainNode = audioContext.createGain()
     gainNodesMap.value.set(pitchName, gainNode)
+    console.log(gainNodesMap.value)
     gainNode.connect(audioContext.destination) // 连接到目标
 
     console.log(startTime, duration)
@@ -69,7 +70,7 @@ export const useAudioStore = defineStore("audio", () => {
     // 创建 BufferSource 和 GainNode
     const fadeGainNode = audioContext.createGain()
     fadeGainNode.connect(gainNode)
-    noteBufferToGainMap.value.set(id, fadeGainNode)
+    fadeGainNodeMap.value.set(id, fadeGainNode)
 
     noteBufferSourceMap.value.set(id, {
       pitchName,
@@ -87,7 +88,7 @@ export const useAudioStore = defineStore("audio", () => {
 
   async function generateAudioNode(
     noteBufferSourceMap,
-    noteBufferToGainMap,
+    fadeGainNodeMap,
     timelinePlayTime,
   ) {
     for (const [id, noteBufferSourceInstance] of noteBufferSourceMap) {
@@ -119,7 +120,7 @@ export const useAudioStore = defineStore("audio", () => {
         audioContext,
       })
       audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
-      const fadeGainNode = noteBufferToGainMap.get(id)
+      const fadeGainNode = fadeGainNodeMap.get(id)
       const fadeDuration = 0.1 // 淡出持续时间（秒）
       const fadeOutStartTime =
         audioContext.currentTime + startTime + duration - fadeDuration // 淡出开始时间
@@ -188,22 +189,20 @@ export const useAudioStore = defineStore("audio", () => {
   // 动态调整链路
   function removeNodeFromPitchName(id, pitchName) {
     const gainNode = gainNodesMap.value.get(pitchName)
-    const nodeToRemove = noteBufferToGainMap.value.get(id)
-    if (gainNode) {
-      console.log("disconnect")
-      nodeToRemove.disconnect(gainNode) // 断开子节点
-    }
-
-    const audioBufferSourceNode = audioBufferSourceNodeMap.get(id)
-    if (audioBufferSourceNode) {
+    noteBufferSourceMap.value.delete(id)
+    if (audioBufferSourceNodeMap.has(id)) {
+      const audioBufferSourceNode = audioBufferSourceNodeMap.get(id)
       audioBufferSourceNode.disconnect()
+      audioBufferSourceNodeMap.delete(id)
+    }
+    const fadeGainNodeToRemove = fadeGainNodeMap.value.get(id)
+    if (gainNode) {
+      fadeGainNodeToRemove.disconnect(gainNode) // 断开子节点
+      fadeGainNodeMap.value.delete(id)
     }
   }
   function stopAllNodes() {
-    for (const [
-      id,
-      audioBufferSourceNode,
-    ] of audioBufferSourceNodeMap.entries()) {
+    for (const audioBufferSourceNode of audioBufferSourceNodeMap.values()) {
       audioBufferSourceNode.stop()
     }
 
@@ -213,7 +212,7 @@ export const useAudioStore = defineStore("audio", () => {
     audioContext,
     gainNodesMap,
     noteBufferSourceMap,
-    noteBufferToGainMap,
+    fadeGainNodeMap,
     // updateInstrumentAudioNode,
     generateAudioNode,
     stopAllNodes,
