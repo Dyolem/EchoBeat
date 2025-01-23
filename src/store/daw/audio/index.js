@@ -84,12 +84,6 @@ export const useAudioStore = defineStore("audio", () => {
       duration,
       audioContext,
     })
-    const audioBufferSourceNode = await createBufferSourceNode({
-      id,
-      pitchName,
-      audioContext,
-    })
-    audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
   }
 
   async function generateAudioNode(
