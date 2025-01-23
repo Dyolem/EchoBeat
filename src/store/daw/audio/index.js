@@ -38,7 +38,9 @@ export const useAudioStore = defineStore("audio", () => {
     [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, instrumentsAudioNodeMap],
   ])
   audioGeneratorStore.preCreateBuffer(audioContext.value)
-  const gainNodesMap = ref(new Map()) // 存储每个 pitchName 对应的 GainNode，会有多个noteBufferToGainNode来链接一个GainNode
+  // 存储每个 pitchName 对应的 GainNode，由于同属于一个pitchName的note元素会有多个，
+  // 会有多个fadeGainNode来链接一个GainNode
+  const gainNodesMap = ref(new Map())
   const noteBufferSourceMap = ref(new Map()) //单个音符对应的音频节点映射表
   const fadeGainNodeMap = ref(new Map()) //用于处理单个音符尾音淡出的增益节点的映射表
 
@@ -60,10 +62,14 @@ export const useAudioStore = defineStore("audio", () => {
   }
   async function insertSourceNodeAndGainNode(noteInfo) {
     const { id, pitchName, startTime, duration, audioContext } = noteInfo
-    const gainNode = audioContext.createGain()
-    gainNodesMap.value.set(pitchName, gainNode)
-    console.log(gainNodesMap.value)
-    gainNode.connect(audioContext.destination) // 连接到目标
+    let gainNode
+    if (!gainNodesMap.value.has(pitchName)) {
+      gainNode = audioContext.createGain()
+      gainNodesMap.value.set(pitchName, gainNode)
+      gainNode.connect(audioContext.destination) // 连接到目标
+    } else {
+      gainNode = gainNodesMap.value.get(pitchName)
+    }
 
     console.log(startTime, duration)
 
