@@ -82,24 +82,46 @@ async function playAudio() {
     } else {
       controller = resume(audioContext, trackRulerStore.totalTime)
     }
-    await audioStore.generateAudioNode(
-      audioStore.noteBufferSourceMap,
-      audioStore.fadeGainNodeMap,
-      accurateTime.value,
-    )
+    // await audioStore.generateAudioNode({
+    //   noteBufferSourceMap: audioStore.noteBufferSourceMap,
+    //   fadeGainNodeMap: audioStore.fadeGainNodeMap,
+    //   timelinePlayTime: accurateTime.value,
+    // })
   } else {
     if (audioContext) {
       pause(audioContext, controller)
     }
   }
 }
-function queryCurrentTime(audioContext, signal, anyStartTime = 0, maxTime) {
+
+let checkPoint = 0
+function queryCurrentTime({
+  audioContext,
+  signal,
+  anyStartTime = 0,
+  timeInterval = 2,
+  maxTime,
+} = {}) {
   if (!audioContext) return
-  console.log(signal.aborted)
+  // console.log(signal.aborted)
+
+  let lastCheckPoint = audioContext.currentTime + anyStartTime
   requestAnimationFrame(() => {
     const time = audioContext.currentTime + anyStartTime
+    const currentCheckPoint = time
     trackRulerStore.timelineCurrentTime = time
     trackRulerStore.synchronizeStateWithCurrentTime(time)
+    if (lastCheckPoint <= checkPoint && currentCheckPoint >= checkPoint) {
+      console.log("generate")
+      checkPoint += timeInterval
+      audioStore.generateAudioNode({
+        noteBufferSourceMap: audioStore.noteBufferSourceMap,
+        fadeGainNodeMap: audioStore.fadeGainNodeMap,
+        timelinePlayTime: accurateTime.value,
+        generableAudioTimeEnd: accurateTime.value + timeInterval,
+      })
+    }
+
     if (signal.aborted) return
     if (time > maxTime) {
       // queryCurrentTime(audioContext, AbortSignal.abort(), anyStartTime, maxTime)
@@ -108,14 +130,26 @@ function queryCurrentTime(audioContext, signal, anyStartTime = 0, maxTime) {
       return
     }
 
-    queryCurrentTime(audioContext, signal, anyStartTime, maxTime)
+    queryCurrentTime({
+      audioContext,
+      signal,
+      anyStartTime,
+      timeInterval,
+      maxTime,
+    })
   })
 }
 function initPlay({ anyStartTime, maxTime }) {
   isPlaying.value = true
   const controller = new AbortController()
   const audioContext = new AudioContext()
-  queryCurrentTime(audioContext, controller.signal, anyStartTime, maxTime)
+  checkPoint = audioContext.currentTime + anyStartTime
+  queryCurrentTime({
+    audioContext,
+    signal: controller.signal,
+    anyStartTime,
+    maxTime,
+  })
   return { audioContext, controller }
 }
 function pause(audioContext, controller) {
@@ -129,14 +163,16 @@ function resume(audioContext, maxTime) {
   if (!audioContext) return
   isPlaying.value = true
   const suspendTime = audioContext.currentTime
+  const anyStartTime = accurateTime.value - suspendTime
   audioContext.resume()
+  checkPoint = audioContext.currentTime + anyStartTime
   controller = new AbortController()
-  queryCurrentTime(
+  queryCurrentTime({
     audioContext,
-    controller.signal,
-    accurateTime.value - suspendTime,
+    signal: controller.signal,
+    anyStartTime,
     maxTime,
-  )
+  })
   return controller
 }
 function reset(intervalId) {
