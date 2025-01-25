@@ -82,11 +82,6 @@ async function playAudio() {
     } else {
       controller = resume(audioContext, trackRulerStore.totalTime)
     }
-    // await audioStore.generateAudioNode({
-    //   noteBufferSourceMap: audioStore.noteBufferSourceMap,
-    //   fadeGainNodeMap: audioStore.fadeGainNodeMap,
-    //   timelinePlayTime: accurateTime.value,
-    // })
   } else {
     if (audioContext) {
       pause(audioContext, controller)
@@ -116,7 +111,6 @@ function queryCurrentTime({
       checkPoint += timeInterval
       audioStore.generateAudioNode({
         noteBufferSourceMap: audioStore.noteBufferSourceMap,
-        fadeGainNodeMap: audioStore.fadeGainNodeMap,
         timelinePlayTime: accurateTime.value,
         generableAudioTimeEnd: accurateTime.value + timeInterval,
       })

@@ -38,15 +38,17 @@ export const useAudioStore = defineStore("audio", () => {
     [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, instrumentsAudioNodeMap],
   ])
   audioGeneratorStore.preCreateBuffer(audioContext.value)
-  // 存储每个 pitchName 对应的 GainNode，由于同属于一个pitchName的note元素会有多个，
-  // 会有多个fadeGainNode来链接一个GainNode
-  const gainNodesMap = ref(new Map())
-  const noteBufferSourceMap = ref(new Map()) //单个音符对应的音频节点映射表
-  const fadeGainNodeMap = ref(new Map()) //用于处理单个音符尾音淡出的增益节点的映射表
 
-  const audioBufferSourceNodeMap = new Map() //根据note的id存储所有对应的音频节点
+  /**
+   * 以下Map结构的键均为note元素的id
+   */
+  const noteBufferSourceMap = ref(new Map()) //单个音符对应的音频节点映射表,包含创建源节点的必要信息
+  const audioBufferSourceNodeMap = new Map() //根据note的id存储所有创建的对应的音频节点
+  const velocityGainNodesMap = new Map() //用于处理单个音符起始音量（按压力度）的增益节点的映射表
+  const fadeGainNodeMap = new Map() //用于处理单个音符尾音淡出的增益节点的映射表
+  const audioControllerMap = new Map() //用于控制设置在音频源节点的ended事件处理器函数的信号控制器
 
-  async function createBufferSourceNode({ id, pitchName, audioContext }) {
+  function createBufferSourceNode({ id, pitchName, audioContext }) {
     const audioBuffer = audioGeneratorStore.fetchPreLoadedBuffer(pitchName)
     const audioBufferSourceNode = audioContext.createBufferSource()
     audioBufferSourceNode.buffer = audioBuffer
@@ -56,27 +58,27 @@ export const useAudioStore = defineStore("audio", () => {
       midiNumber,
       audioGeneratorStore.sampleMap,
     )
-    const fadeGainNode = fadeGainNodeMap.value.get(id)
-    audioBufferSourceNode.connect(fadeGainNode)
+    audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
     return audioBufferSourceNode
   }
-  async function insertSourceNodeAndGainNode(noteInfo) {
+  function createFadeGainNode({ id, pitchName, audioContext }) {
+    const fadeGainNode = fadeGainNodeMap.get(id) ?? audioContext.createGain()
+    fadeGainNodeMap.set(id, fadeGainNode)
+    return fadeGainNode
+  }
+
+  function createVelocityGainNode({ id, audioContext }) {
+    const velocityGainNode =
+      velocityGainNodesMap.get(id) ?? audioContext.createGain()
+    velocityGainNode.connect(audioContext.destination)
+    velocityGainNodesMap.set(id, velocityGainNode)
+
+    return velocityGainNode
+  }
+
+  function insertSourceNodeAndGainNode(noteInfo) {
     const { id, pitchName, startTime, duration, audioContext } = noteInfo
-    let gainNode
-    if (!gainNodesMap.value.has(pitchName)) {
-      gainNode = audioContext.createGain()
-      gainNodesMap.value.set(pitchName, gainNode)
-      gainNode.connect(audioContext.destination) // 连接到目标
-    } else {
-      gainNode = gainNodesMap.value.get(pitchName)
-    }
-
     console.log(startTime, duration)
-
-    // 创建 BufferSource 和 GainNode
-    const fadeGainNode = audioContext.createGain()
-    fadeGainNode.connect(gainNode)
-    fadeGainNodeMap.value.set(id, fadeGainNode)
 
     noteBufferSourceMap.value.set(id, {
       pitchName,
@@ -86,14 +88,13 @@ export const useAudioStore = defineStore("audio", () => {
     })
   }
 
-  const audioControllerMap = new Map()
-  // const toBePlayedAudioBufferSourceNodeIdSet = new Set()
-  async function generateAudioNode({
+  function generateAudioNode({
     noteBufferSourceMap,
-    fadeGainNodeMap,
     timelinePlayTime,
     generableAudioTimeEnd,
   }) {
+    const mixingGainNode = audioContext.value.createGain()
+    mixingGainNode.connect(audioContext.value.destination)
     for (const [id, noteBufferSourceInstance] of noteBufferSourceMap) {
       let startTime = 0
       let duration = 0
@@ -119,13 +120,15 @@ export const useAudioStore = defineStore("audio", () => {
         startTime = _startTime - timelinePlayTime
         duration = _duration
       }
-      const audioBufferSourceNode = await createBufferSourceNode({
+
+      if (audioControllerMap.has(id)) continue
+      const audioBufferSourceNode = createBufferSourceNode({
         id,
         pitchName,
         audioContext,
       })
+      const velocityGainNode = createVelocityGainNode({ id, audioContext })
       const audioController = new AbortController()
-      if (audioControllerMap.has(id)) continue
       audioControllerMap.set(id, audioController)
       audioBufferSourceNode.addEventListener(
         "ended",
@@ -133,42 +136,41 @@ export const useAudioStore = defineStore("audio", () => {
           console.log("ended")
           audioControllerMap.get(id).abort()
           audioControllerMap.delete(id)
+          audioBufferSourceNode.disconnect()
           audioBufferSourceNodeMap.delete(id)
+          fadeGainNodeMap.get(id)?.disconnect()
+          fadeGainNodeMap.delete(id)
+          velocityGainNodesMap.get(id)?.disconnect()
+          velocityGainNodesMap.delete(id)
         },
         {
           signal: audioController.signal,
         },
       )
-      audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
+      const fadeGainNode = createFadeGainNode({ id, pitchName, audioContext })
       const audioStartTime = audioContext.currentTime + startTime
-      const fadeGainNode = fadeGainNodeMap.get(id)
-      const fadeInDuration = 0.01 // 淡入效果持续时间（秒）
 
-      const fadeInStartTime = audioStartTime // 淡入开始时间
       if (isPlayedInMiddle) {
         console.log("middle")
-
-        // 设置初始音量为 0
-        fadeGainNode.gain.setValueAtTime(0.01, fadeInStartTime)
-
-        // 线性淡入到音量 1
-        fadeGainNode.gain.exponentialRampToValueAtTime(
-          1,
-          fadeInStartTime + fadeInDuration,
-        )
-      } else {
-        fadeGainNode.gain.setValueAtTime(1, fadeInStartTime)
+        const fadeInStartTime = audioStartTime // 淡入开始时间
+        const fadeInDuration = 0.01 // 淡入效果持续时间（秒）
+        gainNodeFadeIn(fadeGainNode, {
+          startTime: fadeInStartTime,
+          duration,
+          fadeInDuration,
+        })
       }
-      // gainNodeFadeOut(fadeGainNode, { startTime: audioStartTime, duration })
-      const fadeOutDuration = 0.5 // 淡出效果持续时间（秒）
-      const fadeOutStopTime = audioStartTime + duration + fadeOutDuration
-      const fadeOutStartTime = fadeOutStopTime - fadeOutDuration // 淡出开始时间
-      fadeGainNode.gain.setValueAtTime(
-        fadeGainNode.gain.value,
-        fadeOutStartTime,
-      ) // 保持音量为 1
-      fadeGainNode.gain.linearRampToValueAtTime(0, fadeOutStopTime) // 淡出至 0
-      // fadeGainNode.gain.setValueAtTime(1, fadeOutStopTime + 0.5)
+      const fadeOutDuration = 0.2
+      gainNodeFadeOut(fadeGainNode, {
+        startTime: audioStartTime,
+        duration,
+        fadeOutDuration,
+      })
+      // velocityGainNode 和fadeGainNode的连接顺序是有讲究的
+      audioBufferSourceNode
+        .connect(fadeGainNode)
+        .connect(velocityGainNode)
+        .connect(mixingGainNode)
       audioBufferSourceNode.start(
         audioStartTime,
         offsetTime,
@@ -177,22 +179,27 @@ export const useAudioStore = defineStore("audio", () => {
     }
   }
 
-  // function gainNodeFadeOut(fadeGainNode, { startTime, duration }) {
-  //   const fadeOutDuration = 0.1 // 淡出效果持续时间（秒）
-  //   const fadeOutStopTime = startTime + duration
-  //   const fadeOutStartTime = fadeOutStopTime - fadeOutDuration // 淡出开始时间
-  //   fadeGainNode.gain.setValueAtTime(1, fadeOutStartTime) // 保持音量为 1
-  //   fadeGainNode.gain.exponentialRampToValueAtTime(0.01, fadeOutStopTime) // 淡出至 0
-  // }
+  function gainNodeFadeIn(
+    fadeGainNode,
+    { startTime, duration, fadeInDuration = 0.01 },
+  ) {
+    fadeInDuration = Math.min(duration, fadeInDuration)
+    const fadeInStopTime = startTime + fadeInDuration
+    const fadeInStartTime = fadeInStopTime - fadeInDuration // 淡出开始时间
+    fadeGainNode.gain.setValueAtTime(0, fadeInStartTime) // 保持音量为 1
+    fadeGainNode.gain.linearRampToValueAtTime(1, fadeInStopTime)
+  }
 
-  function gainNodeFadeOut(fadeGainNode, { startTime, duration }) {
-    const fadeOutDuration = 0.1 // 淡出效果持续时间（秒）
-    const fadeOutStopTime = startTime + duration
+  function gainNodeFadeOut(
+    fadeGainNode,
+    { startTime, duration, fadeOutDuration = 0.2 },
+  ) {
+    const fadeOutStopTime = startTime + duration + fadeOutDuration
     const fadeOutStartTime = fadeOutStopTime - fadeOutDuration // 淡出开始时间
-    fadeGainNode.gain.setValueAtTime(1, fadeOutStartTime) // 保持音量为 1
+    fadeGainNode.gain.setValueAtTime(fadeGainNode.gain.value, fadeOutStartTime) // 保持音量为 1
     fadeGainNode.gain.exponentialRampToValueAtTime(0.01, fadeOutStopTime) // 淡出至 0
   }
-  async function adjustNodeStartAndLastTime({
+  function adjustNodeStartAndLastTime({
     id,
     newId,
     startTime,
@@ -200,17 +207,6 @@ export const useAudioStore = defineStore("audio", () => {
     pitchName,
     audioContext,
   } = {}) {
-    // if (
-    //   id === undefined ||
-    //   pitchName === undefined ||
-    //   !pitchAudioSourceNodeInstance ||
-    //   !fadeGainNode ||
-    //   startTime === undefined ||
-    //   lastTime === undefined ||
-    //   !(audioContext instanceof AudioContext)
-    // )
-    //   return
-
     const noteBufferSourceInstance = noteBufferSourceMap.value.get(id)
     if (!noteBufferSourceInstance) return
     if (newId !== undefined) {
@@ -222,7 +218,7 @@ export const useAudioStore = defineStore("audio", () => {
       }
       noteBufferSourceMap.value.delete(id)
       noteBufferSourceMap.value.set(newId, newNoteBufferSourceInstance)
-      await insertSourceNodeAndGainNode({
+      insertSourceNodeAndGainNode({
         id: newId,
         ...newNoteBufferSourceInstance,
       })
@@ -234,46 +230,30 @@ export const useAudioStore = defineStore("audio", () => {
         audioContext: audioContext,
       })
     }
-
-    const oldAudioBufferSourceNode = audioBufferSourceNodeMap.get(id)
-    if (!oldAudioBufferSourceNode) return
-    oldAudioBufferSourceNode.disconnect()
-    audioBufferSourceNodeMap.delete(id)
   }
 
-  // 动态调整链路
   function removeNodeFromPitchName(id, pitchName) {
-    const gainNode = gainNodesMap.value.get(pitchName)
     noteBufferSourceMap.value.delete(id)
-    if (audioBufferSourceNodeMap.has(id)) {
-      const audioBufferSourceNode = audioBufferSourceNodeMap.get(id)
-      audioBufferSourceNode.disconnect()
-      audioBufferSourceNodeMap.delete(id)
-    }
-    const fadeGainNodeToRemove = fadeGainNodeMap.value.get(id)
-    if (gainNode) {
-      fadeGainNodeToRemove.disconnect(gainNode) // 断开子节点
-      fadeGainNodeMap.value.delete(id)
-    }
   }
   function stopAllNodes() {
     for (const [id, audioBufferSourceNode] of audioBufferSourceNodeMap) {
+      const fadeGainNode = fadeGainNodeMap.get(id)
+      if (!fadeGainNode) return
       const currentTime = audioBufferSourceNode.context.currentTime
-      const fadeGainNode = fadeGainNodeMap.value.get(id)
-      const duration = 0.1
-      fadeGainNode.gain.setValueAtTime(fadeGainNode.gain.value, currentTime) // 保持音量为 1
-      fadeGainNode.gain.linearRampToValueAtTime(0.01, currentTime + duration) // 淡出至 0
-      audioBufferSourceNode.stop(currentTime + duration)
+      const fadeOutDuration = 0.1
+      gainNodeFadeOut(fadeGainNode, {
+        startTime: currentTime,
+        duration: 0,
+        fadeOutDuration,
+      })
+      audioBufferSourceNode.stop(currentTime + fadeOutDuration)
     }
 
     audioBufferSourceNodeMap.clear()
   }
   return {
     audioContext,
-    gainNodesMap,
     noteBufferSourceMap,
-    fadeGainNodeMap,
-    // updateInstrumentAudioNode,
     generateAudioNode,
     stopAllNodes,
     removeNodeFromPitchName,
