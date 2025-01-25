@@ -1,10 +1,8 @@
 <script setup>
 import { useAudioStore } from "@/store/daw/audio/index.js"
-import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { computed, ref } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
-const noteItemStore = useNoteItemStore()
 
 const audioStore = useAudioStore()
 const accurateTime = computed(() => {
@@ -13,61 +11,11 @@ const accurateTime = computed(() => {
 const timeDisplay = computed(() => {
   return accurateTime.value.toFixed(1)
 })
-let anyStartTime = 0
-let audioContext = null
-let intervalId = null
-const isPlaying = ref(false)
-const hasDragged = ref(false)
 
-// function playAudio() {
-//   // audio.play()
-//   isPlaying.value = !isPlaying.value
-//   if (isPlaying.value) {
-//     if (!audioContext) {
-//       const { audioContext: _audioContext, intervalId: _intervalId } =
-//         initPlay()
-//       audioContext = _audioContext
-//       intervalId = _intervalId
-//     } else {
-//       resume(audioContext)
-//     }
-//   } else {
-//     if (audioContext) {
-//       pause(audioContext, intervalId)
-//     }
-//   }
-// }
-// function queryCurrentTime(audioContext, anyStartTime = 0) {
-//   if (!audioContext) return
-//   let isEnded = false
-//   const intervalId = setInterval(() => {
-//     if (audioContext.currentTime >= 100) {
-//       clearTimeout(intervalId)
-//       isEnded = true
-//     }
-//     const time = audioContext.currentTime + anyStartTime
-//     trackRulerStore.timelineCurrentTime = time
-//     trackRulerStore.synchronizeStateWithCurrentTime(time)
-//   }, 10)
-//   return isEnded ? null : intervalId
-// }
-// function initPlay(anyStartTime) {
-//   const audioContext = new AudioContext()
-//   const intervalId = queryCurrentTime(audioContext, anyStartTime)
-//   return { audioContext, intervalId }
-// }
-// function pause(audioContext, intervalId) {
-//   if (!audioContext) return
-//   audioContext.suspend()
-//   console.log(intervalId)
-//   if (intervalId !== null) clearInterval(intervalId)
-// }
-// function resume(audioContext) {
-//   if (!audioContext) return
-//   audioContext.resume()
-//   intervalId = queryCurrentTime(audioContext)
-// }
+let audioContext = null
+const isPlaying = ref(false)
 let controller = null
+const dynamicGenerationTimeInterval = 2
 async function playAudio() {
   if (!isPlaying.value) {
     if (!audioContext) {
@@ -94,12 +42,11 @@ function queryCurrentTime({
   audioContext,
   signal,
   anyStartTime = 0,
-  timeInterval = 2,
+  dynamicGenerationTimeInterval = 2,
   maxTime,
 } = {}) {
   if (!audioContext) return
   // console.log(signal.aborted)
-
   let lastCheckPoint = audioContext.currentTime + anyStartTime
   requestAnimationFrame(() => {
     const time = audioContext.currentTime + anyStartTime
@@ -107,18 +54,18 @@ function queryCurrentTime({
     trackRulerStore.timelineCurrentTime = time
     trackRulerStore.synchronizeStateWithCurrentTime(time)
     if (lastCheckPoint <= checkPoint && currentCheckPoint >= checkPoint) {
-      console.log("generate")
-      checkPoint += timeInterval
+      // console.log("generate")
+      checkPoint += dynamicGenerationTimeInterval
       audioStore.generateAudioNode({
         noteBufferSourceMap: audioStore.noteBufferSourceMap,
         timelinePlayTime: accurateTime.value,
-        generableAudioTimeEnd: accurateTime.value + timeInterval,
+        generableAudioTimeEnd:
+          accurateTime.value + dynamicGenerationTimeInterval,
       })
     }
 
     if (signal.aborted) return
     if (time > maxTime) {
-      // queryCurrentTime(audioContext, AbortSignal.abort(), anyStartTime, maxTime)
       audioContext.suspend()
       isPlaying.value = false
       return
@@ -128,7 +75,7 @@ function queryCurrentTime({
       audioContext,
       signal,
       anyStartTime,
-      timeInterval,
+      dynamicGenerationTimeInterval,
       maxTime,
     })
   })
@@ -143,6 +90,7 @@ function initPlay({ anyStartTime, maxTime }) {
     signal: controller.signal,
     anyStartTime,
     maxTime,
+    dynamicGenerationTimeInterval,
   })
   return { audioContext, controller }
 }
@@ -166,14 +114,9 @@ function resume(audioContext, maxTime) {
     signal: controller.signal,
     anyStartTime,
     maxTime,
+    dynamicGenerationTimeInterval,
   })
   return controller
-}
-function reset(intervalId) {
-  if (intervalId !== null) {
-    clearInterval(intervalId)
-  }
-  initPlay()
 }
 </script>
 
