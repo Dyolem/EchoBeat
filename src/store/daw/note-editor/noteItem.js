@@ -509,12 +509,14 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
       const maxWidth = initX + initWidth - workspace.startPosition
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
-      updateNoteTarget.x = newX
-      updateNoteTarget.width = newWidth
-      nextInsertedNoteWidth.value = newWidth
-
       const newStartTime = getStartTime(newX)
       const newDuration = getLastTime(newWidth)
+      updateNoteTarget.x = newX
+      updateNoteTarget.width = newWidth
+      updateNoteTarget.startTime = newStartTime
+      updateNoteTarget.duration = newDuration
+      nextInsertedNoteWidth.value = newWidth
+
       const audioContext = audioStore.audioContext
       audioStore.adjustNodeStartAndLastTime({
         id,
@@ -558,11 +560,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       }
 
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
-      updateNoteTarget.width = newWidth
-      nextInsertedNoteWidth.value = newWidth
-
       const newStartTime = getStartTime(updateNoteTarget.x)
       const newDuration = getLastTime(newWidth)
+      updateNoteTarget.width = newWidth
+      updateNoteTarget.startTime = newStartTime
+      updateNoteTarget.duration = newDuration
+      nextInsertedNoteWidth.value = newWidth
+
       const audioContext = audioStore.audioContext
       console.log("right")
       audioStore.adjustNodeStartAndLastTime({
