@@ -169,10 +169,15 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
       },
       { once: true },
     )
-    source.onended = () => {
-      activeControllers.delete(playSampleController)
-    }
-
+    source.addEventListener(
+      "ended",
+      () => {
+        activeControllers.delete(playSampleController)
+      },
+      {
+        once: true,
+      },
+    )
     return playSampleController
   }
 
