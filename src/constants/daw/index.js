@@ -71,21 +71,17 @@ export function generateNoteFrequencyMap(notes = NOTES_TABLE) {
     return Math.pow(2, (midiNumber - A4_POSITION) / 12) * A4_FREQUENCY
   }
 
-  // 填充音名与频率的映射（从 A0 到 C8）
+  // 填充音名与频率的映射
   for (let octave = 0; octave <= 8; octave++) {
     for (let i = 0; i < notes.length; i++) {
       const noteName = `${notes[i]}${octave}`
       const midiNumber = octave * 12 + i
-      if (midiNumber >= 21 && midiNumber <= 108) {
-        // 限制在钢琴音域范围内
+      if (midiNumber >= 0 && midiNumber <= 127) {
         const frequency = calculateFrequency(midiNumber)
         noteFrequencyMap.set(noteName, frequency.toFixed(2)) // 保留两位小数
       }
     }
   }
-
-  // 打印结果
-  console.log(noteFrequencyMap)
   return noteFrequencyMap
 }
 export const NOTE_FREQUENCY_MAP = generateNoteFrequencyMap()
