@@ -3,8 +3,16 @@ import { debounce } from "@/utils/debounce.js"
 import EditorHeader from "@/views/daw/header/index.vue"
 import MidiEditor from "@/views/daw/midi-editor/index.vue"
 import MixTrackEditor from "@/views/daw/mix-track-editor/index.vue"
+import AddTrackSidebar from "@/views/daw/add-track-sidebar/index.vue"
 
-import { computed, onMounted, onUnmounted, ref, watchEffect } from "vue"
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  provide,
+  ref,
+  watchEffect,
+} from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 
 const trackRulerStore = useTrackRulerStore()
@@ -46,6 +54,16 @@ onMounted(() => {
 onUnmounted(() => {
   controller.abort()
 })
+
+const selectedAudioTrackId = ref("")
+function updateSelectedAudioTrackId(newId) {
+  if (!newId) return
+  selectedAudioTrackId.value = newId
+}
+provide("selectedAudioTrackId", {
+  selectedAudioTrackId,
+  updateSelectedAudioTrackId,
+})
 </script>
 
 <template>
@@ -54,7 +72,9 @@ onUnmounted(() => {
       <EditorHeader />
     </header>
     <main class="editor-main">
-      <div class="editor-side-bar"></div>
+      <div class="editor-side-bar">
+        <AddTrackSidebar></AddTrackSidebar>
+      </div>
       <MixTrackEditor
         :main-editor-id="mainEditorId"
         :main-editor-view-width="mainEditorViewWidth"
@@ -91,7 +111,7 @@ onUnmounted(() => {
   position: relative;
   width: 100vw;
   display: flex;
-  height: v-bind(mainEditorHeight + "px");
+  height: v-bind(mainEditorViewHeight + "px");
   background-color: #9a6e3a;
 }
 .editor-side-bar {
@@ -100,6 +120,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   height: 100%;
   background-color: gray;
+  margin-right: 10px;
 }
 .drawer-box {
   position: absolute;

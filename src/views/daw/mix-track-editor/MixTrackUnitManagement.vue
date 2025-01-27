@@ -17,7 +17,6 @@ const props = defineProps({
     default: 1,
   },
 })
-const selectedId = ref("")
 const mixTrackManagementContainerWidth = computed(() => {
   return props.width * props.zoomRatio
 })
@@ -25,20 +24,15 @@ const mixTrackManagementContainerWidth = computed(() => {
 
 <template>
   <div class="mix-track-management-container">
-    <div
-      class="track-unit-grid"
+    <MixTrack
       v-for="[id, trackUnit] in mixTrackEditorStore.mixTrackUnitMap"
       :key="id"
+      :id="id"
+      :track-width="trackUnit.trackWidth * zoomRatio"
+      :track-height="trackUnit.trackHeight"
     >
-      <MixTrack
-        :id="id"
-        v-model:selected-id="selectedId"
-        :track-width="trackUnit.trackWidth * zoomRatio"
-        :track-height="trackUnit.trackHeight"
-      >
-        <template #mix-content-thumbnail> </template>
-      </MixTrack>
-    </div>
+      <template #mix-content-thumbnail> </template>
+    </MixTrack>
   </div>
 </template>
 
@@ -46,10 +40,5 @@ const mixTrackManagementContainerWidth = computed(() => {
 .mix-track-management-container {
   width: v-bind(mixTrackManagementContainerWidth + "px");
   height: v-bind(height + "px");
-}
-.track-unit-grid {
-  width: 100%;
-  height: fit-content;
-  background-color: rgba(140, 215, 255, 0.3);
 }
 </style>

@@ -1,4 +1,6 @@
 <script setup>
+import { inject } from "vue"
+
 const props = defineProps({
   id: {
     type: [Number, String],
@@ -18,21 +20,26 @@ const props = defineProps({
     default: "purple",
   },
 })
-const selectedId = defineModel("selectedId", {
-  type: [Number, String],
-  required: true,
-})
+const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
+  "selectedAudioTrackId",
+  {},
+)
 </script>
 
 <template>
   <div
-    class="mix-editor-track-container"
-    @click="selectedId = id"
-    :class="selectedId === id ? 'selected' : ''"
+    class="track-unit-grid"
+    :class="selectedAudioTrackId === id ? 'track-unit-grid-selected' : ''"
+    @click="() => updateSelectedAudioTrackId(id)"
   >
-    <div class="track-name"></div>
-    <div class="mix-content-thumbnail">
-      <slot name="mix-content-thumbnail"></slot>
+    <div
+      class="mix-editor-track-container"
+      :class="selectedAudioTrackId === id ? 'selected' : ''"
+    >
+      <div class="track-name"></div>
+      <div class="mix-content-thumbnail">
+        <slot name="mix-content-thumbnail"></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -43,6 +50,13 @@ const selectedId = defineModel("selectedId", {
   height: v-bind(trackHeight + "px");
   background-color: pink;
   border-radius: 4px;
+}
+.track-unit-grid {
+  width: 100%;
+  height: fit-content;
+}
+.track-unit-grid-selected {
+  background-color: rgba(140, 215, 255, 0.3);
 }
 .selected {
   outline: 1px solid #ffffff;

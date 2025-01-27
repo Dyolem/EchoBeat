@@ -9,6 +9,8 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       [
         "1",
         {
+          id: "1",
+          audioTrackName: "Instrument",
           trackWidth: 100,
           trackHeight: baseTrackHeight,
         },
@@ -16,6 +18,8 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       [
         "2",
         {
+          id: "2",
+          audioTrackName: "Base",
           trackWidth: 100,
           trackHeight: baseTrackHeight,
         },
