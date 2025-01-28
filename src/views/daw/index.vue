@@ -71,10 +71,7 @@ provide("selectedAudioTrackId", {
     <header>
       <EditorHeader />
     </header>
-    <main class="editor-main">
-      <div class="editor-side-bar">
-        <AddTrackSidebar></AddTrackSidebar>
-      </div>
+    <main>
       <MixTrackEditor
         :main-editor-id="mainEditorId"
         :main-editor-view-width="mainEditorViewWidth"
@@ -107,21 +104,7 @@ provide("selectedAudioTrackId", {
   --footer-height: 50px;
   --content-height: calc(100vh - var(--header-height) - var(--footer-height));
 }
-.editor-main {
-  position: relative;
-  width: 100vw;
-  display: flex;
-  height: v-bind(mainEditorViewHeight + "px");
-  background-color: #9a6e3a;
-}
-.editor-side-bar {
-  flex-grow: 1;
-  flex-basis: 100px;
-  flex-shrink: 0;
-  height: 100%;
-  background-color: gray;
-  margin-right: 10px;
-}
+
 .drawer-box {
   position: absolute;
   bottom: v-bind(footerHeight + "px");
