@@ -1,6 +1,6 @@
 <script setup>
 import { useAudioStore } from "@/store/daw/audio/index.js"
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
 
@@ -13,11 +13,11 @@ const timeDisplay = computed(() => {
 })
 
 let audioContext = null
-const isPlaying = ref(false)
+let isPlaying = false
 let controller = null
 const dynamicGenerationTimeInterval = 2
-async function playAudio() {
-  if (!isPlaying.value) {
+function playAudio() {
+  if (!isPlaying) {
     if (!audioContext) {
       const { audioContext: newAudioContext, controller: newController } =
         initPlay({
@@ -67,7 +67,7 @@ function queryCurrentTime({
     if (signal.aborted) return
     if (time > maxTime) {
       audioContext.suspend()
-      isPlaying.value = false
+      isPlaying = false
       return
     }
 
@@ -81,7 +81,7 @@ function queryCurrentTime({
   })
 }
 function initPlay({ anyStartTime, maxTime }) {
-  isPlaying.value = true
+  isPlaying = true
   const controller = new AbortController()
   const audioContext = new AudioContext()
   checkPoint = audioContext.currentTime + anyStartTime
@@ -96,14 +96,14 @@ function initPlay({ anyStartTime, maxTime }) {
 }
 function pause(audioContext, controller) {
   if (!audioContext) return
-  isPlaying.value = false
+  isPlaying = false
   audioContext.suspend()
   audioStore.stopAllNodes()
   controller.abort()
 }
 function resume(audioContext, maxTime) {
   if (!audioContext) return
-  isPlaying.value = true
+  isPlaying = true
   const suspendTime = audioContext.currentTime
   const anyStartTime = accurateTime.value - suspendTime
   audioContext.resume()
