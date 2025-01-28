@@ -15,6 +15,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  mainColor: {
+    type: String,
+    default: "#1E90FF",
+  },
   height: {
     type: Number,
     default: 90,
@@ -76,7 +80,7 @@ const serialNumbering = computed(() => {
   background-color: hsl(0, 0%, 8%);
 }
 .selected {
-  box-shadow: inset -4px 0 0 0 gold;
+  box-shadow: v-bind("`inset -4px 0 0 0 ${mainColor}`");
   background-color: hsl(0, 0%, 12%);
 }
 .controller-nav {
@@ -84,7 +88,6 @@ const serialNumbering = computed(() => {
   justify-content: space-between;
   width: 100%;
   height: 30px;
-  background-color: #31c27c;
 }
 .track-info {
   display: flex;
@@ -94,6 +97,10 @@ const serialNumbering = computed(() => {
   color: #ffffff;
   gap: 5px;
   user-select: none;
+}
+.track-type-icon {
+  font-size: 16px;
+  color: v-bind(mainColor);
 }
 .control-features {
   display: flex;

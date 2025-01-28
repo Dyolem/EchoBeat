@@ -1,7 +1,7 @@
 <script setup>
-import MixTrack from "@/views/daw/mix-track/index.vue"
+import MixTrackUnit from "@/views/daw/mix-track-editor/MixTrackUnit.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { computed, ref } from "vue"
+import { computed } from "vue"
 const mixTrackEditorStore = useMixTrackEditorStore()
 const props = defineProps({
   width: {
@@ -24,15 +24,16 @@ const mixTrackManagementContainerWidth = computed(() => {
 
 <template>
   <div class="mix-track-management-container">
-    <MixTrack
+    <MixTrackUnit
       v-for="[id, trackUnit] in mixTrackEditorStore.mixTrackUnitMap"
       :key="id"
       :id="id"
       :track-width="trackUnit.trackWidth * zoomRatio"
       :track-height="trackUnit.trackHeight"
+      :main-color="trackUnit.mainColor"
     >
       <template #mix-content-thumbnail> </template>
-    </MixTrack>
+    </MixTrackUnit>
   </div>
 </template>
 

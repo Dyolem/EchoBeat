@@ -1,8 +1,19 @@
-<script setup></script>
+<script setup>
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+const mixTrackEditorStore = useMixTrackEditorStore()
+
+function addAudioTrackHandler() {
+  mixTrackEditorStore.addAudioTrack({ audioTrackName: "Instrument" })
+}
+</script>
 
 <template>
   <div class="feature-bar">
-    <button class="add-track-button" title="Add Track (Shift + T)">
+    <button
+      class="add-track-button"
+      title="Add Track (Shift + T)"
+      @click="addAudioTrackHandler"
+    >
       <echo-tabler:plus class="add-icon"></echo-tabler:plus>
       Add Track
     </button>
@@ -11,11 +22,15 @@
 
 <style scoped>
 .feature-bar {
+  position: sticky;
+  top: 0;
   display: flex;
   align-items: center;
   width: 100%;
   height: 50px;
+  flex-shrink: 0;
   background-color: pink;
+  z-index: 1;
 }
 .add-track-button {
   --button-height: 30px;

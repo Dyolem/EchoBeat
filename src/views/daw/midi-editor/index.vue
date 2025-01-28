@@ -10,6 +10,10 @@ const props = defineProps({
   editorScrollTop: {
     type: Number,
   },
+  mainColor: {
+    type: String,
+    default: "#1E90FF",
+  },
 })
 const emit = defineEmits(["update:editorScrollTop"])
 

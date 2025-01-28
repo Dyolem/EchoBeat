@@ -17,7 +17,7 @@ const props = defineProps({
   },
   mainColor: {
     type: String,
-    default: "purple",
+    default: "#1E90FF",
   },
 })
 const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
@@ -48,7 +48,7 @@ const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
 .mix-editor-track-container {
   width: v-bind(trackWidth + "px");
   height: v-bind(trackHeight + "px");
-  background-color: pink;
+  background-color: v-bind(mainColor + "DD");
   border-radius: 4px;
 }
 .track-unit-grid {
@@ -56,7 +56,7 @@ const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
   height: fit-content;
 }
 .track-unit-grid-selected {
-  background-color: rgba(140, 215, 255, 0.3);
+  background-color: v-bind(mainColor + "22");
 }
 .selected {
   outline: 1px solid #ffffff;
