@@ -5,6 +5,7 @@ import NoteEditor from "@/views/daw/midi-editor/note-editor/index.vue"
 import { computed, inject, provide, ref } from "vue"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
 const editorGridParametersStore = useEditorGridParametersStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 
@@ -14,11 +15,10 @@ const props = defineProps({
   },
 })
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
-const fallbackMainColor = "#1E90FF"
 const mainColor = computed(() => {
   return (
     mixTrackEditorStore.mixTrackUnitMap.get(selectedAudioTrackId.value)
-      ?.mainColor ?? fallbackMainColor
+      ?.mainColor ?? FALLBACK_THEME_COLOR
   )
 })
 provide("mainColor", mainColor)
