@@ -271,6 +271,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       selectedAudioTrackId: audioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     })
+    if (!workspaceMap) return
     if (workspaceMap.size === 0) {
       createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
       workspaceNoteItemsMap = createdWorkspace.noteItemsMap

@@ -136,6 +136,7 @@ function insertNote({ x: insertX, y: insertY }) {
     },
     true,
   )
+  if (!insertedItemInfo) return
   noteMainSelectedId.value = insertedItemInfo.id
 
   audioGenerator

@@ -14,10 +14,12 @@ const props = defineProps({
   },
 })
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
+const fallbackMainColor = "#1E90FF"
 const mainColor = computed(() => {
-  if (selectedAudioTrackId.value === undefined) return "#1E90FF"
-  return mixTrackEditorStore.mixTrackUnitMap.get(selectedAudioTrackId.value)
-    .mainColor
+  return (
+    mixTrackEditorStore.mixTrackUnitMap.get(selectedAudioTrackId.value)
+      ?.mainColor ?? fallbackMainColor
+  )
 })
 provide("mainColor", mainColor)
 const emit = defineEmits(["update:editorScrollTop"])
