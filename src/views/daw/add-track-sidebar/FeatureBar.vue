@@ -1,9 +1,14 @@
 <script setup>
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { inject } from "vue"
 const mixTrackEditorStore = useMixTrackEditorStore()
 
+const { updateSelectedAudioTrackId } = inject("selectedAudioTrackId")
 function addAudioTrackHandler() {
-  mixTrackEditorStore.addAudioTrack({ audioTrackName: "Instrument" })
+  const newTrackId = mixTrackEditorStore.addAudioTrack({
+    audioTrackName: "Instrument",
+  })
+  updateSelectedAudioTrackId(newTrackId)
 }
 </script>
 

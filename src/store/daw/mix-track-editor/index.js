@@ -52,6 +52,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     trackFeatureMapStore.addTrackFeatureMap(newTrackId, {
       midiWorkspace: workspaceStore.createNewWorkspaceMap(),
     })
+    return newTrackId
   }
 
   function audioTrackUpdatedWithWorkspace({
