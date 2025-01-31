@@ -12,6 +12,7 @@ const props = defineProps({
     type: Number,
   },
 })
+const mainColor = inject("mainColor")
 const emit = defineEmits(["update:chromaticScaleScrollTop"])
 const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
 const octaveContainerRef = useTemplateRef("octaveContainerRef")
@@ -66,7 +67,7 @@ onMounted(() => {
   noteItemStore.octaveContainerInstance = octaveContainerRef.value
 })
 function playNote(target) {
-  target.style.backgroundColor = "purple"
+  target.style.backgroundColor = mainColor.value
   const noteName = target.dataset["noteName"]
   return audioGenerator.generateAudio(noteName)
 }

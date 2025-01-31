@@ -66,11 +66,6 @@ provide("selectedAudioTrackId", {
   selectedAudioTrackId,
   updateSelectedAudioTrackId,
 })
-const audioTrackId = ref("")
-provide("audioTrackId", audioTrackId)
-const selectedTrackMidiEditor = computed(() => {
-  return mixTrackEditorStore.mixTrackUnitMap
-})
 </script>
 
 <template>

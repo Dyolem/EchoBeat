@@ -1,8 +1,9 @@
 <script setup>
-import { inject, ref, useTemplateRef } from "vue"
+import { computed, inject, ref, useTemplateRef } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
+import { colorMix } from "@/utils/colorMix.js"
 const workspaceStore = useWorkspaceStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
 
@@ -37,6 +38,14 @@ const props = defineProps({
   },
 })
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
+const mainColor = inject("mainColor")
+const workspaceHandleBgColor = computed(() => {
+  return colorMix("srgb", mainColor.value, "#000 10%")
+})
+const workspaceBadgeNameBgColor = computed(() => {
+  return colorMix("srgb", mainColor.value, "#000 30%")
+})
+
 const grabbingWorkspaceHandleRef = useTemplateRef("grabbingWorkspaceHandleRef")
 function workspaceGrabbingHandler(e) {
   isMovementHandleActive.value = true
@@ -91,19 +100,21 @@ const isMovementHandleActive = ref(false)
 
 <style scoped>
 .grabbing-workspace-handle {
+  --workspace-handle-background-color: v-bind(workspaceBadgeNameBgColor);
+  --workspace-badge-name-background-color: v-bind(workspaceBadgeNameBgColor);
   display: flex;
   align-items: center;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
   width: v-bind(workspaceContainerWidth + "px");
   height: 100%;
-  background-color: rgb(97, 9, 138);
+  background-color: var(--workspace-handle-background-color);
   pointer-events: initial;
   cursor: grab;
 }
 .workspace-badge-name {
   color: #ffffff;
-  background-color: rgb(78, 7, 110);
+  background-color: var(--workspace-badge-name-background-color);
   font-size: 12px;
   height: fit-content;
   padding: 2px 6px;
@@ -114,5 +125,22 @@ const isMovementHandleActive = ref(false)
 }
 .grabbing-workspace-handle-active {
   cursor: grabbing;
+}
+/* 支持color-mix的浏览器会覆盖 */
+@supports (background: color-mix(in srgb, red, blue)) {
+  .grabbing-workspace-handle {
+    background: color-mix(
+      in srgb,
+      var(--workspace-handle-background-color),
+      #000000 10%
+    );
+  }
+  .workspace-badge-name {
+    background: color-mix(
+      in srgb,
+      var(--workspace-badge-name-background-color),
+      #000000 30%
+    );
+  }
 }
 </style>

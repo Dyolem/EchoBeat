@@ -329,6 +329,8 @@ function noteMainMousedownHandler(event) {
   background-color: var(--note-background-color);
   border-radius: 2px;
   z-index: v-bind(editorNoteZIndex);
+  border: 1px solid
+    color-mix(in srgb, var(--note-background-color), #ffffff 50%);
 }
 .editor-note-main {
   flex-grow: 1;

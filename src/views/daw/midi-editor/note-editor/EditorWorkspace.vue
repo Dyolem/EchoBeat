@@ -55,8 +55,12 @@ const props = defineProps({
     required: true,
   },
 })
-const audioTrackId = inject("audioTrackId")
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
+const mainColor = inject("mainColor")
+const noteItemBackgroundColor = computed(() => {
+  return mainColor.value
+})
+
 const workspaceMap = computed(() => {
   return trackFeatureMapStore.getSelectedTrackFeature({
     selectedAudioTrackId: selectedAudioTrackId.value,
@@ -256,6 +260,7 @@ function stretchWorkspaceWidth(event) {
             :note-position="getNotePosition(noteItem.x, noteItem.y)"
             :workspace-start-position="startPosition"
             :noteEditorRegionRef="noteEditorRegionRef"
+            :note-back-ground-color="mainColor"
           ></note-item>
         </template>
       </div>
@@ -282,7 +287,7 @@ function stretchWorkspaceWidth(event) {
   scrollbar-width: none;
   width: 100%;
   height: v-bind(workspaceScrollContainerHeight + "px");
-  background-color: rgba(97, 9, 138, 0.3);
+  background-color: v-bind(mainColor + "22");
   pointer-events: initial;
 }
 .workspace-scroll-zone {

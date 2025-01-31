@@ -2,19 +2,24 @@
 import DrawerEditor from "@/views/daw/drawer-editor/index.vue"
 import MidiSidebar from "@/views/daw/midi-editor/midi-sidebar/index.vue"
 import NoteEditor from "@/views/daw/midi-editor/note-editor/index.vue"
-import { provide, ref } from "vue"
+import { computed, inject, provide, ref } from "vue"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 const editorGridParametersStore = useEditorGridParametersStore()
+const mixTrackEditorStore = useMixTrackEditorStore()
 
 const props = defineProps({
   editorScrollTop: {
     type: Number,
   },
-  mainColor: {
-    type: String,
-    default: "#1E90FF",
-  },
 })
+const { selectedAudioTrackId } = inject("selectedAudioTrackId")
+const mainColor = computed(() => {
+  if (selectedAudioTrackId.value === undefined) return "#1E90FF"
+  return mixTrackEditorStore.mixTrackUnitMap.get(selectedAudioTrackId.value)
+    .mainColor
+})
+provide("mainColor", mainColor)
 const emit = defineEmits(["update:editorScrollTop"])
 
 const BLACK_KEY_HEIGHT = 10
