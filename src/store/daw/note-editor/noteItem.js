@@ -393,8 +393,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
     updateNoteTarget.y = snappedY
     updateNoteTarget.pitchName = snappedPitchName
-    const newNoteId = getId(snappedPitchName)
-
+    const newNoteId = getId(snappedPitchName, noteItemsMap)
     return {
       newNoteId,
       newPitchName: snappedPitchName,
