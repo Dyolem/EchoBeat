@@ -56,7 +56,7 @@ onMounted(() => {
         `[data-note-name=${escapedPitchName}]`,
       )
       if (!target) return
-      target.style.backgroundColor = "purple"
+      target.style.backgroundColor = mainColor.value
       setTimeout(() => {
         resetState(target)
       }, 100)
