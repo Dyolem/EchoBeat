@@ -145,6 +145,15 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       }
     }
   }
+
+  /**
+   * @typedef {import('../type.js').NoteItemsMap} NoteItemsMap
+   * @param {string} audioTrackId
+   * @param {string} type
+   * @param {number} startPosition
+   * @param {NoteItemsMap} noteItemsMap
+   * @returns {{id: string, type:string, noteItemsMap:NoteItemsMap, width: number, startPosition: number}}
+   */
   function createWorkspace({
     audioTrackId,
     type,

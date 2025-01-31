@@ -11,34 +11,25 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
   const baseTrackHeight = BASE_GRID_HEIGHT
-  const mixTrackUnitMap = ref(
-    new Map([
-      [
-        "1",
-        {
-          id: "1",
-          audioTrackName: "Instrument",
-          trackWidth: 100,
-          trackHeight: baseTrackHeight,
-          mainColor: "#000000",
-          serialNumbering: 1,
-          startPosition: 100,
-        },
-      ],
-      [
-        "2",
-        {
-          id: "2",
-          audioTrackName: "Base",
-          trackWidth: 100,
-          trackHeight: baseTrackHeight,
-          mainColor: "#0069c2",
-          serialNumbering: 1,
-          startPosition: 0,
-        },
-      ],
-    ]),
-  )
+  /**
+   * @typedef {string} AudioTrackId - 音轨唯一标识符
+   */
+
+  /**
+   * @typedef {Object} MixTrackUnit
+   * @property {AudioTrackId} id - 音轨的唯一标识符
+   * @property {string} audioTrackName - 音轨显示名称
+   * @property {number} trackWidth - 音轨宽度（单位：像素）
+   * @property {number} trackHeight - 音轨高度（单位：像素）
+   * @property {string} mainColor - 音轨主色（十六进制颜色代码）
+   * @property {number} serialNumbering - 音轨序号
+   * @property {number} startPosition - 音轨起始位置（单位：像素）
+   */
+
+  /**
+   * @type {import('vue').Ref<Map<AudioTrackId, MixTrackUnit>>}
+   */
+  const mixTrackUnitMap = ref(new Map([]))
   function getBaseInfoTemplate() {
     return {
       trackWidth: 0,

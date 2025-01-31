@@ -84,14 +84,68 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return pitchNameMappedToAreaArr
   })
 
-  function createNoteItemsMap() {
+  /**
+   * @typedef {[number, number]} ScaleYTuple - 垂直缩放比例范围元组 [最小值, 最大值]
+   */
+
+  /**
+   * @typedef {string} PitchNameId - 以音名作为Map的键，同时具有id的作用
+   */
+
+  /**
+   * @typedef {Object} PitchAreaElement
+   * @property {PitchNameId} pitchName - 音高名称（如 "c4"）
+   * @property {ScaleYTuple} scale - 垂直高度范围
+   */
+
+  /**
+   * @typedef {Object} NoteItem
+   * @property {PitchNameId} pitchName - 音高名称（与Map键严格一致）
+   * @property {string} id - note元素自身id
+   * @property {string} width - note元素的宽度
+   * @property {string} height - note元素的高度
+   * @property {string} x - note元素相对于midi编辑器左上角原点的绝对横坐标
+   * @property {string} y - note元素相对于midi编辑器左上角原点的绝对纵坐标
+   * @property {number} startTime - 以0时刻为起点的时间参考系，note元素的起始播放时刻
+   * @property {number} duration - 以0时刻为起点的时间参考系，note元素的播放持续时间
+   * @property {AudioContext} audioContext - 创建note对应的音频节点的音频上下文
+   */
+  /**
+   * @typedef {Object} NoteTrack
+   * @property {PitchNameId} pitchName - 音高名称（与Map键严格一致）
+   * @property {ScaleYTuple} scaleY - 垂直高度范围
+   * @property {NoteItem[]} noteItems - 音符项集合（初始化为空数组）
+   */
+
+  /**
+   * 创建音符轨道映射表
+   * @returns {Map<PitchNameId, NoteTrack>}
+   * @param {import('vue').computed<PitchAreaElement[]>} _pitchNameMappedToArea - 响应式音域配置源
+   */
+  function createNoteItemsMap(
+    _pitchNameMappedToArea = pitchNameMappedToArea.value,
+  ) {
+    /** @type {Map<PitchNameId, NoteTrack>} */
     const noteItemsMap = new Map()
+
     noteItemsMap.clear()
-    for (const pitchNameMappedToAreaElement of pitchNameMappedToArea.value) {
+
+    // 类型安全的遍历处理
+    for (const pitchNameMappedToAreaElement of _pitchNameMappedToArea) {
+      /** @type {PitchAreaElement} */
       const { pitchName, scale } = pitchNameMappedToAreaElement
-      const template = { pitchName, scaleY: scale, noteItems: [] }
+
+      /** @type {NoteTrack} */
+      const template = {
+        pitchName,
+        scaleY: scale, // 自动匹配ScaleYTuple类型
+        noteItems: [], // 初始化空数组
+      }
+
+      // 这里会检查键类型与pitchName类型的一致性
       noteItemsMap.set(pitchName, template)
     }
+
     return noteItemsMap
   }
 

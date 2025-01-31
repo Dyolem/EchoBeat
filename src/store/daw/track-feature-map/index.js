@@ -2,14 +2,29 @@ import { defineStore } from "pinia"
 import { ref } from "vue"
 
 export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
-  const trackFeatureMap = ref(
-    new Map([["1", { midiWorkspace: [], instrument: [], effects: [] }]]),
-  )
+  /**
+   * @typedef {string} AudioTrackId
+   * @typedef {import('../type.js').WorkspaceMap} WorkspaceMap
+   * @typedef {Object} TrackFeatureMap
+   * @property {WorkspaceMap} midiWorkspace
+   * @property {any} instrument
+   * @property {any} effects
+   * @type {import('vue').Ref<Map<AudioTrackId,WorkspaceMap>>}
+   */
+  const trackFeatureMap = ref(new Map())
   const featureEnum = ref({
     MIDI_WORKSPACE: "midiWorkspace",
     INSTRUMENT: "instrument",
     EFFECTS: "effect",
   })
+
+  /**
+   * @typedef {string} TrackFeatureMapId
+   * @param trackFeatureMapId
+   * @param {import('../type.js').WorkspaceMap} midiWorkspace
+   * @param {any} instrument
+   * @param {any} effects
+   */
   function addTrackFeatureMap(
     trackFeatureMapId,
     { midiWorkspace, instrument, effects },
