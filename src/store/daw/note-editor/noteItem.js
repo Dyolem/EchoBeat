@@ -10,11 +10,13 @@ import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/inde
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
+import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
   const trackRulerStore = useTrackRulerStore()
   const audioStore = useAudioStore()
+  const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
 
   const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
@@ -224,21 +226,26 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     )
   }
 
-  function getWorkspaceInitialInfo({ createPosition }) {
+  function getWorkspaceInitialInfo({ createPosition, audioTrackId }) {
     const startPosition = createPosition
     const type = "instruments"
     const _noteItemsMap = createNoteItemsMap()
-
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
     return {
       type,
       startPosition,
       noteItemsMap: _noteItemsMap,
+      workspaceMap,
     }
   }
   function insertNoteItem(
-    { workspaceId, x, y, insertToSpecifiedPitchName } = {},
+    { audioTrackId, x, y, insertToSpecifiedPitchName } = {},
     returnInsertedItemFullInfo = false,
   ) {
+    console.log(audioTrackId)
     if (x === undefined || y === undefined) return
 
     const specifiedPitchName =
@@ -247,21 +254,22 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
     let workspaceNoteItemsMap = null
     let createdWorkspace = null
-    if (workspaceStore.workspaceMap.size === 0) {
-      const workspaceInfo = getWorkspaceInitialInfo({
-        createPosition: x,
-      })
+    const workspaceInfo = getWorkspaceInitialInfo({
+      createPosition: x,
+      audioTrackId,
+    })
+    const { workspaceMap } = workspaceInfo
+    if (workspaceMap.size === 0) {
       createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
       workspaceNoteItemsMap = createdWorkspace.noteItemsMap
     } else {
-      for (const workspace of workspaceStore.workspaceMap.values()) {
+      for (const workspace of workspaceMap.values()) {
         const { startPosition, width, noteItemsMap } = workspace
         if (x >= startPosition && x <= startPosition + width) {
           createdWorkspace = workspace
           workspaceNoteItemsMap = noteItemsMap
           break
         } else {
-          const workspaceInfo = getWorkspaceInitialInfo({ createPosition: x })
           createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
           workspaceNoteItemsMap = createdWorkspace.noteItemsMap
           break
@@ -279,15 +287,24 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return returnInsertedItemFullInfo ? template : template.id
   }
 
-  function deleteNoteItem(id, workspaceId, deleteFromSpecifiedPitchName) {
+  function deleteNoteItem({
+    id,
+    workspaceId,
+    audioTrackId,
+    pitchName: deleteFromSpecifiedPitchName,
+  }) {
     if (
       id === undefined ||
       workspaceId === undefined ||
+      audioTrackId === undefined ||
       deleteFromSpecifiedPitchName === undefined
     )
       return
-    const noteItemsMap =
-      workspaceStore.workspaceMap.get(workspaceId).noteItemsMap
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    const noteItemsMap = workspaceMap.get(workspaceId).noteItemsMap
     const deleteTargetArr = noteItemsMap.get(
       deleteFromSpecifiedPitchName,
     ).noteItems
@@ -348,18 +365,20 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
   }
 
-  function updateNoteItemPosition(
+  function updateNoteItemPosition({
     id,
+    audioTrackId,
     workspaceId,
     pitchName,
     position,
     mousedownPositionInNote,
-  ) {
+  }) {
     const isCoordinateAxisArray = (arr) => {
       return Array.isArray(arr) && arr.length === 2
     }
     if (
       id === undefined ||
+      audioTrackId === undefined ||
       workspaceId === undefined ||
       pitchName === undefined ||
       !isCoordinateAxisArray(position) ||
@@ -367,7 +386,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     )
       return
 
-    const workspace = workspaceStore.workspaceMap.get(workspaceId)
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    const workspace = workspaceMap.get(workspaceId)
     const noteItemsMap = workspace.noteItemsMap
 
     const updateNoteTarget = noteItemsMap
@@ -413,15 +436,19 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
   }
 
-  function updateNoteItemsMap(
+  function updateNoteItemsMap({
     oldId,
     newId,
+    audioTrackId,
     workspaceId,
     oldPitchName,
     newPitchName,
-  ) {
-    const noteItemsMap =
-      workspaceStore.workspaceMap.get(workspaceId).noteItemsMap
+  }) {
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    const noteItemsMap = workspaceMap.get(workspaceId).noteItemsMap
     const oldTargetArr = noteItemsMap.get(oldPitchName).noteItems
     const newTargetArr = noteItemsMap.get(newPitchName).noteItems
     const oldTargetIndex = oldTargetArr.findIndex((item) => {
@@ -446,6 +473,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
   function stretchNoteWidth({
     id,
+    audioTrackId,
     workspaceId,
     pitchName,
     stretchXLength,
@@ -455,6 +483,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }) {
     if (
       id === undefined ||
+      audioTrackId === undefined ||
       workspaceId === undefined ||
       pitchName === undefined ||
       stretchXLength === undefined ||
@@ -463,7 +492,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       mousedownStartX === undefined
     )
       return
-    const workspace = workspaceStore.workspaceMap.get(workspaceId)
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    const workspace = workspaceMap.get(workspaceId)
     const noteItemsMap = workspace.noteItemsMap
     const updateNoteTarget = noteItemsMap
       .get(pitchName)
@@ -578,16 +611,24 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       })
     }
   }
-  function patchUpdateNoteItemsWidth(newTrackZoomRatio, oldTrackZoomRatio) {
+  function patchUpdateNoteItemsWidth({
+    audioTrackId,
+    newTrackZoomRatio,
+    oldTrackZoomRatio,
+  }) {
     if (
+      audioTrackId === undefined ||
       newTrackZoomRatio === oldTrackZoomRatio ||
       newTrackZoomRatio === undefined ||
       oldTrackZoomRatio === undefined
     )
       return
     editorGridParametersStore.trackZoomRatio = newTrackZoomRatio
-
-    for (const { noteItemsMap } of workspaceStore.workspaceMap.values()) {
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    for (const { noteItemsMap } of workspaceMap.values()) {
       noteItemsMap.forEach((pitchNameObj) => {
         pitchNameObj.noteItems.forEach((noteItem) => {
           noteItem.x = (noteItem.x / oldTrackZoomRatio) * newTrackZoomRatio

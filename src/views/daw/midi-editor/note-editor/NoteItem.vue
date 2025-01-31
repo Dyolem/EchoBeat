@@ -62,6 +62,7 @@ const props = defineProps({
     default: 0,
   },
 })
+const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const editorNoteZIndex = ref(ZIndex.EDITOR_NOTE)
 const { noteMainSelectedId, updateNoteMainSelectedId } =
   inject("noteMainSelectedId")
@@ -135,13 +136,14 @@ function draggableRegionHandler(event) {
       event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      const { newNoteId } = noteItemMap.updateNoteItemPosition(
+      const { newNoteId } = noteItemMap.updateNoteItemPosition({
         id,
-        props.workspaceId,
-        belongedPitchName,
-        [translateXDistance, translateYDistance],
-        [mousedownX, mousedownY],
-      )
+        audioTrackId: selectedAudioTrackId.value,
+        workspaceId: props.workspaceId,
+        pitchName: belongedPitchName,
+        position: [translateXDistance, translateYDistance],
+        mousedownPositionInNote: [mousedownX, mousedownY],
+      })
       newId = newNoteId
     }
   }
@@ -152,13 +154,14 @@ function draggableRegionHandler(event) {
       document.removeEventListener("mousemove", mouseMoveHandler)
       selectionController.abort()
       if (!newId) return
-      noteItemMap.updateNoteItemsMap(
-        id,
+      noteItemMap.updateNoteItemsMap({
+        oldId: id,
         newId,
-        props.workspaceId,
-        belongedPitchName,
-        props.belongedPitchName,
-      )
+        audioTrackId: selectedAudioTrackId.value,
+        workspaceId: props.workspaceId,
+        oldPitchName: belongedPitchName,
+        newPitchName: props.belongedPitchName,
+      })
       updateNoteMainSelectedId(newId)
     },
     {
@@ -179,6 +182,7 @@ function stretchEditorNoteLength(event) {
 
     const moveInfo = {
       id: props.id,
+      audioTrackId: selectedAudioTrackId.value,
       workspaceId: props.workspaceId,
       pitchName: props.belongedPitchName,
       stretchXLength: stretchXLength,
@@ -222,11 +226,12 @@ function noteMainMousedownHandler(event) {
   //A single click should execute the logic
   if (timeInterval === 0) {
     if (noteItemMap.isInsertMode) {
-      noteItemMap.deleteNoteItem(
-        props.id,
-        props.workspaceId,
-        props.belongedPitchName,
-      )
+      noteItemMap.deleteNoteItem({
+        id: props.id,
+        workspaceId: props.workspaceId,
+        audioTrackId: selectedAudioTrackId.value,
+        pitchName: props.belongedPitchName,
+      })
       updateNoteMainSelectedId("")
     } else {
       /*
@@ -261,11 +266,12 @@ function noteMainMousedownHandler(event) {
       "mouseup",
       () => {
         if (!isMoved) {
-          noteItemMap.deleteNoteItem(
-            props.id,
-            props.workspaceId,
-            props.belongedPitchName,
-          )
+          noteItemMap.deleteNoteItem({
+            id: props.id,
+            workspaceId: props.workspaceId,
+            audioTrackId: selectedAudioTrackId.value,
+            pitchName: props.belongedPitchName,
+          })
         } else {
           isMoved = false
         }

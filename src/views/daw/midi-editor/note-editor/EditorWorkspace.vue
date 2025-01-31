@@ -5,8 +5,10 @@ import NoteItem from "@/views/daw/midi-editor/note-editor/NoteItem.vue"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import WorkspaceHandle from "@/views/daw/midi-editor/note-editor/WorkspaceHandle.vue"
 import clearSelection from "@/utils/clearSelection.js"
+import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 const noteItemStore = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
+const trackFeatureMapStore = useTrackFeatureMapStore()
 
 const props = defineProps({
   id: {
@@ -53,7 +55,14 @@ const props = defineProps({
     required: true,
   },
 })
-
+const audioTrackId = inject("audioTrackId")
+const { selectedAudioTrackId } = inject("selectedAudioTrackId")
+const workspaceMap = computed(() => {
+  return trackFeatureMapStore.getSelectedTrackFeature({
+    selectedAudioTrackId: selectedAudioTrackId.value,
+    featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+  })
+})
 const workspaceScrollContainerHeight = computed(() => {
   return props.editableViewHeight - props.workspaceHandleHeight
 })
@@ -125,7 +134,11 @@ const workspaceScrollZoneRef = useTemplateRef("workspaceScrollZoneRef")
 function stretchableJudgement(event) {
   // 鼠标触发区域的边缘宽度
   const edgeWidth = 10
-  const workspace = workspaceStore.workspaceMap.get(props.id)
+  const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+    selectedAudioTrackId: selectedAudioTrackId.value,
+    featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+  })
+  const workspace = workspaceMap.get(props.id)
   let mousemoveXInWorkspace =
     event.clientX -
     noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
@@ -146,7 +159,11 @@ function stretchWorkspaceWidth(event) {
 
   const controller = new AbortController()
   const selectionController = clearSelection()
-  const workspace = workspaceStore.workspaceMap.get(props.id)
+  const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+    selectedAudioTrackId: selectedAudioTrackId.value,
+    featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+  })
+  const workspace = workspaceMap.get(props.id)
   const initWorkspaceStartPosition = workspace.startPosition
   const initWorkspaceWidth = workspace.width
   const { x: stretchStart } = props.getCursorPositionInNoteEditorRegion(event)
@@ -160,6 +177,7 @@ function stretchWorkspaceWidth(event) {
       const { x: stretchEnd } = props.getCursorPositionInNoteEditorRegion(event)
       workspaceStore.updateWorkspaceWidth({
         workspaceId: props.id,
+        selectedAudioTrackId: selectedAudioTrackId.value,
         maxWidth: props.editorCanvasWidth,
         minWidth: noteItemStore.noteWidth,
         initWorkspaceStartPosition,

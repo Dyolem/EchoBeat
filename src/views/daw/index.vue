@@ -14,8 +14,10 @@ import {
   watchEffect,
 } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 
 const trackRulerStore = useTrackRulerStore()
+const mixTrackEditorStore = useMixTrackEditorStore()
 const HEADER_HEIGHT = 100
 const FOOTER_HEIGHT = 50
 const headerHeight = ref(HEADER_HEIGHT)
@@ -63,6 +65,11 @@ function updateSelectedAudioTrackId(newId) {
 provide("selectedAudioTrackId", {
   selectedAudioTrackId,
   updateSelectedAudioTrackId,
+})
+const audioTrackId = ref("")
+provide("audioTrackId", audioTrackId)
+const selectedTrackMidiEditor = computed(() => {
+  return mixTrackEditorStore.mixTrackUnitMap
 })
 </script>
 

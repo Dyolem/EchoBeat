@@ -3,9 +3,13 @@ import { ref } from "vue"
 import { BASE_GRID_HEIGHT } from "@/constants/daw/index.js"
 import { generateUniqueId } from "@/utils/generateUniqueId.js"
 import { useAudioTrackMainColorStore } from "@/store/daw/audio-track-color/index.js"
+import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
+import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 
 export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const audioTrackMainColorStore = useAudioTrackMainColorStore()
+  const trackFeatureMapStore = useTrackFeatureMapStore()
+  const workspaceStore = useWorkspaceStore()
   const baseTrackHeight = BASE_GRID_HEIGHT
   const mixTrackUnitMap = ref(
     new Map([
@@ -51,6 +55,9 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       audioTrackName,
       mainColor,
       serialNumbering: existedTracksSize + 1,
+    })
+    trackFeatureMapStore.addTrackFeatureMap(newTrackId, {
+      midiWorkspace: workspaceStore.createNewWorkspaceMap(),
     })
   }
   return { mixTrackUnitMap, addAudioTrack }

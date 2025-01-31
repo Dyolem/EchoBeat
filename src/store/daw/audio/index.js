@@ -121,7 +121,7 @@ export const useAudioStore = defineStore("audio", () => {
         duration = _duration
       }
 
-      if (audioControllerMap.has(id)) continue
+      if (audioControllerMap.has(id)) continue //避免这种情况：动态生成2秒内的音频，而有一段音频从1.5秒到2.5秒，这样在0-2秒会被生成一次，2-4秒又会生成
       const audioBufferSourceNode = createBufferSourceNode({
         id,
         pitchName,

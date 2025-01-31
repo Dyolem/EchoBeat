@@ -17,8 +17,10 @@ import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
+import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 
 const editorGridParametersStore = useEditorGridParametersStore()
+const trackFeatureMapStore = useTrackFeatureMapStore()
 const noteItems = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
 const audioGenerator = useAudioGeneratorStore()
@@ -51,6 +53,11 @@ const props = defineProps({
     default: "Instruments",
   },
 })
+
+const { selectedAudioTrackId } = inject("selectedAudioTrackId")
+watchEffect(() => {
+  console.log(selectedAudioTrackId.value)
+})
 const noteEditorContainerRef = useTemplateRef("noteEditorContainerRef")
 const noteEditorRegionRef = useTemplateRef("noteEditorRegionRef")
 const chromaticInfo = inject("chromaticInfo")
@@ -66,6 +73,14 @@ const noteHeight = computed(() => {
         OCTAVE_WHITE_KEY_COUNT) /
       (OCTAVE_KEY_COUNT * chromaticInfo.value.octaveCount)
     ).toFixed(3),
+  )
+})
+const workspaceMap = computed(() => {
+  return (
+    trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: selectedAudioTrackId.value,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    }) ?? []
   )
 })
 
@@ -115,6 +130,7 @@ function insertNote({ x: insertX, y: insertY }) {
   if (insertX === undefined || insertY === undefined) return
   const insertedItemInfo = noteItems.insertNoteItem(
     {
+      audioTrackId: selectedAudioTrackId.value,
       x: insertX,
       y: insertY,
     },
@@ -162,11 +178,15 @@ function noteEditorDblClickHandler(event) {
 watch(
   () => props.zoomRatio,
   (newTrackZoomRatio, oldTrackZoomRatio) => {
-    noteItems.patchUpdateNoteItemsWidth(newTrackZoomRatio, oldTrackZoomRatio)
-    workspaceStore.patchUpdateWorkspaceWithZoomRatio(
+    noteItems.patchUpdateNoteItemsWidth({
+      audioTrackId: selectedAudioTrackId.value,
       newTrackZoomRatio,
       oldTrackZoomRatio,
-    )
+    })
+    workspaceStore.patchUpdateWorkspaceWithZoomRatio(workspaceMap, {
+      newTrackZoomRatio,
+      oldTrackZoomRatio,
+    })
   },
 )
 
@@ -177,7 +197,7 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
   <div class="note-editor-container" ref="noteEditorContainerRef">
     <div class="workplace-track-placeholder">
       <EditorWorkspace
-        v-for="[workspaceId, workspace] in workspaceStore.workspaceMap"
+        v-for="[workspaceId, workspace] in workspaceMap"
         :key="workspaceId"
         :id="workspaceId"
         :editable-view-height="editableViewHeight"

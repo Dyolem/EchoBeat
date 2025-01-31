@@ -1,8 +1,10 @@
 <script setup>
-import { ref, useTemplateRef } from "vue"
+import { inject, ref, useTemplateRef } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
+import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 const workspaceStore = useWorkspaceStore()
+const trackFeatureMapStore = useTrackFeatureMapStore()
 
 const props = defineProps({
   id: {
@@ -34,7 +36,7 @@ const props = defineProps({
     default: 80,
   },
 })
-
+const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const grabbingWorkspaceHandleRef = useTemplateRef("grabbingWorkspaceHandleRef")
 function workspaceGrabbingHandler(e) {
   isMovementHandleActive.value = true
@@ -50,9 +52,9 @@ function workspaceGrabbingHandler(e) {
         event.clientX -
         props.noteEditorRegionRef.getBoundingClientRect().left -
         mousedownPositionXInWorkSpace
-
       workspaceStore.updateWorkspacePosition({
         workspaceId: props.id,
+        selectedAudioTrackId: selectedAudioTrackId.value,
         startPosition: workspaceStartPosition,
         positionScale: [0, props.notePadWidth - props.workspaceContainerWidth],
       })
