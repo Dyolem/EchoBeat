@@ -19,6 +19,10 @@ const props = defineProps({
     type: String,
     default: "#1E90FF",
   },
+  audioTrackStartPosition: {
+    type: Number,
+    default: 0,
+  },
 })
 const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
   "selectedAudioTrackId",
@@ -50,6 +54,7 @@ const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
   height: v-bind(trackHeight + "px");
   background-color: v-bind(mainColor + "DD");
   border-radius: 4px;
+  transform: v-bind("`translateX(${audioTrackStartPosition}px)`");
 }
 .track-unit-grid {
   width: 100%;

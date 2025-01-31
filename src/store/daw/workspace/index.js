@@ -3,12 +3,14 @@ import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/inde
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 
 export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
   const noteItemStore = useNoteItemStore()
   const audioStore = useAudioStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
+  const mixTrackEditorStore = useMixTrackEditorStore()
 
   function createNewWorkspaceAtLeftSide({
     createPosition,
@@ -144,11 +146,15 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     }
   }
   function createWorkspace({
+    audioTrackId,
     type,
     startPosition,
     noteItemsMap,
-    workspaceMap,
   }) {
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
     const { isCreateNewWorkspace, workspaceInfo } = computedStartPosition(
       startPosition,
       workspaceMap,
@@ -165,13 +171,21 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         startPosition,
       }
       workspaceMap.set(id, workspaceContent)
+      mixTrackEditorStore.audioTrackUpdatedWithWorkspace({
+        audioTrackId,
+        trackWidth: width,
+        trackStartPosition: startPosition,
+      })
       return workspaceContent
     } else {
       const { width, modifiedWorkspaceId } = workspaceInfo
       const workspaceContent = workspaceMap.get(modifiedWorkspaceId)
       workspaceContent.width = width
       // workspaceStartPosition.value = workspaceContent.startPosition
-
+      mixTrackEditorStore.audioTrackUpdatedWithWorkspace({
+        audioTrackId,
+        trackWidth: width,
+      })
       return workspaceContent
     }
   }
@@ -242,7 +256,12 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         }
       }
     }
-    workspace.startPosition = snapJudgedStartPosition
+    workspace.startPosition = newWorkspacePosition
+    console.log(newWorkspacePosition)
+    mixTrackEditorStore.audioTrackUpdatedWithWorkspace({
+      audioTrackId: selectedAudioTrackId,
+      trackStartPosition: newWorkspacePosition,
+    })
     return [newWorkspacePosition, oldWorkspacePosition]
   }
 
@@ -315,6 +334,10 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       }
     }
     workspace.width = newWidth
+    mixTrackEditorStore.audioTrackUpdatedWithWorkspace({
+      audioTrackId: selectedAudioTrackId,
+      trackWidth: newWidth,
+    })
   }
   return {
     createWorkspace,

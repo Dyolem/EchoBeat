@@ -22,6 +22,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
           trackHeight: baseTrackHeight,
           mainColor: "#000000",
           serialNumbering: 1,
+          startPosition: 100,
         },
       ],
       [
@@ -33,13 +34,14 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
           trackHeight: baseTrackHeight,
           mainColor: "#0069c2",
           serialNumbering: 1,
+          startPosition: 0,
         },
       ],
     ]),
   )
   function getBaseInfoTemplate() {
     return {
-      trackWidth: 100,
+      trackWidth: 0,
       trackHeight: baseTrackHeight,
     }
   }
@@ -60,5 +62,22 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       midiWorkspace: workspaceStore.createNewWorkspaceMap(),
     })
   }
-  return { mixTrackUnitMap, addAudioTrack }
+
+  function audioTrackUpdatedWithWorkspace({
+    audioTrackId,
+    trackWidth: newTrackWidth,
+    trackStartPosition: newTrackStartPosition,
+  }) {
+    const audioTrack = mixTrackUnitMap.value.get(audioTrackId)
+    if (!audioTrack) return
+    if (newTrackWidth !== undefined) audioTrack.trackWidth = newTrackWidth
+
+    if (newTrackStartPosition !== undefined)
+      audioTrack.startPosition = newTrackStartPosition
+  }
+  return {
+    mixTrackUnitMap,
+    addAudioTrack,
+    audioTrackUpdatedWithWorkspace,
+  }
 })

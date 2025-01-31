@@ -31,6 +31,7 @@ const mixTrackManagementContainerWidth = computed(() => {
       :track-width="trackUnit.trackWidth * zoomRatio"
       :track-height="trackUnit.trackHeight"
       :main-color="trackUnit.mainColor"
+      :audio-track-start-position="trackUnit.startPosition"
     >
       <template #mix-content-thumbnail> </template>
     </MixTrackUnit>

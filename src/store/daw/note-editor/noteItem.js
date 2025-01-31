@@ -189,22 +189,18 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const startPosition = createPosition
     const type = "instruments"
     const _noteItemsMap = createNoteItemsMap()
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
+
     return {
+      audioTrackId,
       type,
       startPosition,
       noteItemsMap: _noteItemsMap,
-      workspaceMap,
     }
   }
   function insertNoteItem(
     { audioTrackId, x, y, insertToSpecifiedPitchName } = {},
     returnInsertedItemFullInfo = false,
   ) {
-    console.log(audioTrackId)
     if (x === undefined || y === undefined) return
 
     const specifiedPitchName =
@@ -217,7 +213,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       createPosition: x,
       audioTrackId,
     })
-    const { workspaceMap } = workspaceInfo
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
     if (workspaceMap.size === 0) {
       createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
       workspaceNoteItemsMap = createdWorkspace.noteItemsMap
