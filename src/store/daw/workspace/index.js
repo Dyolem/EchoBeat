@@ -149,7 +149,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     noteItemsMap,
     workspaceMap,
   }) {
-    console.log(workspaceMap)
     const { isCreateNewWorkspace, workspaceInfo } = computedStartPosition(
       startPosition,
       workspaceMap,
@@ -212,7 +211,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       selectedAudioTrackId: selectedAudioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     })
-    console.log(workspaceMap)
     const workspace = workspaceMap.get(workspaceId)
     if (!workspace) return [newWorkspacePosition, oldWorkspacePosition]
 

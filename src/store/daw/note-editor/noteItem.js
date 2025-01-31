@@ -94,20 +94,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
     return noteItemsMap
   }
-  const initNoteItemsMap = computed(() => {
-    const noteItemsMap = new Map()
-    noteItemsMap.clear()
-    for (const pitchNameMappedToAreaElement of pitchNameMappedToArea.value) {
-      const { pitchName, scale } = pitchNameMappedToAreaElement
-      const template = { pitchName, scaleY: scale, noteItems: [] }
-      noteItemsMap.set(pitchName, template)
-    }
-    return noteItemsMap
-  })
-  const noteItemsMap = ref(initNoteItemsMap.value)
-  watch(initNoteItemsMap, (newVal) => {
-    noteItemsMap.value = newVal
-  })
+
   function getInsertToSpecifiedPitchName({ x, y } = {}, pitchNameMappedToArea) {
     if (x === undefined || y === undefined) return
     let insertToSpecifiedPitchName = ""
@@ -121,13 +108,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return insertToSpecifiedPitchName
   }
 
-  function getId(
-    insertToSpecifiedPitchName,
-    NOTE_ITEMS_MAP = noteItemsMap.value,
-  ) {
-    if (insertToSpecifiedPitchName === undefined) return
-    const count = NOTE_ITEMS_MAP.get(insertToSpecifiedPitchName).noteItems
-      .length
+  function getId(insertToSpecifiedPitchName, noteItemsMap) {
+    if (insertToSpecifiedPitchName === undefined || noteItemsMap === undefined)
+      return
+    const count = noteItemsMap.get(insertToSpecifiedPitchName).noteItems.length
     const date = new Date()
     const fetchTime = date.getTime()
     return `${insertToSpecifiedPitchName}-${count}-${fetchTime}`
@@ -167,11 +151,14 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     insertToSpecifiedPitchName,
     newWorkspace,
   ) {
-    const id = getId(insertToSpecifiedPitchName)
+    const id = getId(insertToSpecifiedPitchName, newWorkspace.noteItemsMap)
 
     const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack({
-      x,
-      y,
+      notePosition: {
+        x,
+        y,
+      },
+      noteItemsMap: newWorkspace.noteItemsMap,
     })
     const { snappedX, snappedY } = snappedPosition
     const { legalNoteStartPosition, legalNoteWidth } =
@@ -196,34 +183,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       duration,
       audioContext: audioStore.audioContext,
     }
-  }
-
-  function isExistNoteItem(
-    { x, y } = {},
-    isSnappedToHorizontalGrid,
-    insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
-      { x, y },
-      pitchNameMappedToArea.value,
-    ),
-  ) {
-    if (x === undefined || y === undefined) return
-    const noteItems = noteItemsMap.value.get(
-      insertToSpecifiedPitchName,
-    ).noteItems
-    return (
-      noteItems.find((item) => {
-        const { x: itemX, y: itemY } = item
-        if (isSnappedToHorizontalGrid) {
-          if (x - itemX >= 0 && x - itemX < minGridWidth.value) {
-            return true
-          }
-        } else {
-          if (x === itemX && y === itemY) {
-            return true
-          }
-        }
-      }) ?? false
-    )
   }
 
   function getWorkspaceInitialInfo({ createPosition, audioTrackId }) {
@@ -327,7 +286,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       editorGridParametersStore.minGridVerticalMovement
     )
   }
-  function snapToOtherPitchNameTrack({ x, y }, mousedownPositionInNote = []) {
+  function snapToOtherPitchNameTrack({
+    notePosition,
+    mousedownPositionInNote = [],
+    noteItemsMap,
+  }) {
+    const { x, y } = notePosition
     const expectedInsertToPitchName = getInsertToSpecifiedPitchName(
       { x, y },
       pitchNameMappedToArea.value,
@@ -336,7 +300,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     let snappedY = 0
     if (mousedownPositionInNote.length === 0) {
       //insert logic
-      snappedY = noteItemsMap.value.get(expectedInsertToPitchName)?.scaleY[0]
+      snappedY = noteItemsMap.get(expectedInsertToPitchName)?.scaleY[0]
       snappedX = leftJustifyingGrid(x)
     } else {
       //update logic
@@ -400,10 +364,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
     const [x, y] = position
     const [mousedownXInNote] = mousedownPositionInNote
-    const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack(
-      { x, y },
+    const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack({
+      notePosition: { x, y },
       mousedownPositionInNote,
-    )
+      noteItemsMap,
+    })
     const { snappedX, snappedY } = snappedPosition
     if (isSnappedToHorizontalGrid.value) {
       const { legalNoteStartPosition } =
@@ -658,11 +623,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     topJustifyingGrid,
     noteWidth,
     noteHeight,
-    noteItemsMap,
     getStartTime,
     insertNoteItem,
     deleteNoteItem,
-    isExistNoteItem,
     updateNoteItemPosition,
     updateNoteItemsMap,
     stretchNoteWidth,
