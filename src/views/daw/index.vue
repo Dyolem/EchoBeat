@@ -66,6 +66,15 @@ provide("selectedAudioTrackId", {
   selectedAudioTrackId,
   updateSelectedAudioTrackId,
 })
+
+const selectedTrackItemId = ref("")
+function updateSelectedTrackItemId(newId) {
+  selectedTrackItemId.value = newId
+}
+provide("selectedTrackItemId", {
+  selectedTrackItemId,
+  updateSelectedTrackItemId,
+})
 </script>
 
 <template>

@@ -17,7 +17,7 @@ const props = defineProps({
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const mainColor = computed(() => {
   return (
-    mixTrackEditorStore.mixTrackUnitMap.get(selectedAudioTrackId.value)
+    mixTrackEditorStore.mixTracksMap.get(selectedAudioTrackId.value)
       ?.mainColor ?? FALLBACK_THEME_COLOR
   )
 })

@@ -29,26 +29,50 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   /**
    * @type {import('vue').Ref<Map<AudioTrackId, MixTrackUnit>>}
    */
-  const mixTrackUnitMap = ref(new Map([]))
+  const mixTracksMap = ref(new Map([]))
   function getBaseInfoTemplate() {
     return {
       trackWidth: 0,
       trackHeight: baseTrackHeight,
     }
   }
-  function addAudioTrack({
+  function createNewTrack({
     audioTrackName,
     mainColor = audioTrackMainColorStore.getRandomColor(),
   }) {
     const newTrackId = generateUniqueId("AudioTrack")
-    const existedTracksSize = mixTrackUnitMap.value.size
-    mixTrackUnitMap.value.set(newTrackId, {
-      ...getBaseInfoTemplate(),
+    const existedTracksSize = mixTracksMap.value.size
+    mixTracksMap.value.set(newTrackId, {
       id: newTrackId,
       audioTrackName,
       mainColor,
       serialNumbering: existedTracksSize + 1,
+      subTrackItemsMap: new Map(),
     })
+    return newTrackId
+  }
+  function createSubTrackItem({
+    audioTrackId,
+    trackWidth,
+    trackHeight,
+    startPosition,
+  }) {
+    const subTrackItemMap = mixTracksMap.value.get(audioTrackId).subTrackItemMap
+    const subTrackItemId = generateUniqueId(audioTrackId)
+    subTrackItemMap.set(subTrackItemId, {
+      trackWidth,
+      trackHeight,
+      startPosition,
+      audioTrackId,
+      subTrackItemId,
+    })
+    return subTrackItemId
+  }
+  function addAudioTrack({
+    audioTrackName,
+    mainColor = audioTrackMainColorStore.getRandomColor(),
+  }) {
+    const newTrackId = createNewTrack({ audioTrackName, mainColor })
     trackFeatureMapStore.addTrackFeatureMap(newTrackId, {
       midiWorkspace: workspaceStore.createNewWorkspaceMap(),
     })
@@ -57,19 +81,30 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
 
   function audioTrackUpdatedWithWorkspace({
     audioTrackId,
+    subTrackItemId,
     trackWidth: newTrackWidth,
     trackStartPosition: newTrackStartPosition,
   }) {
-    const audioTrack = mixTrackUnitMap.value.get(audioTrackId)
-    if (!audioTrack) return
-    if (newTrackWidth !== undefined) audioTrack.trackWidth = newTrackWidth
+    // const subTrackItemMap = mixTracksMap.value.get(audioTrackId).subTrackItemMap
+    // const subTrack = subTrackItemMap.get(subTrackItemId)
+    // if (!subTrack) return
+    // if (newTrackWidth !== undefined) subTrack.trackWidth = newTrackWidth
+    //
+    // if (newTrackStartPosition !== undefined)
+    //   subTrack.startPosition = newTrackStartPosition
+
+    const subTrackItemMap = mixTracksMap.value.get(audioTrackId)
+    const subTrack = subTrackItemMap.get(subTrackItemId)
+    if (!subTrack) return
+    if (newTrackWidth !== undefined) subTrack.trackWidth = newTrackWidth
 
     if (newTrackStartPosition !== undefined)
-      audioTrack.startPosition = newTrackStartPosition
+      subTrack.startPosition = newTrackStartPosition
   }
   return {
-    mixTrackUnitMap,
+    mixTracksMap,
     addAudioTrack,
     audioTrackUpdatedWithWorkspace,
+    createSubTrackItem,
   }
 })

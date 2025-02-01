@@ -28,10 +28,7 @@ function scrollHandler() {
     <FeatureBar></FeatureBar>
     <div class="track-controllers-container">
       <TrackControllerPad
-        v-for="[
-          audioTrackId,
-          audioTrack,
-        ] in mixTrackEditorStore.mixTrackUnitMap"
+        v-for="[audioTrackId, audioTrack] in mixTrackEditorStore.mixTracksMap"
         :key="audioTrackId"
         :id="audioTrackId"
         :serial-numbering="audioTrack.serialNumbering"

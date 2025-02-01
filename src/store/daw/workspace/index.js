@@ -180,21 +180,11 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         startPosition,
       }
       workspaceMap.set(id, workspaceContent)
-      mixTrackEditorStore.audioTrackUpdatedWithWorkspace({
-        audioTrackId,
-        trackWidth: width,
-        trackStartPosition: startPosition,
-      })
       return workspaceContent
     } else {
       const { width, modifiedWorkspaceId } = workspaceInfo
       const workspaceContent = workspaceMap.get(modifiedWorkspaceId)
       workspaceContent.width = width
-      // workspaceStartPosition.value = workspaceContent.startPosition
-      mixTrackEditorStore.audioTrackUpdatedWithWorkspace({
-        audioTrackId,
-        trackWidth: width,
-      })
       return workspaceContent
     }
   }
@@ -266,11 +256,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       }
     }
     workspace.startPosition = newWorkspacePosition
-    console.log(newWorkspacePosition)
-    mixTrackEditorStore.audioTrackUpdatedWithWorkspace({
-      audioTrackId: selectedAudioTrackId,
-      trackStartPosition: newWorkspacePosition,
-    })
     return [newWorkspacePosition, oldWorkspacePosition]
   }
 
@@ -343,10 +328,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       }
     }
     workspace.width = newWidth
-    mixTrackEditorStore.audioTrackUpdatedWithWorkspace({
-      audioTrackId: selectedAudioTrackId,
-      trackWidth: newWidth,
-    })
   }
   return {
     createWorkspace,

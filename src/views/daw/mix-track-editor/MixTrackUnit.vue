@@ -1,69 +1,65 @@
 <script setup>
 import { inject } from "vue"
+import TrackItem from "@/views/daw/mix-track-editor/TrackItem.vue"
+import { FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
 
 const props = defineProps({
   id: {
-    type: [Number, String],
+    type: String,
     required: true,
   },
-
-  trackWidth: {
-    type: Number,
-    default: 100,
+  workspaceMap: {
+    type: Map,
+    default: () => new Map(),
   },
   trackHeight: {
     type: Number,
-    default: 50,
+    default: 90,
   },
   mainColor: {
     type: String,
-    default: "#1E90FF",
-  },
-  audioTrackStartPosition: {
-    type: Number,
-    default: 0,
+    default: FALLBACK_THEME_COLOR,
   },
 })
 const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
   "selectedAudioTrackId",
   {},
 )
+const { updateSelectedTrackItemId } = inject("selectedTrackItemId", {})
+
+function updateSelectedId(event) {
+  updateSelectedAudioTrackId(props.id)
+  const target = event.target.closest(".track-item")
+  const trackItemId = target?.dataset["trackItemId"]
+  updateSelectedTrackItemId(trackItemId)
+}
 </script>
 
 <template>
   <div
     class="track-unit-grid"
     :class="selectedAudioTrackId === id ? 'track-unit-grid-selected' : ''"
-    @click="() => updateSelectedAudioTrackId(id)"
+    @click="updateSelectedId"
   >
-    <div
-      class="mix-editor-track-container"
-      :class="selectedAudioTrackId === id ? 'selected' : ''"
-    >
-      <div class="track-name"></div>
-      <div class="mix-content-thumbnail">
-        <slot name="mix-content-thumbnail"></slot>
-      </div>
-    </div>
+    <TrackItem
+      v-for="[workspaceId, workspace] in workspaceMap"
+      :key="id + workspaceId"
+      :id="id + workspaceId"
+      :main-color="mainColor"
+      :width="workspace.width"
+      :track-item-start-position="workspace.startPosition"
+    ></TrackItem>
   </div>
 </template>
 
 <style scoped>
-.mix-editor-track-container {
-  width: v-bind(trackWidth + "px");
-  height: v-bind(trackHeight + "px");
-  background-color: v-bind(mainColor + "DD");
-  border-radius: 4px;
-  transform: v-bind("`translateX(${audioTrackStartPosition}px)`");
-}
 .track-unit-grid {
+  position: relative;
   width: 100%;
-  height: fit-content;
+  height: v-bind(trackHeight + "px");
+  display: flex;
 }
 .track-unit-grid-selected {
   background-color: v-bind(mainColor + "22");
-}
-.selected {
-  outline: 1px solid #ffffff;
 }
 </style>
