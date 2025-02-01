@@ -184,9 +184,9 @@ watch(
       newTrackZoomRatio,
       oldTrackZoomRatio,
     })
-    workspaceStore.patchUpdateWorkspaceWithZoomRatio(workspaceMap, {
-      newTrackZoomRatio,
-      oldTrackZoomRatio,
+    workspaceStore.patchUpdateWorkspaceWithZoomRatio(workspaceMap.value, {
+      newZoomRatio: newTrackZoomRatio,
+      oldZoomRatio: oldTrackZoomRatio,
     })
   },
 )
