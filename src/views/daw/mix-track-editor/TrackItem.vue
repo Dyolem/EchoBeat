@@ -58,5 +58,6 @@ onMounted(() => {
 }
 .selected {
   outline: 1px solid #ffffff;
+  z-index: 1;
 }
 </style>
