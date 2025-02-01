@@ -57,9 +57,6 @@ const props = defineProps({
 })
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const mainColor = inject("mainColor")
-const noteItemBackgroundColor = computed(() => {
-  return mainColor.value
-})
 
 const workspaceMap = computed(() => {
   return trackFeatureMapStore.getSelectedTrackFeature({
@@ -138,11 +135,7 @@ const workspaceScrollZoneRef = useTemplateRef("workspaceScrollZoneRef")
 function stretchableJudgement(event) {
   // 鼠标触发区域的边缘宽度
   const edgeWidth = 10
-  const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
-    selectedAudioTrackId: selectedAudioTrackId.value,
-    featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-  })
-  const workspace = workspaceMap.get(props.id)
+  const workspace = workspaceMap.value.get(props.id)
   let mousemoveXInWorkspace =
     event.clientX -
     noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
@@ -163,11 +156,7 @@ function stretchWorkspaceWidth(event) {
 
   const controller = new AbortController()
   const selectionController = clearSelection()
-  const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
-    selectedAudioTrackId: selectedAudioTrackId.value,
-    featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-  })
-  const workspace = workspaceMap.get(props.id)
+  const workspace = workspaceMap.value.get(props.id)
   const initWorkspaceStartPosition = workspace.startPosition
   const initWorkspaceWidth = workspace.width
   const { x: stretchStart } = props.getCursorPositionInNoteEditorRegion(event)
