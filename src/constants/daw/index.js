@@ -87,3 +87,4 @@ export function generateNoteFrequencyMap(notes = NOTES_TABLE) {
 export const NOTE_FREQUENCY_MAP = generateNoteFrequencyMap()
 export const SCROLLBAR_WIDTH = 10
 export const FALLBACK_THEME_COLOR = "#A4CFF8"
+export const DARKEN_COLOR = "#404040"

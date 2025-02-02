@@ -1,6 +1,7 @@
 <script setup>
-import { inject, onMounted } from "vue"
-import { FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
+import { computed, inject, onMounted } from "vue"
+import { DARKEN_COLOR, FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
+import { colorMix } from "@/utils/colorMix.js"
 
 const props = defineProps({
   id: {
@@ -19,12 +20,22 @@ const props = defineProps({
     type: String,
     default: FALLBACK_THEME_COLOR,
   },
+  trackName: {
+    type: String,
+    default: "Instrument",
+  },
 })
 const { selectedTrackItemId, updateSelectedTrackItemId } = inject(
   "selectedTrackItemId",
 )
 onMounted(() => {
   updateSelectedTrackItemId(props.id)
+})
+const trackCopyStretchHandleBgColor = computed(() => {
+  return colorMix("srgb", props.mainColor, `${DARKEN_COLOR} 50%`)
+})
+const mixContentThumbnailBgColor = computed(() => {
+  return colorMix("srgb", props.mainColor + "EE", `${DARKEN_COLOR} 20%`)
 })
 </script>
 
@@ -34,11 +45,11 @@ onMounted(() => {
     :class="selectedTrackItemId === id ? 'selected' : ''"
     :data-track-item-id="id"
   >
-    <div class="mix-content-thumbnail-container">
-      <div class="track-name"></div>
-      <div class="mix-content-thumbnail">
-        <slot name="mix-content-thumbnail"></slot>
-      </div>
+    <div class="track-copy-stretch-handle">
+      <span class="track-name">{{ trackName }}</span>
+    </div>
+    <div class="mix-content-thumbnail">
+      <slot name="mix-content-thumbnail"></slot>
     </div>
   </div>
 </template>
@@ -46,18 +57,54 @@ onMounted(() => {
 <style scoped>
 .track-item {
   position: absolute;
+  display: flex;
+  flex-direction: column;
   width: v-bind(width + "px");
   height: 100%;
-  background-color: v-bind(mainColor + "EE");
   border-radius: 4px;
   transform: v-bind("`translateX(${trackItemStartPosition}px)`");
-}
-.mix-content-thumbnail-container {
-  width: 100%;
-  height: 100%;
 }
 .selected {
   outline: 1px solid #ffffff;
   z-index: 1;
+}
+.track-copy-stretch-handle {
+  --track-copy-stretch-handle-background-color: v-bind(mainColor);
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 18px;
+  background-color: v-bind(trackCopyStretchHandleBgColor);
+}
+.track-name {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 0 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mix-content-thumbnail {
+  --mix-content-thumbnail-bg-color: v-bind(mainColor + "EE");
+  width: 100%;
+  flex-grow: 1;
+  background-color: v-bind(mixContentThumbnailBgColor);
+}
+@supports (background-color: color-mix(in srgb, red, blue)) {
+  .track-copy-stretch-handle {
+    background-color: color-mix(
+      in srgb,
+      var(--track-copy-stretch-handle-background-color),
+      var(--darken-mix-color) 50%
+    );
+  }
+  .mix-content-thumbnail {
+    background-color: color-mix(
+      in srgb,
+      var(--mix-content-thumbnail-bg-color),
+      var(--darken-mix-color) 20%
+    );
+  }
 }
 </style>

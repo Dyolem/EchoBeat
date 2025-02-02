@@ -132,14 +132,14 @@ const isMovementHandleActive = ref(false)
     background: color-mix(
       in srgb,
       var(--workspace-handle-background-color),
-      #000000 10%
+      var(--darken-mix-color) 1%
     );
   }
   .workspace-badge-name {
     background: color-mix(
       in srgb,
       var(--workspace-badge-name-background-color),
-      #000000 30%
+      var(--darken-mix-color) 50%
     );
   }
 }

@@ -11,11 +11,13 @@ import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
   const trackRulerStore = useTrackRulerStore()
   const audioStore = useAudioStore()
+  const mixTrackEditorStore = useMixTrackEditorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
 
@@ -241,7 +243,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
   function getWorkspaceInitialInfo({ createPosition, audioTrackId }) {
     const startPosition = createPosition
-    const type = "instruments"
+    const type =
+      mixTrackEditorStore.mixTracksMap.get(audioTrackId)?.audioTrackName ??
+      "Instrument"
     const _noteItemsMap = createNoteItemsMap()
 
     return {

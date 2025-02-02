@@ -28,6 +28,7 @@ body {
 }
 
 * {
+  --darken-mix-color:#404040;
   margin: 0px;
   padding: 0px;
   list-style: none;

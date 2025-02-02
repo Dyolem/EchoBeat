@@ -48,6 +48,7 @@ function updateSelectedId(event) {
       :main-color="mainColor"
       :width="workspace.width"
       :track-item-start-position="workspace.startPosition"
+      :track-name="workspace.type"
     ></TrackItem>
   </div>
 </template>
