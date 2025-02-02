@@ -23,7 +23,7 @@ export function colorMix(colorSpace, ...colorStrings) {
     }
   }
 
-  // 将颜色转换为RGB对象
+  // 将颜色转换为RGB(A)对象，考虑透明度
   function parseColorToRgb(colorStr) {
     const lowerStr = colorStr.toLowerCase().trim()
     const colorKeywords = {
@@ -40,26 +40,33 @@ export function colorMix(colorSpace, ...colorStrings) {
 
     if (colorKeywords[lowerStr]) {
       const [r, g, b] = colorKeywords[lowerStr]
-      return { r, g, b }
+      return { r, g, b, a: 1 }
     }
 
-    // 处理十六进制颜色
+    // 处理十六进制颜色（可能包含透明度）
     if (lowerStr.startsWith("#")) {
-      let hex = lowerStr.slice(1).padEnd(6, "0")
+      let hex = lowerStr.slice(1)
+      // 如果是3位十六进制颜色，则重复每个字符
       if (hex.length === 3) hex = [...hex].map((c) => c + c).join("")
-      const r = parseInt(hex.substr(0, 2), 16)
-      const g = parseInt(hex.substr(2, 2), 16)
-      const b = parseInt(hex.substr(4, 2), 16)
-      return { r, g, b }
+      // 如果有透明度（8位），则需要解析最后两位
+      const hasAlpha = hex.length === 8
+      const r = parseInt(hex.slice(0, 2), 16)
+      const g = parseInt(hex.slice(2, 4), 16)
+      const b = parseInt(hex.slice(4, 6), 16)
+      const a = hasAlpha ? parseInt(hex.slice(6, 8), 16) / 255 : 1
+      return { r, g, b, a }
     }
 
-    // 处理RGB颜色
-    const rgbMatch = lowerStr.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i)
-    if (rgbMatch) {
+    // 处理RGB(A)颜色
+    const rgbaMatch = lowerStr.match(
+      /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d*\.?\d+))?\)$/i,
+    )
+    if (rgbaMatch) {
       return {
-        r: +rgbMatch[1],
-        g: +rgbMatch[2],
-        b: +rgbMatch[3],
+        r: +rgbaMatch[1],
+        g: +rgbaMatch[2],
+        b: +rgbaMatch[3],
+        a: rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1,
       }
     }
 
@@ -90,7 +97,7 @@ export function colorMix(colorSpace, ...colorStrings) {
   const ratio1 = p1 / total
   const ratio2 = p2 / total
 
-  // 执行颜色混合
+  // 执行颜色混合（RGB通道）
   const mixChannel = (c1, c2) => Math.round(c1 * ratio1 + c2 * ratio2)
   const mixed = {
     r: mixChannel(colors[0].rgb.r, colors[1].rgb.r),
@@ -98,7 +105,26 @@ export function colorMix(colorSpace, ...colorStrings) {
     b: mixChannel(colors[0].rgb.b, colors[1].rgb.b),
   }
 
-  // 转换为十六进制格式
+  // 混合透明度
+  const mixAlpha = (a1, a2) => {
+    if (a1 === 1 && a2 === 1) {
+      return 1 // 如果两个颜色都是完全不透明，则最终结果也是完全不透明
+    }
+    if (a1 === 1) {
+      return a2 // 如果第一个颜色完全不透明，则透明度为第二个颜色的透明度
+    }
+    if (a2 === 1) {
+      return a1 // 如果第二个颜色完全不透明，则透明度为第一个颜色的透明度
+    }
+    return a1 + a2 * (1 - a1) // 叠加透明度
+  }
+
+  const mixedAlpha = mixAlpha(colors[0].rgb.a, colors[1].rgb.a)
+
+  // 转换为十六进制格式（包括透明度）
   const toHex = (c) => c.toString(16).padStart(2, "0")
-  return `#${toHex(mixed.r)}${toHex(mixed.g)}${toHex(mixed.b)}`
+  const alphaHex = Math.round(mixedAlpha * 255)
+    .toString(16)
+    .padStart(2, "0") // 转换透明度为十六进制
+  return `#${toHex(mixed.r)}${toHex(mixed.g)}${toHex(mixed.b)}${alphaHex}`
 }
