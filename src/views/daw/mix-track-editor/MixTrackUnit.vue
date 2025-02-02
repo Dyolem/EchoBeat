@@ -49,6 +49,7 @@ function updateSelectedId(event) {
       :width="workspace.width"
       :track-item-start-position="workspace.startPosition"
       :track-name="workspace.type"
+      :workspace-zoom-ratio="workspace.zoomRatio"
     ></TrackItem>
   </div>
 </template>

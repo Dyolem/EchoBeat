@@ -34,6 +34,16 @@
 
 /** @typedef {Map<PitchNameId, NoteTrack>} NoteItemsMap */
 
+/**@typedef {Object} WorkspaceMap
+ * @property {string} id - 工作区自身唯一ID
+ * @property {string} audioTrackId - 工作区所属音轨的唯一ID
+ * @property {NoteItemsMap} noteItemsMap - 工作区内创建的note元素的Map集合
+ * @property {number} width - 工作区宽度
+ * @property {number} startPosition - 工作区起始位置
+ */
+
 /**
- * @typedef {{id: string, type:string, noteItemsMap:NoteItemsMap, width: number, startPosition: number}} WorkspaceMap
+ * @typedef {Object} MidiWorkspace
+ * @property {Number} zoomRatio - midi编辑区的当前的缩放倍率
+ * @property {WorkspaceMap} workspaceMap - 存储midi工作区的Map结构
  */

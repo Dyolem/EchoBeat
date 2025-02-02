@@ -21,7 +21,7 @@ export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
   /**
    * @typedef {string} TrackFeatureMapId
    * @param trackFeatureMapId
-   * @param {import('../type.js').WorkspaceMap} midiWorkspace
+   * @param {import('../type.js').MidiWorkspace} midiWorkspace
    * @param {any} instrument
    * @param {any} effects
    */
@@ -38,10 +38,17 @@ export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
   function getSelectedTrackFeature({ selectedAudioTrackId, featureType }) {
     return trackFeatureMap.value.get(selectedAudioTrackId)?.[featureType]
   }
+  function getSelectedTrackWorkspaceMap({ selectedAudioTrackId, featureType }) {
+    return (
+      getSelectedTrackFeature({ selectedAudioTrackId, featureType })
+        ?.workspaceMap ?? new Map()
+    )
+  }
   return {
     featureEnum,
     trackFeatureMap,
     addTrackFeatureMap,
     getSelectedTrackFeature,
+    getSelectedTrackWorkspaceMap,
   }
 })

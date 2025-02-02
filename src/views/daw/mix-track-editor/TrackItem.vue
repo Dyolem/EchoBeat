@@ -24,10 +24,24 @@ const props = defineProps({
     type: String,
     default: "Instrument",
   },
+  workspaceZoomRatio: {
+    type: Number,
+    default: 1,
+  },
 })
 const { selectedTrackItemId, updateSelectedTrackItemId } = inject(
   "selectedTrackItemId",
 )
+const mainEditorZoomRatio = inject("mainEditorZoomRatio")
+const trackItemWidth = computed(() => {
+  return (props.width / props.workspaceZoomRatio) * mainEditorZoomRatio.value
+})
+const trackItemStartPosition = computed(() => {
+  return (
+    (props.trackItemStartPosition / props.workspaceZoomRatio) *
+    mainEditorZoomRatio.value
+  )
+})
 onMounted(() => {
   updateSelectedTrackItemId(props.id)
 })
@@ -56,13 +70,14 @@ const mixContentThumbnailBgColor = computed(() => {
 
 <style scoped>
 .track-item {
+  --track-itme-start-position: v-bind(trackItemStartPosition + "px");
   position: absolute;
   display: flex;
   flex-direction: column;
-  width: v-bind(width + "px");
+  width: v-bind(trackItemWidth + "px");
   height: 100%;
   border-radius: 4px;
-  transform: v-bind("`translateX(${trackItemStartPosition}px)`");
+  transform: translateX(var(--track-itme-start-position));
 }
 .selected {
   outline: 1px solid #ffffff;

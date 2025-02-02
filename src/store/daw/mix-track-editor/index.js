@@ -71,10 +71,14 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   function addAudioTrack({
     audioTrackName,
     mainColor = audioTrackMainColorStore.getRandomColor(),
+    midiWorkspaceZoomRatio,
   }) {
     const newTrackId = createNewTrack({ audioTrackName, mainColor })
     trackFeatureMapStore.addTrackFeatureMap(newTrackId, {
-      midiWorkspace: workspaceStore.createNewWorkspaceMap(),
+      midiWorkspace: {
+        workspaceMap: workspaceStore.createNewWorkspaceMap(),
+        zoomRatio: midiWorkspaceZoomRatio,
+      },
     })
     return newTrackId
   }

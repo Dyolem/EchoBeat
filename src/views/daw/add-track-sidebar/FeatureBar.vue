@@ -7,6 +7,7 @@ const { updateSelectedAudioTrackId } = inject("selectedAudioTrackId")
 function addAudioTrackHandler() {
   const newTrackId = mixTrackEditorStore.addAudioTrack({
     audioTrackName: "Instrument",
+    midiWorkspaceZoomRatio: 1,
   })
   updateSelectedAudioTrackId(newTrackId)
 }

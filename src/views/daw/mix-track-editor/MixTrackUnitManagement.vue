@@ -1,7 +1,7 @@
 <script setup>
 import MixTrackUnit from "@/views/daw/mix-track-editor/MixTrackUnit.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { computed } from "vue"
+import { computed, provide } from "vue"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 const mixTrackEditorStore = useMixTrackEditorStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
@@ -19,12 +19,16 @@ const props = defineProps({
     default: 1,
   },
 })
+const mainEditorZoomRatio = computed(() => {
+  return props.zoomRatio
+})
+provide("mainEditorZoomRatio", mainEditorZoomRatio)
 const mixTrackManagementContainerWidth = computed(() => {
   return props.width * props.zoomRatio
 })
 function getWorkspaceMap(audioTrackId) {
   return (
-    trackFeatureMapStore.getSelectedTrackFeature({
+    trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId: audioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     }) ?? []

@@ -32,6 +32,10 @@ const props = defineProps({
     type: Number,
     default: 1,
   },
+  currentWorkspaceZoomRatio: {
+    type: Number,
+    default: 1,
+  },
   noteEditorRegionRef: {
     type: Object,
     required: true,
@@ -59,7 +63,7 @@ const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const mainColor = inject("mainColor")
 
 const workspaceMap = computed(() => {
-  return trackFeatureMapStore.getSelectedTrackFeature({
+  return trackFeatureMapStore.getSelectedTrackWorkspaceMap({
     selectedAudioTrackId: selectedAudioTrackId.value,
     featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
   })
@@ -96,6 +100,16 @@ const noteHeight = computed(() => {
 const { scrollMovement, updateScrollMovement } = inject("scrollMovement")
 const noteEditorWorkspaceRef = useTemplateRef("noteEditorWorkspaceRef")
 onMounted(() => {
+  workspaceStore.passivePatchUpdateWorkspaceWithZoomRatio({
+    audioTrackId: selectedAudioTrackId.value,
+    newZoomRatio: props.currentWorkspaceZoomRatio,
+    oldZoomRatio: props.zoomRatio,
+  })
+  noteItemStore.passivePatchUpdateNoteItemsWithZoomRatio({
+    audioTrackId: selectedAudioTrackId.value,
+    newTrackZoomRatio: props.currentWorkspaceZoomRatio,
+    oldTrackZoomRatio: props.zoomRatio,
+  })
   watch(
     scrollMovement,
     (newScrollMovement) => {

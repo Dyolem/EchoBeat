@@ -55,9 +55,6 @@ const props = defineProps({
 })
 
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
-watchEffect(() => {
-  console.log(selectedAudioTrackId.value)
-})
 const noteEditorContainerRef = useTemplateRef("noteEditorContainerRef")
 const noteEditorRegionRef = useTemplateRef("noteEditorRegionRef")
 const chromaticInfo = inject("chromaticInfo")
@@ -77,7 +74,7 @@ const noteHeight = computed(() => {
 })
 const workspaceMap = computed(() => {
   return (
-    trackFeatureMapStore.getSelectedTrackFeature({
+    trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId: selectedAudioTrackId.value,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     }) ?? []
@@ -133,6 +130,7 @@ function insertNote({ x: insertX, y: insertY }) {
       audioTrackId: selectedAudioTrackId.value,
       x: insertX,
       y: insertY,
+      zoomRatio: props.zoomRatio,
     },
     true,
   )
@@ -179,12 +177,13 @@ function noteEditorDblClickHandler(event) {
 watch(
   () => props.zoomRatio,
   (newTrackZoomRatio, oldTrackZoomRatio) => {
-    noteItems.patchUpdateNoteItemsWidth({
+    noteItems.passivePatchUpdateNoteItemsWithZoomRatio({
       audioTrackId: selectedAudioTrackId.value,
       newTrackZoomRatio,
       oldTrackZoomRatio,
     })
-    workspaceStore.patchUpdateWorkspaceWithZoomRatio(workspaceMap.value, {
+    workspaceStore.passivePatchUpdateWorkspaceWithZoomRatio({
+      audioTrackId: selectedAudioTrackId.value,
       newZoomRatio: newTrackZoomRatio,
       oldZoomRatio: oldTrackZoomRatio,
     })
@@ -205,7 +204,8 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
         :editor-canvas-height="notePadHeight"
         :editor-canvas-width="notePadWidth"
         :workspace-handle-height="workspacePlaceHolderHeight"
-        :zoom-ratio="zoomRatio"
+        :zoom-ratio="workspace.zoomRatio"
+        :current-workspace-zoom-ratio="zoomRatio"
         :noteEditorRegionRef="noteEditorRegionRef"
         :workspace-container-width="workspace.width"
         :start-position="workspace.startPosition"

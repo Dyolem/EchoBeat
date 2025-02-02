@@ -151,6 +151,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
    * @param {string} audioTrackId
    * @param {string} type
    * @param {number} startPosition
+   * @param {number} zoomRatio
    * @param {NoteItemsMap} noteItemsMap
    * @returns {{id: string, type:string, noteItemsMap:NoteItemsMap, width: number, startPosition: number}}
    */
@@ -159,8 +160,9 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     type,
     startPosition,
     noteItemsMap,
+    zoomRatio,
   }) {
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId: audioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     })
@@ -174,10 +176,12 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       const id = `${workspaceMap.size + 1}${date.getTime()}`
       const workspaceContent = {
         id,
+        audioTrackId,
         type,
         noteItemsMap: noteItemsMap,
         width,
         startPosition,
+        zoomRatio,
       }
       workspaceMap.set(id, workspaceContent)
       return workspaceContent
@@ -191,22 +195,34 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   function createNewWorkspaceMap() {
     return new Map()
   }
-  function patchUpdateWorkspaceWithZoomRatio(
-    workspaceMap,
-    { newZoomRatio, oldZoomRatio },
-  ) {
+
+  function passivePatchUpdateWorkspaceWithZoomRatio({
+    audioTrackId,
+    newZoomRatio,
+    oldZoomRatio,
+  }) {
     if (
-      !workspaceMap ||
+      audioTrackId === undefined ||
       newZoomRatio === oldZoomRatio ||
       newZoomRatio === undefined ||
       oldZoomRatio === undefined
     )
       return
+    const midiWorkspaceInfo = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    midiWorkspaceInfo.zoomRatio = newZoomRatio
+    const workspaceMap = midiWorkspaceInfo.workspaceMap
     for (const workspace of workspaceMap.values()) {
       workspace.width *= newZoomRatio / oldZoomRatio
-      workspace.startPosition *= newZoomRatio / oldZoomRatio
+      workspace.startPosition =
+        (workspace.startPosition / oldZoomRatio) * newZoomRatio
+      if (workspace.audioTrackId === audioTrackId)
+        workspace.zoomRatio = newZoomRatio
     }
   }
+
   function updateWorkspacePosition({
     workspaceId,
     selectedAudioTrackId,
@@ -220,7 +236,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     if (startPosition < minPosition || startPosition > maxPosition)
       return [newWorkspacePosition, oldWorkspacePosition]
 
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId: selectedAudioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     })
@@ -274,7 +290,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       rightSide: { positive: true, negative: true },
     },
   }) {
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackFeature({
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     })
@@ -334,6 +350,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     createNewWorkspaceMap,
     updateWorkspacePosition,
     updateWorkspaceWidth,
-    patchUpdateWorkspaceWithZoomRatio,
+    passivePatchUpdateWorkspaceWithZoomRatio,
   }
 })
