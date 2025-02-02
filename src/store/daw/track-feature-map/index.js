@@ -39,10 +39,8 @@ export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
     return trackFeatureMap.value.get(selectedAudioTrackId)?.[featureType]
   }
   function getSelectedTrackWorkspaceMap({ selectedAudioTrackId, featureType }) {
-    return (
-      getSelectedTrackFeature({ selectedAudioTrackId, featureType })
-        ?.workspaceMap ?? new Map()
-    )
+    return getSelectedTrackFeature({ selectedAudioTrackId, featureType })
+      ?.workspaceMap
   }
   return {
     featureEnum,
