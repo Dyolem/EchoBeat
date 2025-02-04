@@ -110,7 +110,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
    * @property {string} y - note元素相对于midi编辑器左上角原点的绝对纵坐标
    * @property {number} startTime - 以0时刻为起点的时间参考系，note元素的起始播放时刻
    * @property {number} duration - 以0时刻为起点的时间参考系，note元素的播放持续时间
-   * @property {AudioContext} audioContext - 创建note对应的音频节点的音频上下文
    */
   /**
    * @typedef {Object} NoteTrack
@@ -237,7 +236,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       backGroundColor: "lightblue",
       startTime,
       duration,
-      audioContext: audioStore.audioContext,
     }
   }
 
@@ -488,14 +486,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     newTargetArr.push(oldTargetArr[oldTargetIndex])
     oldTargetArr.splice(oldTargetIndex, 1)
 
-    const audioContext = audioStore.audioContext
     audioStore.adjustNodeStartAndLastTime({
       id: oldId,
       newId,
       pitchName: newPitchName,
       startTime: newStartTime,
       duration: newDuration,
-      audioContext,
     })
   }
 
@@ -578,13 +574,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       updateNoteTarget.duration = newDuration
       nextInsertedNoteWidth.value = newWidth
 
-      const audioContext = audioStore.audioContext
       audioStore.adjustNodeStartAndLastTime({
         id,
         pitchName,
         startTime: newStartTime,
         duration: newDuration,
-        audioContext,
       })
     } else {
       //right side drag
@@ -628,14 +622,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       updateNoteTarget.duration = newDuration
       nextInsertedNoteWidth.value = newWidth
 
-      const audioContext = audioStore.audioContext
       console.log("right")
       audioStore.adjustNodeStartAndLastTime({
         id,
         startTime: newStartTime,
         duration: newDuration,
         pitchName,
-        audioContext,
       })
     }
   }
@@ -714,7 +706,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 //           backGroundColor: "lightblue",
 //           startTime,
 //           duration,
-//           audioContext: audioStore.audioContext,
 //         },
 //         {
 //           id: "c4-2",
@@ -726,7 +717,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 //           backGroundColor: "lightblue",
 //           startTime,
 //           duration,
-//           audioContext: audioStore.audioContext,
 //         },
 //       ],
 //     },

@@ -61,6 +61,7 @@ function queryCurrentTime({
         timelinePlayTime: accurateTime.value,
         generableAudioTimeEnd:
           accurateTime.value + dynamicGenerationTimeInterval,
+        audioContext: audioStore.audioContext,
       })
     }
 

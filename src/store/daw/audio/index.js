@@ -77,14 +77,13 @@ export const useAudioStore = defineStore("audio", () => {
   }
 
   function insertSourceNodeAndGainNode(noteInfo) {
-    const { id, pitchName, startTime, duration, audioContext } = noteInfo
+    const { id, pitchName, startTime, duration } = noteInfo
     console.log(startTime, duration)
 
     noteBufferSourceMap.value.set(id, {
       pitchName,
       startTime,
       duration,
-      audioContext,
     })
   }
 
@@ -92,9 +91,10 @@ export const useAudioStore = defineStore("audio", () => {
     noteBufferSourceMap,
     timelinePlayTime,
     generableAudioTimeEnd,
+    audioContext,
   }) {
-    const mixingGainNode = audioContext.value.createGain()
-    mixingGainNode.connect(audioContext.value.destination)
+    const mixingGainNode = audioContext.createGain()
+    mixingGainNode.connect(audioContext.destination)
     for (const [id, noteBufferSourceInstance] of noteBufferSourceMap) {
       let startTime = 0
       let duration = 0
@@ -104,7 +104,6 @@ export const useAudioStore = defineStore("audio", () => {
         pitchName,
         startTime: _startTime,
         duration: _duration,
-        audioContext,
       } = noteBufferSourceInstance
       if (_startTime >= generableAudioTimeEnd) continue
       if (timelinePlayTime > _startTime + _duration) continue
@@ -205,7 +204,6 @@ export const useAudioStore = defineStore("audio", () => {
     startTime,
     duration,
     pitchName,
-    audioContext,
   } = {}) {
     const noteBufferSourceInstance = noteBufferSourceMap.value.get(id)
     if (!noteBufferSourceInstance) return
@@ -214,7 +212,6 @@ export const useAudioStore = defineStore("audio", () => {
         pitchName,
         startTime: startTime,
         duration: duration,
-        audioContext: audioContext,
       }
       noteBufferSourceMap.value.delete(id)
       noteBufferSourceMap.value.set(newId, newNoteBufferSourceInstance)
@@ -227,7 +224,6 @@ export const useAudioStore = defineStore("audio", () => {
         startTime: startTime,
         duration: duration,
         pitchName,
-        audioContext: audioContext,
       })
     }
   }
