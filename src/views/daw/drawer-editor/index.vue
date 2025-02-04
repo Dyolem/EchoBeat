@@ -32,6 +32,10 @@ const initDrawerEditorWidth = ref(INIT_DRAWER_EDITOR_WIDTH)
 const initDrawerEditorHeight = ref(INIT_DRAWER_EDITOR_HEIGHT)
 
 const props = defineProps({
+  id: {
+    type: String,
+    required: true,
+  },
   canvasContentHeightProp: {
     type: Number,
     default: undefined,
@@ -116,6 +120,7 @@ onUnmounted(() => {
       ></slot>
     </div>
     <Editor
+      :id="id"
       v-model:editor-view-height="drawerEditorViewHeight"
       v-model:editor-view-width="drawerEditorViewWidth"
       @update:editor-view-width="updateEditorViewWidthHandler"

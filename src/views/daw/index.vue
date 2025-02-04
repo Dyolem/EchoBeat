@@ -15,7 +15,9 @@ import {
 } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-
+import { MAIN_EDITOR_ID, SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+const zoomRatioStore = useZoomRatioStore()
 const trackRulerStore = useTrackRulerStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 const HEADER_HEIGHT = 100
@@ -30,8 +32,7 @@ const exceptEditorHeight = computed(() => {
   return headerHeight.value + footerHeight.value
 })
 
-const mainEditorId = ref("main-editor")
-trackRulerStore.mainEditorId = mainEditorId.value
+trackRulerStore.mainEditorId = MAIN_EDITOR_ID
 
 const mainEditorViewWidth = ref(window.innerWidth - editorSideBarWidth.value)
 const mainEditorViewHeight = ref(window.innerHeight - exceptEditorHeight.value)
@@ -52,6 +53,7 @@ const isOpenDrawerEditor = ref(false)
 
 onMounted(() => {
   resizeHandler()
+  zoomRatioStore.initZoomRatioMap()
 })
 onUnmounted(() => {
   controller.abort()
@@ -84,7 +86,7 @@ provide("selectedTrackItemId", {
     </header>
     <main>
       <MixTrackEditor
-        :main-editor-id="mainEditorId"
+        :main-editor-id="MAIN_EDITOR_ID"
         :main-editor-view-width="mainEditorViewWidth"
         :main-editor-view-height="mainEditorViewHeight"
       ></MixTrackEditor>
@@ -96,6 +98,7 @@ provide("selectedTrackItemId", {
       <teleport to="body">
         <Transition name="drawer">
           <MidiEditor
+            :id="SUBORDINATE_EDITOR_ID"
             class="drawer-box"
             v-show="isOpenDrawerEditor"
           ></MidiEditor>

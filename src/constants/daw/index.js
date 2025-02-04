@@ -1,3 +1,17 @@
+import { generateUniqueId } from "@/utils/generateUniqueId.js"
+export const EDITOR_TYPE_ENUM = {
+  MAIN_EDITOR: "mainEditor",
+  SUBORDINATE_EDITOR: "subordinateEditor",
+}
+export const MAIN_EDITOR_ID = generateUniqueId(EDITOR_TYPE_ENUM.MAIN_EDITOR)
+export const SUBORDINATE_EDITOR_ID = generateUniqueId(
+  EDITOR_TYPE_ENUM.SUBORDINATE_EDITOR,
+)
+export const EDITOR_TYPE_ID_MAP = {
+  [EDITOR_TYPE_ENUM.MAIN_EDITOR]: MAIN_EDITOR_ID,
+  [EDITOR_TYPE_ENUM.SUBORDINATE_EDITOR]: SUBORDINATE_EDITOR_ID,
+}
+
 export const EDITOR_MODE_ENUM = {
   SELECT: "select",
   INSERT: "insert",

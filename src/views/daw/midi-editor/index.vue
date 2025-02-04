@@ -10,6 +10,10 @@ const editorGridParametersStore = useEditorGridParametersStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 
 const props = defineProps({
+  id: {
+    type: String,
+    required: true,
+  },
   editorScrollTop: {
     type: Number,
   },
@@ -111,6 +115,7 @@ function drawNotePadGrid(
 
 <template>
   <DrawerEditor
+    :id="id"
     :canvas-content-height-prop="canvasContentHeight"
     :draw-drawer-editor-grid-handler="drawNotePadGrid"
   >

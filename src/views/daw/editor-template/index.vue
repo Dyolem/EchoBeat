@@ -6,7 +6,6 @@ import {
   computed,
   ref,
   useTemplateRef,
-  useId,
   watch,
   onMounted,
   onUnmounted,
@@ -21,7 +20,9 @@ import {
   SCROLLBAR_WIDTH,
   ZIndex,
 } from "@/constants/daw/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
+const zoomRatioStore = useZoomRatioStore()
 const trackRulerStore = useTrackRulerStore()
 const BEATS_NUMBER = 95
 const INIT_BPM = 120
@@ -81,6 +82,7 @@ provide("editorContentContainerRef", editorContentContainerRef)
 const props = defineProps({
   id: {
     type: String,
+    required: true,
   },
   editorViewHeight: {
     type: Number,
@@ -119,9 +121,6 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-})
-const id = computed(() => {
-  return props.id ?? useId()
 })
 const trackRulerHeight = computed(() => {
   return props.trackRulerHeight
@@ -168,7 +167,7 @@ watch(
 )
 onMounted(() => {
   watch(
-    () => trackRulerStore.timeLineInstanceMap.get(id.value).scrollLeft,
+    () => trackRulerStore.timeLineInstanceMap.get(props.id).scrollLeft,
     (newVal) => {
       editorContentContainerRef.value.scrollLeft = newVal
     },
@@ -355,6 +354,10 @@ function scrollHandler(event) {
     scrollLeft: editorScrollLeft,
   })
 }
+function updateSpecifiedEditorZoomRatio(newZoomRatio) {
+  console.log(props.id)
+  zoomRatioStore.updateSpecifiedEditorZoomRatio(props.id, newZoomRatio)
+}
 onUnmounted(() => {
   controller.abort()
 })
@@ -395,6 +398,7 @@ onUnmounted(() => {
           :grid-height="gridHeight"
           :min-grid-width="minGridWidth"
           v-model:track-zoom-ratio="trackZoomRatio"
+          @update:track-zoom-ratio="updateSpecifiedEditorZoomRatio"
         >
           <template #interactable-layer>
             <slot
