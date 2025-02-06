@@ -3,6 +3,18 @@ export const EDITOR_TYPE_ENUM = {
   MAIN_EDITOR: "mainEditor",
   SUBORDINATE_EDITOR: "subordinateEditor",
 }
+export const ID_PREFIX_ENUM = {
+  AUDIO_TRACK: "audio_track",
+  SUB_TRACK_ITEM: "sub_track_item",
+  WORKSPACE: "workspace",
+}
+export const ID_SET = {
+  AUDIO_TRACK: (prefix = ID_PREFIX_ENUM.AUDIO_TRACK) =>
+    generateUniqueId(prefix),
+  SUB_TRACK_ITEM: (prefix = ID_PREFIX_ENUM.SUB_TRACK_ITEM) =>
+    generateUniqueId(prefix),
+  WORKSPACE: (prefix = ID_PREFIX_ENUM.WORKSPACE) => generateUniqueId(prefix),
+}
 export const MAIN_EDITOR_ID = generateUniqueId(EDITOR_TYPE_ENUM.MAIN_EDITOR)
 export const SUBORDINATE_EDITOR_ID = generateUniqueId(
   EDITOR_TYPE_ENUM.SUBORDINATE_EDITOR,
@@ -10,6 +22,13 @@ export const SUBORDINATE_EDITOR_ID = generateUniqueId(
 export const EDITOR_TYPE_ID_MAP = {
   [EDITOR_TYPE_ENUM.MAIN_EDITOR]: MAIN_EDITOR_ID,
   [EDITOR_TYPE_ENUM.SUBORDINATE_EDITOR]: SUBORDINATE_EDITOR_ID,
+}
+export const ALIGN_TYPE = ["ceil", "floor", "round"]
+export const ALIGN_TYPE_ENUM = {
+  LEFT_JUSTIFYING: "floor",
+  RIGHT_JUSTIFYING: "ceil",
+  TOP_JUSTIFYING: "floor",
+  BOTTOM_JUSTIFYING: "ceil",
 }
 
 export const EDITOR_MODE_ENUM = {
