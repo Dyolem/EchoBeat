@@ -1,13 +1,20 @@
 <script setup>
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { inject } from "vue"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { MAIN_EDITOR_ID, SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
 const mixTrackEditorStore = useMixTrackEditorStore()
+const zoomRatioStore = useZoomRatioStore()
 
 const { updateSelectedAudioTrackId } = inject("selectedAudioTrackId")
 function addAudioTrackHandler() {
   const newTrackId = mixTrackEditorStore.addAudioTrack({
     audioTrackName: "Instrument",
-    midiWorkspaceZoomRatio: 1,
+    mainEditorZoomRatio:
+      zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
+    midiWorkspaceZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
+      SUBORDINATE_EDITOR_ID,
+    ),
   })
   updateSelectedAudioTrackId(newTrackId)
 }

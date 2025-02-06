@@ -130,6 +130,7 @@ function insertNote({ x: insertX, y: insertY }) {
       audioTrackId: selectedAudioTrackId.value,
       x: insertX,
       y: insertY,
+      workspaceBadgeName: props.workspaceBadgeName,
       zoomRatio: props.zoomRatio,
     },
     true,
@@ -200,6 +201,7 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
         v-for="[workspaceId, workspace] in workspaceMap"
         :key="workspaceId"
         :id="workspaceId"
+        :sub-track-item-id="workspace.subTrackItemId"
         :editable-view-height="editableViewHeight"
         :editor-canvas-height="notePadHeight"
         :editor-canvas-width="notePadWidth"

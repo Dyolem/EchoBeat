@@ -1,6 +1,10 @@
 <script setup>
-import { computed, inject, onMounted } from "vue"
-import { DARKEN_COLOR, FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
+import { computed, inject, onMounted, useTemplateRef } from "vue"
+import {
+  BASE_GRID_HEIGHT,
+  DARKEN_COLOR,
+  FALLBACK_THEME_COLOR,
+} from "@/constants/daw/index.js"
 import { colorMix } from "@/utils/colorMix.js"
 
 const props = defineProps({
@@ -12,7 +16,11 @@ const props = defineProps({
     type: Number,
     default: 100,
   },
-  trackItemStartPosition: {
+  height: {
+    type: Number,
+    default: BASE_GRID_HEIGHT,
+  },
+  startPosition: {
     type: Number,
     default: 0,
   },
@@ -24,7 +32,7 @@ const props = defineProps({
     type: String,
     default: "Instrument",
   },
-  workspaceZoomRatio: {
+  trackZoomRatio: {
     type: Number,
     default: 1,
   },
@@ -32,18 +40,12 @@ const props = defineProps({
 const { selectedTrackItemId, updateSelectedTrackItemId } = inject(
   "selectedTrackItemId",
 )
-const mainEditorZoomRatio = inject("mainEditorZoomRatio")
-const trackItemWidth = computed(() => {
-  return (props.width / props.workspaceZoomRatio) * mainEditorZoomRatio.value
-})
-const trackItemStartPosition = computed(() => {
-  return (
-    (props.trackItemStartPosition / props.workspaceZoomRatio) *
-    mainEditorZoomRatio.value
-  )
-})
+const trackItemRef = useTemplateRef("trackItemRef")
 onMounted(() => {
   updateSelectedTrackItemId(props.id)
+  trackItemRef.value.addEventListener("mousedown", (event) => {
+    event.currentTarget.style.cursor = "move"
+  })
 })
 const trackCopyStretchHandleBgColor = computed(() => {
   return colorMix("srgb", props.mainColor, `${DARKEN_COLOR} 50%`)
@@ -56,6 +58,7 @@ const mixContentThumbnailBgColor = computed(() => {
 <template>
   <div
     class="track-item"
+    ref="trackItemRef"
     :class="selectedTrackItemId === id ? 'selected' : ''"
     :data-track-item-id="id"
   >
@@ -70,14 +73,17 @@ const mixContentThumbnailBgColor = computed(() => {
 
 <style scoped>
 .track-item {
-  --track-itme-start-position: v-bind(trackItemStartPosition + "px");
+  --track-itme-start-position: v-bind(startPosition + "px");
   position: absolute;
   display: flex;
   flex-direction: column;
-  width: v-bind(trackItemWidth + "px");
-  height: 100%;
+  width: v-bind(width + "px");
+  height: v-bind(height + "px");
   border-radius: 4px;
   transform: translateX(var(--track-itme-start-position));
+}
+.track-item:hover {
+  cursor: grab;
 }
 .selected {
   outline: 1px solid #ffffff;

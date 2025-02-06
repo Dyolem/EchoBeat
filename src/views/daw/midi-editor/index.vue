@@ -25,6 +25,10 @@ const mainColor = computed(() => {
       ?.mainColor ?? FALLBACK_THEME_COLOR
   )
 })
+const workspaceBadgeName = computed(() => {
+  return mixTrackEditorStore.mixTracksMap.get(selectedAudioTrackId.value)
+    ?.audioTrackName
+})
 provide("mainColor", mainColor)
 const emit = defineEmits(["update:editorScrollTop"])
 
@@ -149,6 +153,7 @@ function drawNotePadGrid(
         :note-pad-height="interactableLayerHeight"
         :editable-view-width="editableViewWidth"
         :editable-view-height="editableViewHeight"
+        :workspace-badge-name="workspaceBadgeName"
         :zoom-ratio="zoomRatio"
         :track-ruler-height="trackRulerHeight"
       ></NoteEditor>

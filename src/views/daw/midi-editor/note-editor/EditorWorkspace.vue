@@ -6,13 +6,21 @@ import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import WorkspaceHandle from "@/views/daw/midi-editor/note-editor/WorkspaceHandle.vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+
 const noteItemStore = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
+const mixTrackEditorStore = useMixTrackEditorStore()
 
 const props = defineProps({
   id: {
     type: [Number, String],
+    required: true,
+  },
+  subTrackItemId: {
+    type: String,
     required: true,
   },
   editorCanvasHeight: {
@@ -177,25 +185,41 @@ function stretchWorkspaceWidth(event) {
   const mousedownXInNoteEditorWorkspaceContainer =
     event.clientX -
     noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
-
+  const minWorkspaceWidth = noteItemStore.noteWidth
+  const maxWorkspaceWidth = props.editorCanvasWidth
   document.addEventListener(
     "mousemove",
     (event) => {
       const { x: stretchEnd } = props.getCursorPositionInNoteEditorRegion(event)
-      workspaceStore.updateWorkspaceWidth({
-        workspaceId: props.id,
-        selectedAudioTrackId: selectedAudioTrackId.value,
-        maxWidth: props.editorCanvasWidth,
-        minWidth: noteItemStore.noteWidth,
-        initWorkspaceStartPosition,
-        initWorkspaceWidth,
-        mousedownX: mousedownXInNoteEditorWorkspaceContainer,
-        stretchStart,
-        stretchEnd: stretchEnd,
-        stretchableDirection: {
-          leftSide: { positive: false, negative: true },
-          rightSide: { positive: true, negative: true },
-        },
+      const { newWidth, newStartPosition } =
+        workspaceStore.updateWorkspaceWidth({
+          workspaceId: props.id,
+          selectedAudioTrackId: selectedAudioTrackId.value,
+          maxWidth: maxWorkspaceWidth,
+          minWidth: minWorkspaceWidth,
+          initStartPosition: initWorkspaceStartPosition,
+          initWidth: initWorkspaceWidth,
+          mousedownX: mousedownXInNoteEditorWorkspaceContainer,
+          stretchStart,
+          stretchEnd: stretchEnd,
+          stretchableDirection: {
+            leftSide: { positive: false, negative: true },
+            rightSide: { positive: true, negative: true },
+          },
+        })
+      mixTrackEditorStore.updateSubTrackItemWidth({
+        audioTrackId: selectedAudioTrackId.value,
+        subTrackItemId: props.subTrackItemId,
+        width: newWidth,
+        scale: [minWorkspaceWidth, maxWorkspaceWidth],
+        isActive: false,
+      })
+      mixTrackEditorStore.updateSubTrackItemStartPosition({
+        audioTrackId: selectedAudioTrackId.value,
+        subTrackItemId: props.subTrackItemId,
+        startPosition: newStartPosition,
+        horizontalScale: [0, maxWorkspaceWidth - newWidth],
+        isActive: false,
       })
     },
     {
@@ -224,6 +248,7 @@ function stretchWorkspaceWidth(event) {
     <div class="workspace-handle">
       <WorkspaceHandle
         :id="id"
+        :sub-track-item-id="subTrackItemId"
         :zoom-ratio="zoomRatio"
         :noteEditorRegionRef="noteEditorRegionRef"
         :note-pad-width="editorCanvasWidth"

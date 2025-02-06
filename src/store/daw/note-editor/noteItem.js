@@ -5,6 +5,9 @@ import {
   TENSILE_ADSORPTION_GRID_THRESHOLD,
   NOTE_ELEMENT_SIZE,
   NOTE_ELEMENT_MIN_SIZE,
+  ALIGN_TYPE_ENUM,
+  MAIN_EDITOR_ID,
+  SUBORDINATE_EDITOR_ID,
 } from "@/constants/daw/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
@@ -12,8 +15,11 @@ import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { alignToGrid } from "@/utils/alignToGrid.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
+  const zoomRatioStore = useZoomRatioStore()
   const editorGridParametersStore = useEditorGridParametersStore()
   const trackRulerStore = useTrackRulerStore()
   const audioStore = useAudioStore()
@@ -239,70 +245,53 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
   }
 
-  function getWorkspaceInitialInfo({
-    createPosition,
-    audioTrackId,
-    zoomRatio,
-  }) {
-    const startPosition = createPosition
-    const type =
-      mixTrackEditorStore.mixTracksMap.get(audioTrackId)?.audioTrackName ??
-      "Instrument"
-    const _noteItemsMap = createNoteItemsMap()
-
-    return {
-      audioTrackId,
-      type,
-      startPosition,
-      noteItemsMap: _noteItemsMap,
-      zoomRatio,
-    }
-  }
   function insertNoteItem(
-    { audioTrackId, x, y, insertToSpecifiedPitchName, zoomRatio } = {},
+    { audioTrackId, x, y, insertToSpecifiedPitchName } = {},
     returnInsertedItemFullInfo = false,
   ) {
-    if (x === undefined || y === undefined) return
+    if (x === undefined || y === undefined || !audioTrackId) return
 
     const specifiedPitchName =
       insertToSpecifiedPitchName ??
       getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
 
-    let workspaceNoteItemsMap = null
-    let createdWorkspace = null
-    const workspaceInfo = getWorkspaceInitialInfo({
-      createPosition: x,
+    const { workspace, isCreated } = workspaceStore.shallCreateWorkspace({
       audioTrackId,
-      zoomRatio,
+      startPosition: x,
     })
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
-    if (!workspaceMap) return
-    if (workspaceMap.size === 0) {
-      createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
-      workspaceNoteItemsMap = createdWorkspace.noteItemsMap
-    } else {
-      for (const workspace of workspaceMap.values()) {
-        const { startPosition, width, noteItemsMap } = workspace
-        if (x >= startPosition && x <= startPosition + width) {
-          createdWorkspace = workspace
-          workspaceNoteItemsMap = noteItemsMap
-          break
-        } else {
-          createdWorkspace = workspaceStore.createWorkspace(workspaceInfo)
-          workspaceNoteItemsMap = createdWorkspace.noteItemsMap
-          break
-        }
-      }
+    const dataConvert = (value) => {
+      return zoomRatioStore.convertDataBetweenEditors({
+        fromValue: value,
+        fromZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
+          SUBORDINATE_EDITOR_ID,
+        ),
+        toZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
+      })
     }
-    const template = noteItemTemplate(
-      { x, y },
-      specifiedPitchName,
-      createdWorkspace,
-    )
-    const noteItems = workspaceNoteItemsMap.get(specifiedPitchName)?.noteItems
+    const { width, workspaceBadgeName, startPosition, id } = workspace
+    const noteItemsMap = workspace.noteItemsMap
+    if (isCreated) {
+      const subTrackItemId = mixTrackEditorStore.createSubTrackItem({
+        audioTrackId,
+        workspaceId: id,
+        trackItemWidth: dataConvert(width),
+        startPosition: dataConvert(startPosition),
+        trackName: workspaceBadgeName,
+      })
+      workspaceStore.getWorkspace({
+        audioTrackId,
+        workspaceId: id,
+      }).subTrackItemId = subTrackItemId
+    } else {
+      mixTrackEditorStore.updateSubTrackItemWidth({
+        audioTrackId,
+        subTrackItemId: workspace.subTrackItemId,
+        width,
+      })
+    }
+
+    const template = noteItemTemplate({ x, y }, specifiedPitchName, workspace)
+    const noteItems = noteItemsMap.get(specifiedPitchName)?.noteItems
     noteItems?.push(template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
@@ -363,7 +352,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     if (mousedownPositionInNote.length === 0) {
       //insert logic
       snappedY = noteItemsMap.get(expectedInsertToPitchName)?.scaleY[0]
-      snappedX = leftJustifyingGrid(x)
+      snappedX = alignToGrid(x, {
+        gridSize: editorGridParametersStore.minGridHorizontalMovement,
+        alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
+      })
     } else {
       //update logic
       const [mousedownXInNote, mousedownYInNote] = mousedownPositionInNote
@@ -379,8 +371,24 @@ export const useNoteItemStore = defineStore("noteItem", () => {
        * 这就违反了移动位置x是网格值的整数倍时的规则，而bug的产生原因在于减去的mousedownXInNote值，被提前进行了取整。
        * 然而减去mousedownXInNote的值是必须，因此可以单独对mousedownXInNote值进行取整，然后将取整的两个值相减。
        * */
-      snappedX = leftJustifyingGrid(x) - leftJustifyingGrid(mousedownXInNote)
-      snappedY = topJustifyingGrid(y) - topJustifyingGrid(mousedownYInNote)
+      snappedX =
+        alignToGrid(x, {
+          gridSize: editorGridParametersStore.minGridHorizontalMovement,
+          alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
+        }) -
+        alignToGrid(mousedownXInNote, {
+          gridSize: editorGridParametersStore.minGridHorizontalMovement,
+          alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
+        })
+      snappedY =
+        alignToGrid(y, {
+          gridSize: editorGridParametersStore.minGridVerticalMovement,
+          alignType: ALIGN_TYPE_ENUM.TOP_JUSTIFYING,
+        }) -
+        alignToGrid(mousedownYInNote, {
+          gridSize: editorGridParametersStore.minGridVerticalMovement,
+          alignType: ALIGN_TYPE_ENUM.TOP_JUSTIFYING,
+        })
     }
     return {
       snappedPosition: {
@@ -679,6 +687,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     noteWidth,
     noteHeight,
     getStartTime,
+    createNoteItemsMap,
     insertNoteItem,
     deleteNoteItem,
     updateNoteItemPosition,

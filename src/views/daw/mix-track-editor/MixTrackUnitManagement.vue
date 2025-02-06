@@ -1,10 +1,9 @@
 <script setup>
 import MixTrackUnit from "@/views/daw/mix-track-editor/MixTrackUnit.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { computed, provide } from "vue"
-import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
+import { computed, provide, useTemplateRef, watch } from "vue"
+
 const mixTrackEditorStore = useMixTrackEditorStore()
-const trackFeatureMapStore = useTrackFeatureMapStore()
 const props = defineProps({
   width: {
     type: Number,
@@ -23,29 +22,53 @@ const mainEditorZoomRatio = computed(() => {
   return props.zoomRatio
 })
 provide("mainEditorZoomRatio", mainEditorZoomRatio)
-const mixTrackManagementContainerWidth = computed(() => {
-  return props.width * props.zoomRatio
-})
-function getWorkspaceMap(audioTrackId) {
-  return (
-    trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    }) ?? []
-  )
+watch(
+  () => props.zoomRatio,
+  (newZoomRatio, oldZoomRatio) => {
+    mixTrackEditorStore.passivePatchUpdateAudioTracksWithZoomRatio({
+      newZoomRatio,
+      oldZoomRatio,
+    })
+  },
+)
+
+const mixTrackManagementContainer = useTemplateRef(
+  "mixTrackManagementContainer",
+)
+function createGetGeometryInfoInScrollableContainer(scrollableContainer) {
+  return function (event) {
+    const scrollableContainerRect = scrollableContainer.getBoundingClientRect()
+    const x = event.clientX - scrollableContainerRect.left
+    const y = event.clientY - scrollableContainerRect.top
+    return {
+      self: scrollableContainer,
+      position: [scrollableContainerRect.left, scrollableContainerRect.top],
+      cursorPosition: [x, y],
+      scrollTop: scrollableContainer.scrollTop,
+      scrollLeft: scrollableContainer.scrollLeft,
+    }
+  }
 }
+const getGeometryInfoInScrollableContainer = computed(() => {
+  return createGetGeometryInfoInScrollableContainer(
+    mixTrackManagementContainer.value,
+  )
+})
 </script>
 
 <template>
-  <div class="mix-track-management-container">
+  <div class="mix-track-management-container" ref="mixTrackManagementContainer">
     <MixTrackUnit
       v-for="[id, trackUnit] in mixTrackEditorStore.mixTracksMap"
       :key="id"
       :id="id"
+      :track-width="width"
       :track-height="trackUnit.trackHeight"
       :main-color="trackUnit.mainColor"
-      :audio-track-start-position="trackUnit.startPosition"
-      :workspace-map="getWorkspaceMap(id)"
+      :sub-track-items-map="trackUnit.subTrackItemsMap"
+      :get-geometry-info-in-parent-element="
+        getGeometryInfoInScrollableContainer
+      "
     >
       <template #mix-content-thumbnail> </template>
     </MixTrackUnit>
@@ -54,7 +77,8 @@ function getWorkspaceMap(audioTrackId) {
 
 <style scoped>
 .mix-track-management-container {
-  width: v-bind(mixTrackManagementContainerWidth + "px");
+  position: relative;
+  width: v-bind(width + "px");
   height: v-bind(height + "px");
 }
 </style>

@@ -1,33 +1,27 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
-import { BASE_GRID_HEIGHT } from "@/constants/daw/index.js"
-import { generateUniqueId } from "@/utils/generateUniqueId.js"
+import {
+  BASE_GRID_HEIGHT,
+  ID_SET,
+  MAIN_EDITOR_ID,
+  SUBORDINATE_EDITOR_ID,
+} from "@/constants/daw/index.js"
 import { useAudioTrackMainColorStore } from "@/store/daw/audio-track-color/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { clamp } from "@/utils/clamp.js"
 
 export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const audioTrackMainColorStore = useAudioTrackMainColorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
   const baseTrackHeight = BASE_GRID_HEIGHT
-  /**
-   * @typedef {string} AudioTrackId - 音轨唯一标识符
-   */
+  const zoomRatioStore = useZoomRatioStore()
 
   /**
-   * @typedef {Object} MixTrackUnit
-   * @property {AudioTrackId} id - 音轨的唯一标识符
-   * @property {string} audioTrackName - 音轨显示名称
-   * @property {number} trackWidth - 音轨宽度（单位：像素）
-   * @property {number} trackHeight - 音轨高度（单位：像素）
-   * @property {string} mainColor - 音轨主色（十六进制颜色代码）
-   * @property {number} serialNumbering - 音轨序号
-   * @property {number} startPosition - 音轨起始位置（单位：像素）
-   */
-
-  /**
-   * @type {import('vue').Ref<Map<AudioTrackId, MixTrackUnit>>}
+   * @typedef {import('../type.js').MixTracksMap} MixTracksMap
+   * @typedef {import('vue').Ref<MixTracksMap>} mixTracksMap
    */
   const mixTracksMap = ref(new Map([]))
   function getBaseInfoTemplate() {
@@ -39,43 +33,62 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   function createNewTrack({
     audioTrackName,
     mainColor = audioTrackMainColorStore.getRandomColor(),
+    mainEditorZoomRatio = 1,
   }) {
-    const newTrackId = generateUniqueId("AudioTrack")
+    const newAudioTrackId = ID_SET.AUDIO_TRACK()
     const existedTracksSize = mixTracksMap.value.size
-    mixTracksMap.value.set(newTrackId, {
-      id: newTrackId,
+    mixTracksMap.value.set(newAudioTrackId, {
+      id: newAudioTrackId,
       audioTrackName,
       mainColor,
       serialNumbering: existedTracksSize + 1,
       subTrackItemsMap: new Map(),
+      mainEditorZoomRatio,
     })
-    return newTrackId
+    return newAudioTrackId
   }
+
+  const generateSubTrackItemId = (prefix) => ID_SET.SUB_TRACK_ITEM(prefix)
   function createSubTrackItem({
     audioTrackId,
-    trackWidth,
-    trackHeight,
+    workspaceId,
+    trackItemWidth,
+    trackItemHeight = BASE_GRID_HEIGHT,
     startPosition,
+    trackName,
   }) {
-    const subTrackItemMap = mixTracksMap.value.get(audioTrackId).subTrackItemMap
-    const subTrackItemId = generateUniqueId(audioTrackId)
-    subTrackItemMap.set(subTrackItemId, {
-      trackWidth,
-      trackHeight,
-      startPosition,
+    const mixTrack = mixTracksMap.value.get(audioTrackId)
+    const subTrackItemsMap = mixTrack.subTrackItemsMap
+    const subTrackItemId = generateSubTrackItemId()
+    const mainColor = mixTrack.mainColor
+    const trackZoomRatio = mixTrack.mainEditorZoomRatio
+    subTrackItemsMap.set(subTrackItemId, {
       audioTrackId,
+      workspaceId,
       subTrackItemId,
+      trackItemWidth,
+      trackItemHeight,
+      mainColor,
+      startPosition,
+      trackName,
+      trackZoomRatio,
     })
     return subTrackItemId
   }
   function addAudioTrack({
     audioTrackName,
     mainColor = audioTrackMainColorStore.getRandomColor(),
+    mainEditorZoomRatio,
     midiWorkspaceZoomRatio,
   }) {
-    const newTrackId = createNewTrack({ audioTrackName, mainColor })
+    const newTrackId = createNewTrack({
+      audioTrackName,
+      mainColor,
+      mainEditorZoomRatio,
+    })
     trackFeatureMapStore.addTrackFeatureMap(newTrackId, {
       midiWorkspace: {
+        workspaceBadgeName: audioTrackName,
         workspaceMap: workspaceStore.createNewWorkspaceMap(),
         zoomRatio: midiWorkspaceZoomRatio,
       },
@@ -83,32 +96,90 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     return newTrackId
   }
 
-  function audioTrackUpdatedWithWorkspace({
+  const convertDataFromSubToMain = (value) => {
+    return zoomRatioStore.convertDataBetweenEditors({
+      fromValue: value,
+      fromZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
+        SUBORDINATE_EDITOR_ID,
+      ),
+      toZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
+    })
+  }
+  function getSubTrackItemsMap({ audioTrackId }) {
+    return mixTracksMap.value.get(audioTrackId).subTrackItemsMap
+  }
+  function getSubTrackItem({ audioTrackId, subTrackItemId }) {
+    return getSubTrackItemsMap({ audioTrackId }).get(subTrackItemId)
+  }
+  function updateSubTrackItemWidth({
     audioTrackId,
     subTrackItemId,
-    trackWidth: newTrackWidth,
-    trackStartPosition: newTrackStartPosition,
+    width,
+    scale,
+    isActive = true,
   }) {
-    // const subTrackItemMap = mixTracksMap.value.get(audioTrackId).subTrackItemMap
-    // const subTrack = subTrackItemMap.get(subTrackItemId)
-    // if (!subTrack) return
-    // if (newTrackWidth !== undefined) subTrack.trackWidth = newTrackWidth
-    //
-    // if (newTrackStartPosition !== undefined)
-    //   subTrack.startPosition = newTrackStartPosition
-
-    const subTrackItemMap = mixTracksMap.value.get(audioTrackId)
-    const subTrack = subTrackItemMap.get(subTrackItemId)
-    if (!subTrack) return
-    if (newTrackWidth !== undefined) subTrack.trackWidth = newTrackWidth
-
-    if (newTrackStartPosition !== undefined)
-      subTrack.startPosition = newTrackStartPosition
+    const subTrackItem = getSubTrackItem({ audioTrackId, subTrackItemId })
+    const oldWidth = subTrackItem.trackItemWidth
+    const newWidth = isActive
+      ? width
+      : convertDataFromSubToMain(clamp(width, scale))
+    subTrackItem.trackItemWidth = newWidth
+    return [newWidth, oldWidth]
   }
+
+  function updateSubTrackItemStartPosition({
+    audioTrackId,
+    subTrackItemId,
+    startPosition,
+    horizontalScale,
+    isActive = true,
+  }) {
+    startPosition = clamp(startPosition, horizontalScale)
+    const subTrackItem = getSubTrackItem({ audioTrackId, subTrackItemId })
+    const oldStartPosition = subTrackItem.startPosition
+    const newStartPosition = isActive
+      ? startPosition
+      : convertDataFromSubToMain(startPosition)
+    subTrackItem.startPosition = newStartPosition
+    return [newStartPosition, oldStartPosition]
+  }
+
+  function passivePatchUpdateAudioTracksWithZoomRatio({
+    newZoomRatio,
+    oldZoomRatio,
+  }) {
+    if (
+      newZoomRatio === oldZoomRatio ||
+      newZoomRatio === undefined ||
+      oldZoomRatio === undefined
+    )
+      return
+
+    for (const audioTrack of mixTracksMap.value.values()) {
+      for (const subTrackItem of audioTrack.subTrackItemsMap.values()) {
+        subTrackItem.trackItemWidth *= newZoomRatio / oldZoomRatio
+        subTrackItem.startPosition =
+          (subTrackItem.startPosition / oldZoomRatio) * newZoomRatio
+        subTrackItem.trackZoomRatio = newZoomRatio
+      }
+    }
+  }
+
+  function deleteSpecifiedSubTrackItem({ audioTrackId, subTrackItemId }) {
+    const subTrackItemsMap = getSubTrackItemsMap({ audioTrackId })
+    subTrackItemsMap?.delete(subTrackItemId)
+  }
+
   return {
     mixTracksMap,
+    generateSubTrackItemId,
     addAudioTrack,
-    audioTrackUpdatedWithWorkspace,
+    getSubTrackItem,
+    getSubTrackItemsMap,
     createSubTrackItem,
+    updateSubTrackItemWidth,
+    updateSubTrackItemStartPosition,
+    passivePatchUpdateAudioTracksWithZoomRatio,
+    deleteSpecifiedSubTrackItem,
   }
 })

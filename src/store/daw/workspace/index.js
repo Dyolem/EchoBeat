@@ -4,6 +4,15 @@ import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { alignToGrid } from "@/utils/alignToGrid.js"
+import {
+  ALIGN_TYPE_ENUM,
+  ID_SET,
+  MAIN_EDITOR_ID,
+  SUBORDINATE_EDITOR_ID,
+} from "@/constants/daw/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { clamp } from "@/utils/clamp.js"
 
 export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const editorGridParametersStore = useEditorGridParametersStore()
@@ -11,7 +20,9 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const audioStore = useAudioStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
+  const zoomRatioStore = useZoomRatioStore()
 
+  const generateWorkspaceId = (prefix) => ID_SET.WORKSPACE(prefix)
   function createNewWorkspaceAtLeftSide({
     createPosition,
     rightWorkspace,
@@ -33,7 +44,11 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     return {
       isCreateNewWorkspace: true,
       workspaceInfo: {
-        startPosition: noteItemStore.leftJustifyingGrid(startPosition),
+        id: generateWorkspaceId(),
+        startPosition: alignToGrid(startPosition, {
+          gridSize: editorGridParametersStore.minGridHorizontalMovement,
+          alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
+        }),
         width,
       },
     }
@@ -62,8 +77,9 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     return {
       isCreateNewWorkspace: false,
       workspaceInfo: {
-        modifiedWorkspaceId: leftWorkspace.id,
+        id: leftWorkspace.id,
         width: newWidth,
+        startPosition: leftWorkspace.startPosition,
       },
     }
   }
@@ -84,6 +100,21 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         rightWorkspace,
         maxNewWorkspaceWidth: editorGridParametersStore.maxEditorWidth,
       })
+    }
+    for (const workspace of sortedWorkspaceArr) {
+      if (
+        x >= workspace.startPosition &&
+        x < workspace.startPosition + workspace.width
+      ) {
+        return {
+          isCreateNewWorkspace: false,
+          workspaceInfo: {
+            id: workspace.id,
+            width: workspace.width,
+            startPosition: workspace.startPosition,
+          },
+        }
+      }
     }
 
     const index = sortedWorkspaceArr.findIndex((workspace) => {
@@ -149,47 +180,60 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   /**
    * @typedef {import('../type.js').NoteItemsMap} NoteItemsMap
    * @param {string} audioTrackId
-   * @param {string} type
+   * @param {string} workspaceBadgeName
    * @param {number} startPosition
    * @param {number} zoomRatio
    * @param {NoteItemsMap} noteItemsMap
-   * @returns {{id: string, type:string, noteItemsMap:NoteItemsMap, width: number, startPosition: number}}
+   * @returns {{id: string, workspaceBadgeName:string, noteItemsMap:NoteItemsMap, width: number, startPosition: number}}
    */
-  function createWorkspace({
-    audioTrackId,
-    type,
-    startPosition,
-    noteItemsMap,
-    zoomRatio,
-  }) {
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
+
+  function shallCreateWorkspace({ audioTrackId, startPosition }) {
+    const { workspaceBadgeName, workspaceMap, zoomRatio } =
+      trackFeatureMapStore.getSelectedTrackFeature({
+        selectedAudioTrackId: audioTrackId,
+        featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+      })
+
     const { isCreateNewWorkspace, workspaceInfo } = computedStartPosition(
       startPosition,
       workspaceMap,
     )
     if (isCreateNewWorkspace) {
-      const { startPosition, width } = workspaceInfo
-      const date = new Date()
-      const id = `${workspaceMap.size + 1}${date.getTime()}`
+      const noteItemsMap = noteItemStore.createNoteItemsMap()
+      const { startPosition, width, id: newId } = workspaceInfo
+
       const workspaceContent = {
-        id,
+        id: newId,
         audioTrackId,
-        type,
+        workspaceBadgeName,
         noteItemsMap: noteItemsMap,
         width,
         startPosition,
         zoomRatio,
+        subTrackItemId: "",
       }
-      workspaceMap.set(id, workspaceContent)
-      return workspaceContent
+      workspaceMap.set(newId, workspaceContent)
+      return {
+        isCreated: isCreateNewWorkspace,
+        workspace: workspaceContent,
+      }
     } else {
-      const { width, modifiedWorkspaceId } = workspaceInfo
-      const workspaceContent = workspaceMap.get(modifiedWorkspaceId)
-      workspaceContent.width = width
-      return workspaceContent
+      const { startPosition, width, id: modifiedWorkspaceId } = workspaceInfo
+      const workspace = workspaceMap.get(modifiedWorkspaceId)
+      workspace.width = width
+      return {
+        isCreated: isCreateNewWorkspace,
+        workspace: {
+          id: modifiedWorkspaceId,
+          audioTrackId,
+          startPosition,
+          width,
+          noteItemsMap: workspace.noteItemsMap,
+          workspaceBadgeName,
+          zoomRatio,
+          subTrackItemId: workspace.subTrackItemId,
+        },
+      }
     }
   }
   function createNewWorkspaceMap() {
@@ -223,32 +267,50 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     }
   }
 
+  const convertDataFromMainToSub = (value) => {
+    return zoomRatioStore.convertDataBetweenEditors({
+      fromValue: value,
+      fromZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
+      toZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
+        SUBORDINATE_EDITOR_ID,
+      ),
+    })
+  }
+
   function updateWorkspacePosition({
     workspaceId,
     selectedAudioTrackId,
     startPosition,
     positionScale,
     stretchableUpdate = false,
+    isActive = true,
   }) {
-    let oldWorkspacePosition = 0
-    let newWorkspacePosition = 0
-    const [minPosition, maxPosition] = positionScale
-    if (startPosition < minPosition || startPosition > maxPosition)
-      return [newWorkspacePosition, oldWorkspacePosition]
-
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
+    const midiWorkspaceInfo = trackFeatureMapStore.getSelectedTrackFeature({
       selectedAudioTrackId: selectedAudioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     })
+    const workspaceMap = midiWorkspaceInfo.workspaceMap
     const workspace = workspaceMap.get(workspaceId)
+    let oldWorkspacePosition = workspace.startPosition
+    let newWorkspacePosition = workspace.startPosition
     if (!workspace) return [newWorkspacePosition, oldWorkspacePosition]
+    let [minPosition, maxPosition] = positionScale
+    if (startPosition < minPosition || startPosition > maxPosition)
+      return [
+        Math.min(Math.max(newWorkspacePosition, minPosition), maxPosition),
+        oldWorkspacePosition,
+      ]
 
-    oldWorkspacePosition = workspace.startPosition
     const snapJudgedStartPosition = noteItemStore.isSnappedToHorizontalGrid
-      ? noteItemStore.leftJustifyingGrid(startPosition)
+      ? alignToGrid(startPosition, {
+          gridSize: editorGridParametersStore.minGridHorizontalMovement,
+          alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
+        })
       : startPosition
     newWorkspacePosition = snapJudgedStartPosition
-
+    newWorkspacePosition = isActive
+      ? newWorkspacePosition
+      : convertDataFromMainToSub(newWorkspacePosition)
     if (newWorkspacePosition === oldWorkspacePosition)
       return [newWorkspacePosition, oldWorkspacePosition]
 
@@ -256,7 +318,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       const noteItemsMap = workspace.noteItemsMap
       for (const { noteItems } of noteItemsMap.values()) {
         for (const noteItem of noteItems) {
-          let newX = noteItem.x - oldWorkspacePosition + snapJudgedStartPosition
+          let newX = noteItem.x - oldWorkspacePosition + newWorkspacePosition
 
           noteItem.x = newX
           const newStartTime = noteItemStore.getStartTime(newX)
@@ -271,6 +333,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         }
       }
     }
+
     workspace.startPosition = newWorkspacePosition
     return [newWorkspacePosition, oldWorkspacePosition]
   }
@@ -280,8 +343,8 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     selectedAudioTrackId,
     maxWidth,
     minWidth,
-    initWorkspaceStartPosition,
-    initWorkspaceWidth,
+    initStartPosition,
+    initWidth,
     mousedownX,
     stretchStart,
     stretchEnd,
@@ -289,6 +352,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       leftSide: { positive: true, negative: true },
       rightSide: { positive: true, negative: true },
     },
+    isActive = true,
   }) {
     const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId,
@@ -296,9 +360,9 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     })
     const workspace = workspaceMap.get(workspaceId)
     const { leftSide, rightSide } = stretchableDirection
-    const middlePoint = initWorkspaceWidth / 2
+    const middlePoint = initWidth / 2
     let newWidth = workspace.width
-    let newX = initWorkspaceStartPosition
+    let newStartPosition = initStartPosition
     const stretchedLength = stretchEnd - stretchStart
     const edgeTriggerWidth = 2
     //由于拖拽吸附是左对齐，光标移动过快会导致缺失关键点判断，比如在40px像素时，note需要从20吸附至40，如果光标移动过快，
@@ -310,24 +374,22 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         leftSide.positive === stretchedLength >= -edgeTriggerWidth ||
         leftSide.negative === stretchedLength <= edgeTriggerWidth
       ) {
-        newX = initWorkspaceStartPosition + stretchedLength
+        newStartPosition = initStartPosition + stretchedLength
 
         const [newWorkspacePosition, oldWorkspacePosition] =
           updateWorkspacePosition({
             workspaceId,
             selectedAudioTrackId,
-            startPosition: newX,
-            positionScale: [0, maxWidth - initWorkspaceWidth],
+            startPosition: newStartPosition,
+            positionScale: [0, maxWidth - initWidth],
             stretchableUpdate: true,
+            isActive,
           })
-
+        newStartPosition = newWorkspacePosition
         if (newWorkspacePosition !== oldWorkspacePosition) {
-          newWidth = Math.min(
-            Math.max(
-              newWidth - (newWorkspacePosition - oldWorkspacePosition),
-              minWidth,
-            ),
-            maxWidth,
+          newWidth = clamp(
+            newWidth - (newWorkspacePosition - oldWorkspacePosition),
+            [minWidth, maxWidth],
           )
         }
       }
@@ -337,19 +399,44 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         rightSide.positive === stretchedLength >= -edgeTriggerWidth ||
         rightSide.negative === stretchedLength <= edgeTriggerWidth
       ) {
-        newWidth = Math.min(
-          Math.max(initWorkspaceWidth + stretchedLength, minWidth),
-          maxWidth,
-        )
+        newWidth = clamp(initWidth + stretchedLength, [minWidth, maxWidth])
       }
     }
+    newWidth = isActive ? newWidth : convertDataFromMainToSub(newWidth)
     workspace.width = newWidth
+
+    return {
+      newWidth,
+      newStartPosition,
+    }
+  }
+
+  function deleteWorkspace({ audioTrackId, workspaceId }) {
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    workspaceMap?.delete(workspaceId)
+  }
+
+  function getWorkspaceMap({ audioTrackId }) {
+    return trackFeatureMapStore.getSelectedTrackWorkspaceMap({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+  }
+  function getWorkspace({ audioTrackId, workspaceId }) {
+    return getWorkspaceMap({ audioTrackId })?.get(workspaceId)
   }
   return {
-    createWorkspace,
+    generateWorkspaceId,
+    shallCreateWorkspace,
     createNewWorkspaceMap,
     updateWorkspacePosition,
     updateWorkspaceWidth,
+    getWorkspace,
+    getWorkspaceMap,
+    deleteWorkspace,
     passivePatchUpdateWorkspaceWithZoomRatio,
   }
 })

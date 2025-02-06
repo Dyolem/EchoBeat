@@ -19,7 +19,7 @@ export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
   })
 
   /**
-   * @typedef {string} TrackFeatureMapId
+   * @typedef {AudioTrackId} TrackFeatureMapId
    * @param trackFeatureMapId
    * @param {import('../type.js').MidiWorkspace} midiWorkspace
    * @param {any} instrument

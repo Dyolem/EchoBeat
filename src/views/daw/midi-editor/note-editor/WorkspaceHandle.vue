@@ -2,14 +2,18 @@
 import { computed, inject, ref, useTemplateRef } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
-import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { colorMix } from "@/utils/colorMix.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 const workspaceStore = useWorkspaceStore()
-const trackFeatureMapStore = useTrackFeatureMapStore()
+const mixTrackEditorStore = useMixTrackEditorStore()
 
 const props = defineProps({
   id: {
     type: [Number, String],
+    required: true,
+  },
+  subTrackItemId: {
+    type: String,
     required: true,
   },
   zoomRatio: {
@@ -53,6 +57,7 @@ function workspaceGrabbingHandler(e) {
     e.clientX - grabbingWorkspaceHandleRef.value.getBoundingClientRect().left
   const controller = new AbortController()
   const clearSelectionController = clearSelection()
+  const scale = [0, props.notePadWidth - props.workspaceContainerWidth]
 
   document.addEventListener(
     "mousemove",
@@ -61,11 +66,19 @@ function workspaceGrabbingHandler(e) {
         event.clientX -
         props.noteEditorRegionRef.getBoundingClientRect().left -
         mousedownPositionXInWorkSpace
-      workspaceStore.updateWorkspacePosition({
+      const [newStartPosition] = workspaceStore.updateWorkspacePosition({
         workspaceId: props.id,
         selectedAudioTrackId: selectedAudioTrackId.value,
         startPosition: workspaceStartPosition,
-        positionScale: [0, props.notePadWidth - props.workspaceContainerWidth],
+        positionScale: scale,
+      })
+
+      mixTrackEditorStore.updateSubTrackItemStartPosition({
+        audioTrackId: selectedAudioTrackId.value,
+        subTrackItemId: props.subTrackItemId,
+        startPosition: newStartPosition,
+        horizontalScale: scale,
+        isActive: false,
       })
     },
     {
