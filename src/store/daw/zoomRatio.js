@@ -19,19 +19,22 @@ export const useZoomRatioStore = defineStore("zoomRatio", () => {
     }
     return [newZoomRatio, oldZoomRatio]
   }
-  function convertDataBetweenEditors({ fromValue, fromEditorId, toEditorId }) {
+  function convertDataBetweenEditors({
+    fromValue,
+    fromZoomRatio,
+    toZoomRatio,
+  }) {
     if (
-      !(
-        fromValue === undefined &&
-        zoomRatioMap.has(fromEditorId) &&
-        zoomRatioMap.has(toEditorId)
-      )
-    )
-      return
-    return (
-      (fromValue / zoomRatioMap.get(fromEditorId)) *
-      zoomRatioMap.get(toEditorId)
-    )
+      typeof fromValue !== "number" ||
+      typeof fromZoomRatio !== "number" ||
+      typeof toZoomRatio !== "number"
+    ) {
+      throw new TypeError("params type error")
+    }
+    if (fromZoomRatio === 0) {
+      throw new RangeError("Forbid the divisor to be 0")
+    }
+    return (fromValue / fromZoomRatio) * toZoomRatio
   }
 
   function getSpecifiedEditorZoomRatio(editorId) {
