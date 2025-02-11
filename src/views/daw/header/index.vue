@@ -1,132 +1,22 @@
 <script setup>
-import { useAudioStore } from "@/store/daw/audio/index.js"
-import { computed } from "vue"
-import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
-const trackRulerStore = useTrackRulerStore()
-
-const audioStore = useAudioStore()
-const accurateTime = computed(() => {
-  return trackRulerStore.timelineCurrentTime
-})
-const timeDisplay = computed(() => {
-  return accurateTime.value.toFixed(1)
-})
-
-let audioContext = null
-let isPlaying = false
-let controller = null
-const dynamicGenerationTimeInterval = 2
-function playAudio() {
-  if (!isPlaying) {
-    if (!audioContext) {
-      const { audioContext: newAudioContext, controller: newController } =
-        initPlay({
-          anyStartTime: trackRulerStore.timelineCurrentTime,
-          maxTime: trackRulerStore.totalTime,
-        })
-
-      audioContext = newAudioContext
-      controller = newController
-    } else {
-      controller = resume(audioContext, trackRulerStore.totalTime)
-    }
-  } else {
-    if (audioContext) {
-      pause(audioContext, controller)
-    }
-  }
-}
-
-let checkPoint = 0
-function queryCurrentTime({
-  audioContext,
-  signal,
-  anyStartTime = 0,
-  dynamicGenerationTimeInterval = 2,
-  maxTime,
-} = {}) {
-  if (!audioContext) return
-  // console.log(signal.aborted)
-  let lastCheckPoint = audioContext.currentTime + anyStartTime
-  requestAnimationFrame(() => {
-    const time = audioContext.currentTime + anyStartTime
-    const currentCheckPoint = time
-    trackRulerStore.timelineCurrentTime = time
-    trackRulerStore.synchronizeStateWithCurrentTime(time)
-    if (lastCheckPoint <= checkPoint && currentCheckPoint >= checkPoint) {
-      // console.log("generate")
-      checkPoint += dynamicGenerationTimeInterval
-      audioStore.generateAudioNode({
-        noteBufferSourceMap: audioStore.noteBufferSourceMap,
-        timelinePlayTime: accurateTime.value,
-        generableAudioTimeEnd:
-          accurateTime.value + dynamicGenerationTimeInterval,
-        audioContext: audioStore.audioContext,
-      })
-    }
-
-    if (signal.aborted) return
-    if (time > maxTime) {
-      audioContext.suspend()
-      isPlaying = false
-      return
-    }
-
-    queryCurrentTime({
-      audioContext,
-      signal,
-      anyStartTime,
-      dynamicGenerationTimeInterval,
-      maxTime,
-    })
-  })
-}
-function initPlay({ anyStartTime, maxTime }) {
-  isPlaying = true
-  const controller = new AbortController()
-  const audioContext = new AudioContext()
-  checkPoint = audioContext.currentTime + anyStartTime
-  queryCurrentTime({
-    audioContext,
-    signal: controller.signal,
-    anyStartTime,
-    maxTime,
-    dynamicGenerationTimeInterval,
-  })
-  return { audioContext, controller }
-}
-function pause(audioContext, controller) {
-  if (!audioContext) return
-  isPlaying = false
-  audioContext.suspend()
-  audioStore.stopAllNodes()
-  controller.abort()
-}
-function resume(audioContext, maxTime) {
-  if (!audioContext) return
-  isPlaying = true
-  const suspendTime = audioContext.currentTime
-  const anyStartTime = accurateTime.value - suspendTime
-  audioContext.resume()
-  checkPoint = audioContext.currentTime + anyStartTime
-  controller = new AbortController()
-  queryCurrentTime({
-    audioContext,
-    signal: controller.signal,
-    anyStartTime,
-    maxTime,
-    dynamicGenerationTimeInterval,
-  })
-  return controller
-}
+import PlayController from "@/views/daw/header/play-controller/index.vue"
+import Metronome from "@/views/daw/header/beat-controller/metronome.vue"
+import Mode from "@/views/daw/header/beat-controller/mode.vue"
 </script>
 
 <template>
   <div class="studio-header">
-    <button @click="playAudio">play audio</button>
-    <button @click="pause">pause audio</button>
-    <button @click="resume">resume audio</button>
-    <div class="time">{{ timeDisplay }}</div>
+    <nav class="mix-editor-header-content"></nav>
+    <nav class="mix-editor-toolbar">
+      <div class="mix-editor-toolbar-left">
+        <Metronome></Metronome>
+        <Mode></Mode>
+      </div>
+      <div class="mix-editor-toolbar-center">
+        <PlayController></PlayController>
+      </div>
+      <div class="mix-editor-toolbar-right"></div>
+    </nav>
   </div>
 </template>
 
@@ -134,9 +24,30 @@ function resume(audioContext, maxTime) {
 .studio-header {
   width: 100vw;
   height: var(--header-height);
+  display: flex;
+  flex-direction: column;
   background-color: black;
 }
-.time {
-  color: #fff;
+.mix-editor-header-content {
+  flex: 0.5;
+  width: 100%;
+  background-color: pink;
+}
+.mix-editor-toolbar {
+  flex: 0.5;
+  width: 100%;
+  min-width: 768px;
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr auto minmax(auto, 1fr);
+}
+.mix-editor-toolbar-left,
+.mix-editor-toolbar-center,
+.mix-editor-toolbar-right {
+  display: flex;
+  align-items: center;
+}
+.mix-editor-toolbar-left {
+  gap: 30px;
 }
 </style>
