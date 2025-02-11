@@ -34,3 +34,10 @@ body {
   list-style: none;
   box-sizing: border-box;
 }
+input,select,textarea {
+  -webkit-appearance: none;
+  border-width: 0;
+  box-shadow: none;
+  outline: 0;
+  outline-width: 0;
+}
