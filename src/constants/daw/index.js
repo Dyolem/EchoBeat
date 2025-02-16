@@ -46,7 +46,7 @@ export const NOTE_ELEMENT_SIZE = {
 export const ZIndex = {
   TRACK_RULER: 100,
   EDITOR_CONTENT: 10,
-  EDITOR_CANVAS: 1,
+  EDITOR_BG_SVG: 1,
   INTERACTABLE_LAYER: 10,
   NOTE_EDITOR_WORKSPACE_CONTAINER_PLACEHOLDER: 20,
   EDITOR_NOTE: 30,
@@ -59,7 +59,7 @@ export const ZIndex = {
 export const DEFAULT_ZOOM_RATIO = 1
 export const ZOOM_THRESHOLD = 0.1
 export const MAX_ZOOM = 6
-export const MIN_ZOOM = 0.8
+export const MIN_ZOOM = 0.2
 export const ZOOM_PARAMETERS = {
   zoomThreshold: ZOOM_THRESHOLD,
   zoomScale: [MIN_ZOOM, MAX_ZOOM],
@@ -69,10 +69,17 @@ export const NOTE_ELEMENT_MIN_SIZE = {
   minHeight: NOTE_ELEMENT_SIZE.baseHeight * MIN_ZOOM,
 }
 export const BEATS_COUNT = 95
-export const BASE_GRID_WIDTH = 20
+
 export const BEAT_GRID_RATIO = 4
-export const MIN_GRID_WIDTH = BASE_GRID_WIDTH * MIN_ZOOM
+
 export const BASE_GRID_HEIGHT = 90
+export const INIT_BPM = 120
+export const BASE_GRID_WIDTH = 20
+export const MIN_GRID_WIDTH = 15
+export const MAX_GRID_WIDTH = 30
+export const EDITABLE_TOTAL_TIME = 240
+export const INIT_BEATS_PER_MEASURE = 4
+export const INIT_NOTE_VALUE_DENOMINATOR = 4
 
 // 音名的顺序表
 export const NOTES_TABLE = [
