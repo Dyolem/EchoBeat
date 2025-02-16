@@ -36,15 +36,7 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  canvasContentHeightProp: {
-    type: Number,
-    default: undefined,
-  },
-  drawDrawerEditorGridHandler: {
-    type: Function,
-  },
 })
-provide("drawGrid", props.drawDrawerEditorGridHandler)
 
 const drawerEditorViewHeight = computed({
   get: () => {
@@ -128,7 +120,6 @@ onUnmounted(() => {
       :resize-direction="['n', 's', 'w', 'e', 'nw']"
       :resizable-editor-height-range="heightRange"
       :resizable-editor-width-range="widthRange"
-      :canvas-content-height-prop="canvasContentHeightProp"
       :modify-timeline-by-click="false"
     >
       <template

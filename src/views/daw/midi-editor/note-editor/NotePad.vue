@@ -1,9 +1,7 @@
 <script setup>
-import { computed, inject, watchEffect } from "vue"
+import { computed } from "vue"
 
 const OCTAVE_KEY_COUNT = 12
-const OCTAVE_WHITE_KEY_COUNT = 7
-const OCTAVE_BLACK_KEY_COUNT = 5
 const WHITE_KEY_SVG_RECT_FILL_COLOR = "rgba(162,175,185,0.7)"
 const BLACK_KEY_SVG_RECT_FILL_COLOR = "rgba(0,0,0,0.6)"
 const C_WHITE_KEY_FILL_COLOR = "rgba(255, 255, 255, 0.7)"
@@ -16,34 +14,27 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  noteTrackHeight: {
+    type: Number,
+    required: true,
+  },
+  svgHeight: {
+    type: Number,
+    required: true,
+  },
   octaveCount: {
     type: Number,
     default: 7,
   },
 })
-
-const pianoKeySize = inject("pianoKeySize")
-const whiteKeyHeight = computed(() => {
-  return pianoKeySize.value.whiteKeyHeight
-})
-const noteTrackHeight = computed(() => {
-  return (
-    (whiteKeyHeight.value * props.octaveCount * OCTAVE_WHITE_KEY_COUNT) /
-    (OCTAVE_KEY_COUNT * props.octaveCount)
-  )
-})
 const octaveItemHeight = computed(() => {
-  return noteTrackHeight.value * OCTAVE_KEY_COUNT
+  return props.noteTrackHeight * OCTAVE_KEY_COUNT
 })
-const svgHeight = computed(() => {
-  return octaveItemHeight.value * props.octaveCount
-})
-
 const rectInfo = computed(() => {
   const rectInfoArr = []
   let fillColor = ""
   for (let i = 0; i < OCTAVE_KEY_COUNT; i++) {
-    let y = i * noteTrackHeight.value
+    let y = i * props.noteTrackHeight
     let j = -1
     if (i < 7) {
       j = i
@@ -61,16 +52,12 @@ const rectInfo = computed(() => {
     if (fillColor)
       rectInfoArr.push({
         id: i,
-        height: noteTrackHeight.value,
+        height: props.noteTrackHeight,
         y: y,
         fill: fillColor,
       })
   }
   return rectInfoArr
-})
-const { updateCanvasContentHeight } = inject("canvasContentHeight")
-watchEffect(() => {
-  updateCanvasContentHeight(svgHeight.value)
 })
 </script>
 

@@ -15,11 +15,9 @@ import EditorWorkspace from "@/views/daw/midi-editor/note-editor/EditorWorkspace
 
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
-import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 
-const editorGridParametersStore = useEditorGridParametersStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
 const noteItems = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
@@ -59,19 +57,11 @@ const noteEditorContainerRef = useTemplateRef("noteEditorContainerRef")
 const noteEditorRegionRef = useTemplateRef("noteEditorRegionRef")
 const chromaticInfo = inject("chromaticInfo")
 const pianoKeySize = inject("pianoKeySize")
+const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", ref(20))
 const whiteKeyHeight = computed(() => {
   return pianoKeySize.value.whiteKeyHeight
 })
-const noteHeight = computed(() => {
-  return Number(
-    (
-      (whiteKeyHeight.value *
-        chromaticInfo.value.octaveCount *
-        OCTAVE_WHITE_KEY_COUNT) /
-      (OCTAVE_KEY_COUNT * chromaticInfo.value.octaveCount)
-    ).toFixed(3),
-  )
-})
+
 const workspaceMap = computed(() => {
   return (
     trackFeatureMapStore.getSelectedTrackWorkspaceMap({
@@ -79,6 +69,26 @@ const workspaceMap = computed(() => {
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     }) ?? []
   )
+})
+
+const noteTrackHeight = computed(() => {
+  return (
+    (whiteKeyHeight.value *
+      chromaticInfo.value.octaveCount *
+      OCTAVE_WHITE_KEY_COUNT) /
+    (OCTAVE_KEY_COUNT * chromaticInfo.value.octaveCount)
+  )
+})
+const octaveItemHeight = computed(() => {
+  return noteTrackHeight.value * OCTAVE_KEY_COUNT
+})
+const svgHeight = computed(() => {
+  return octaveItemHeight.value * chromaticInfo.value.octaveCount
+})
+
+const { updateCanvasContentHeight } = inject("canvasContentHeight")
+watchEffect(() => {
+  updateCanvasContentHeight(svgHeight.value + workspacePlaceHolderHeight.value)
 })
 
 const controller = new AbortController()
@@ -97,17 +107,6 @@ onMounted(() => {
 })
 onUnmounted(() => {
   controller.abort()
-})
-watch(
-  noteHeight,
-  (newVal) => {
-    noteItems.noteHeight = newVal
-    editorGridParametersStore.minGridVerticalMovement = newVal
-  },
-  { immediate: true },
-)
-watchEffect(() => {
-  editorGridParametersStore.editorWidth = props.notePadWidth
 })
 
 const noteMainSelectedId = ref("")
@@ -190,8 +189,6 @@ watch(
     })
   },
 )
-
-const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
 </script>
 
 <template>
@@ -231,6 +228,8 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
         <note-pad
           :note-pad-width="notePadWidth"
           :note-pad-height="notePadHeight"
+          :note-track-height="noteTrackHeight"
+          :svg-height="svgHeight"
           :octave-count="chromaticInfo.octaveCount"
         ></note-pad>
       </div>
@@ -247,7 +246,7 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
   position: relative;
   display: flex;
   width: v-bind(notePadWidth + "px");
-  height: v-bind(notePadHeight + "px");
+  height: v-bind(notePadHeight - workspacePlaceHolderHeight + "px");
   background-color: rgba(0, 0, 0, 0.3);
 }
 
