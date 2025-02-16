@@ -1,5 +1,5 @@
 <script setup>
-import { inject, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
+import { inject, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
 import { debounce } from "@/utils/debounce.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import {
@@ -9,16 +9,17 @@ import {
   DEFAULT_ZOOM_RATIO,
   ZIndex,
 } from "@/constants/daw/index.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 const trackRulerStore = useTrackRulerStore()
-
+const beatControllerStore = useBeatControllerStore()
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
-const drawGrid = inject("drawGrid", defaultDrawGrid)
+
 const props = defineProps({
   id: {
     type: String,
-    default: "",
+    required: true,
   },
   canvasWidth: {
     type: Number,
@@ -32,37 +33,15 @@ const props = defineProps({
     type: Number,
     default: DEFAULT_ZOOM_RATIO,
   },
-  gridWidth: {
-    type: Number,
-    default: 20,
-  },
-  gridHeight: {
-    type: Number,
-    default: 90,
-  },
-  minGridWidth: {
-    type: Number,
-    default: 20,
-  },
   modifyTimelineByClick: {
     type: Boolean,
     default: true,
   },
 })
 const interactableLayerZIndex = ref(ZIndex.INTERACTABLE_LAYER)
-const editorCanvas = ref(ZIndex.EDITOR_CANVAS)
-watch(
-  () => [props.canvasWidth, props.canvasHeight],
-  ([newCanvasWidth, newCanvasHeight]) => {
-    drawGrid(canvas, {
-      canvasWidth: newCanvasWidth,
-      canvasHeight: newCanvasHeight,
-      gridWidth: props.gridWidth,
-      gridHeight: props.gridHeight,
-      minGridWidth: props.minGridWidth,
-    })
-  },
-)
+const editorBgSvg = ref(ZIndex.EDITOR_BG_SVG)
+
+const svgHeight = inject("bgSvgHeight", "100%")
 const emit = defineEmits(["update:trackZoomRatio"])
 function CreateZoomCanvas(
   increment = ZOOM_THRESHOLD,
@@ -92,67 +71,7 @@ function CreateZoomCanvas(
 }
 const zoomCanvas = CreateZoomCanvas(ZOOM_THRESHOLD, [MIN_ZOOM, MAX_ZOOM], emit)
 
-// 绘制轨道格子
-function defaultDrawGrid(
-  target,
-  {
-    canvasWidth,
-    canvasHeight,
-    gridWidth = props.gridWidth,
-    gridHeight = props.gridHeight,
-    minGridWidth = props.minGridWidth,
-  },
-) {
-  if (!target) return
-  const ctx = target.getContext("2d")
-  target.width = canvasWidth
-  target.height = canvasHeight
-
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
-
-  ctx.beginPath()
-
-  //Draw vertical lines
-  const isAliquot = gridWidth % minGridWidth === 0
-
-  for (let x = 0; x <= canvasWidth; x += gridWidth) {
-    ctx.strokeStyle = "#ddd"
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, canvasHeight)
-    if (isAliquot && gridWidth !== minGridWidth) {
-      const integralMultiple = gridWidth / minGridWidth
-      for (let i = 1; i < integralMultiple; i++) {
-        const drawnX = x - i * minGridWidth
-        ctx.moveTo(drawnX, 0)
-        ctx.lineTo(drawnX, canvasHeight)
-      }
-    }
-  }
-  ctx.stroke()
-  // Draw horizontal lines
-  for (let y = 0; y < canvasHeight; y += gridHeight) {
-    ctx.strokeStyle = "#ddd"
-    ctx.moveTo(0, y)
-    ctx.lineTo(canvasWidth, y)
-  }
-
-  ctx.stroke()
-}
-let canvas = null
-let interactableLayer = null
-const canvasBackgroundRef = useTemplateRef("canvasBackgroundRef")
-
 onMounted(() => {
-  // canvas = document.getElementById("background")
-  canvas = canvasBackgroundRef.value
-  interactableLayer = document.getElementById("interactable-layer")
-
-  drawGrid(canvas, {
-    canvasWidth: props.canvasWidth,
-    canvasHeight: props.canvasHeight,
-    gridWidth: props.gridWidth,
-    gridHeight: props.gridHeight,
-  })
   const drawDebounce = debounce((event) => {
     if (event.ctrlKey) {
       zoomCanvas((zoomIncrement) => {
@@ -211,7 +130,7 @@ onMounted(() => {
 window.addEventListener(
   "keydown",
   (e) => {
-    e.preventDefault()
+    // e.preventDefault()
     // zoomCanvas((zoomIncrement) => {
     //   if (e.ctrlKey) {
     //     if (e.code === "Equal") {
@@ -238,18 +157,61 @@ onUnmounted(() => {
     ref="interactableContainerRef"
     tabindex="-1"
   >
-    <canvas id="editor-canvas" ref="canvasBackgroundRef"></canvas>
+    <svg class="mix-editor-grid" :width="canvasWidth" :height="svgHeight">
+      <defs>
+        <pattern
+          :id="`${id}-mix-editor-track-grid-pattern`"
+          x="0"
+          y="0"
+          :width="beatControllerStore.dynamicPerBarWidth(id)"
+          height="3240"
+          patternUnits="userSpaceOnUse"
+          class="is-ignore-second"
+        >
+          <rect
+            v-for="n in beatControllerStore.beatsPerMeasure"
+            width="0.5"
+            height="3240"
+            fill="var(--graduation-fill)"
+            :x="(n - 1) * beatControllerStore.factualDisplayedGridWidth(id)"
+          ></rect>
+        </pattern>
+        <pattern
+          :id="`${id}-mix-editor-track-highlight-pattern`"
+          x="0"
+          y="0"
+          :width="beatControllerStore.highlightWidth(id)"
+          height="3240"
+          patternUnits="userSpaceOnUse"
+        >
+          <rect
+            :width="beatControllerStore.dynamicPerBarWidth(id)"
+            height="3240"
+            fill="gray"
+            x="0"
+          ></rect>
+        </pattern>
+      </defs>
+      <rect
+        :fill="`url(#${id}-mix-editor-track-highlight-pattern)`"
+        x="0"
+        y="0"
+        :width="canvasWidth"
+        height="3240"
+      ></rect>
+      <rect
+        :fill="`url(#${id}-mix-editor-track-grid-pattern)`"
+        x="0"
+        y="0"
+        :width="canvasWidth"
+        height="3240"
+      ></rect>
+    </svg>
     <div id="interactable-layer"><slot name="interactable-layer"> </slot></div>
   </div>
 </template>
 
 <style scoped>
-#editor-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: v-bind(editorCanvas);
-}
 .interactable-container {
   position: relative;
   width: v-bind(canvasWidth + "px");
@@ -258,5 +220,9 @@ onUnmounted(() => {
 #interactable-layer {
   position: absolute;
   z-index: v-bind(interactableLayerZIndex);
+}
+.mix-editor-grid {
+  position: absolute;
+  z-index: v-bind(editorBgSvg);
 }
 </style>

@@ -21,15 +21,14 @@ import {
   ZIndex,
 } from "@/constants/daw/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { useEditor } from "@/store/daw/editor.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
+const beatControllerStore = useBeatControllerStore()
+const editorStore = useEditor()
 const zoomRatioStore = useZoomRatioStore()
 const trackRulerStore = useTrackRulerStore()
-const BEATS_NUMBER = 95
-const INIT_BPM = 120
 
-const BASE_GRID_WIDTH = 20
-const MIN_GRID_WIDTH = 20
-const BASE_GRID_HEIGHT = 90
 const TRACK_ZOOM_RATIO = DEFAULT_ZOOM_RATIO
 
 const MIN_DRAWER_EDITOR_HEIGHT = 300
@@ -42,37 +41,13 @@ const INIT_DRAWER_EDITOR_HEIGHT = 400
 const INIT_DRAWER_EDITOR_WIDTH = 1600
 
 const trackZoomRatio = ref(TRACK_ZOOM_RATIO)
-const trackAmount = ref(10)
-const minGridWidth = ref(MIN_GRID_WIDTH)
-
-const gridWidth = computed(() => {
-  return trackZoomRatio.value * BASE_GRID_WIDTH
-})
-const gridHeight = ref(BASE_GRID_HEIGHT)
-
-const {
-  canvasContentHeight: provideCanvasContentHeight = null,
-  updateCanvasContentHeight = null,
-} = inject("canvasContentHeight", {})
+const { canvasContentHeight = 0, updateCanvasContentHeight = null } = inject(
+  "canvasContentHeight",
+  {},
+)
 
 const canvasContentWidth = computed(() => {
-  return gridWidth.value * beatsNumber.value * 4
-})
-const canvasContentHeight = computed(() => {
-  if (props.canvasContentHeightProp !== undefined)
-    return props.canvasContentHeightProp
-  else if (provideCanvasContentHeight !== null)
-    return provideCanvasContentHeight.value
-  else return gridHeight.value * trackAmount.value
-})
-
-const beatsNumber = ref(BEATS_NUMBER)
-const bpm = ref(INIT_BPM)
-const secondsPerBeat = computed(() => {
-  return 60 / bpm.value
-})
-const totalTime = computed(() => {
-  return secondsPerBeat.value * beatsNumber.value
+  return beatControllerStore.totalLength(props.id)
 })
 
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
@@ -112,10 +87,6 @@ const props = defineProps({
   resizeDirection: {
     type: Array,
     default: () => [],
-  },
-  canvasContentHeightProp: {
-    type: Number,
-    default: undefined,
   },
   modifyTimelineByClick: {
     type: Boolean,
@@ -178,6 +149,9 @@ onMounted(() => {
       editorContentContainerRef.value.scrollTop = newVal
     },
   )
+  const x = editorContentRef.value.getBoundingClientRect().left
+  const y = editorContentRef.value.getBoundingClientRect().top
+  editorStore.initEditor(props.id, { x, y })
   if (!props.resizable) return
 
   const box = editorContentContainerRef.value
@@ -355,9 +329,15 @@ function scrollHandler(event) {
   })
 }
 function updateSpecifiedEditorZoomRatio(newZoomRatio) {
-  console.log(props.id)
   zoomRatioStore.updateSpecifiedEditorZoomRatio(props.id, newZoomRatio)
+  editorStore.updateEditorParams(props.id, { zoomRatio: newZoomRatio })
+  if (newZoomRatio >= 3) {
+    beatControllerStore.maxGridWidth = 240
+  } else {
+    beatControllerStore.maxGridWidth = 30
+  }
 }
+
 onUnmounted(() => {
   controller.abort()
 })
@@ -372,15 +352,14 @@ onUnmounted(() => {
     >
       <div class="track-ruler-container">
         <TrackRuler
-          :grid-width="gridWidth"
-          :grid-height="gridHeight"
+          :id="id"
           :track-ruler-width="canvasContentWidth"
           :track-ruler-height="trackRulerHeight"
           :track-zoom-ratio="trackZoomRatio"
         ></TrackRuler>
         <TimeLine
           :id="id"
-          :timeline-height="canvasContentHeight"
+          :timeline-height="editableViewHeight"
           :parent-container="editorContentContainerRef"
           :track-ruler-width="canvasContentWidth"
           :track-ruler-view-width="editorViewWidth"
@@ -394,9 +373,6 @@ onUnmounted(() => {
           :canvas-width="canvasContentWidth"
           :canvas-height="canvasContentHeight"
           :modify-timeline-by-click="modifyTimelineByClick"
-          :grid-width="gridWidth"
-          :grid-height="gridHeight"
-          :min-grid-width="minGridWidth"
           v-model:track-zoom-ratio="trackZoomRatio"
           @update:track-zoom-ratio="updateSpecifiedEditorZoomRatio"
         >
@@ -431,6 +407,7 @@ onUnmounted(() => {
   flex-direction: column;
   height: v-bind(editorViewHeight + "px");
   width: v-bind(editorViewWidth + "px");
+  background-color: black;
   /**padding-left: 10px;**/
 }
 .track-ruler-container {
@@ -443,7 +420,6 @@ onUnmounted(() => {
   width: v-bind(canvasContentWidth + "px");
   height: v-bind(canvasContentHeight + "px");
   flex-grow: 1;
-  background-color: black;
   z-index: v-bind(editorContentZIndex);
 }
 </style>

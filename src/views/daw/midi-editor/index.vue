@@ -3,10 +3,8 @@ import DrawerEditor from "@/views/daw/drawer-editor/index.vue"
 import MidiSidebar from "@/views/daw/midi-editor/midi-sidebar/index.vue"
 import NoteEditor from "@/views/daw/midi-editor/note-editor/index.vue"
 import { computed, inject, provide, ref } from "vue"
-import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
-const editorGridParametersStore = useEditorGridParametersStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 
 const props = defineProps({
@@ -76,53 +74,17 @@ function updateChromaticScaleScrollTopHandler(chromaticScaleScrollTop) {
 }
 const canvasContentHeight = ref(20)
 function updateCanvasContentHeight(height) {
+  console.log(height)
   canvasContentHeight.value = height
 }
 provide("canvasContentHeight", {
   canvasContentHeight,
   updateCanvasContentHeight,
 })
-function drawNotePadGrid(
-  target,
-  { canvasWidth, canvasHeight, gridWidth = 20, gridHeight = 90, minGridWidth },
-) {
-  if (!target) return
-  const ctx = target.getContext("2d")
-  target.width = canvasWidth
-  target.height = canvasHeight + 1
-  editorGridParametersStore.minGridHorizontalMovement = gridWidth
-
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
-
-  ctx.beginPath()
-
-  //Draw vertical lines
-  const isAliquot = gridWidth % minGridWidth === 0
-
-  for (let x = 0; x <= canvasWidth; x += gridWidth) {
-    ctx.strokeStyle = "#ddd"
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, canvasHeight)
-    if (isAliquot && gridWidth !== minGridWidth) {
-      editorGridParametersStore.minGridHorizontalMovement = minGridWidth
-      const integralMultiple = gridWidth / minGridWidth
-      for (let i = 1; i < integralMultiple; i++) {
-        const drawnX = x - i * minGridWidth
-        ctx.moveTo(drawnX, 0)
-        ctx.lineTo(drawnX, canvasHeight)
-      }
-    }
-  }
-  ctx.stroke()
-}
 </script>
 
 <template>
-  <DrawerEditor
-    :id="id"
-    :canvas-content-height-prop="canvasContentHeight"
-    :draw-drawer-editor-grid-handler="drawNotePadGrid"
-  >
+  <DrawerEditor :id="id">
     <template #editor-sidebar="{ editorSidebarWidth, editorSidebarHeight }">
       <div
         class="midi-editor-sidebar"

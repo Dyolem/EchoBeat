@@ -1,9 +1,11 @@
 <script setup>
 import Editor from "@/views/daw/editor-template/index.vue"
 import MixTrackUnitManagement from "@/views/daw/mix-track-editor/MixTrackUnitManagement.vue"
-import { provide, ref } from "vue"
+import { computed, provide, ref } from "vue"
 import AddTrackSidebar from "@/views/daw/add-track-sidebar/index.vue"
-import { SCROLLBAR_WIDTH } from "@/constants/daw/index.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { BASE_GRID_HEIGHT } from "@/constants/daw/index.js"
+const mixTrackEditorStore = useMixTrackEditorStore()
 const props = defineProps({
   mainEditorId: {
     type: String,
@@ -18,6 +20,12 @@ const props = defineProps({
     required: true,
   },
 })
+const dynamicSvgHeight = computed(() => {
+  return mixTrackEditorStore.mixTracksMap.size * BASE_GRID_HEIGHT
+})
+provide("bgSvgHeight", dynamicSvgHeight)
+provide("canvasContentHeight", { canvasContentHeight: dynamicSvgHeight })
+
 const addTrackSidebarScrollTop = ref(0)
 const scrollMovement = ref({
   scrollTop: 0,
@@ -76,7 +84,6 @@ function updateMainEditorSidebarScrollTop(newMainEditorSidebarScrollTop) {
   width: 100vw;
   display: flex;
   height: v-bind(mainEditorViewHeight + "px");
-  background-color: #9a6e3a;
 }
 .editor-side-bar {
   flex-grow: 1;

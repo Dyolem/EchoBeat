@@ -41,3 +41,6 @@ input,select,textarea {
   outline: 0;
   outline-width: 0;
 }
+:root {
+  --graduation-fill: #ffffff;
+}
