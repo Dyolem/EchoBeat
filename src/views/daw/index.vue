@@ -13,13 +13,11 @@ import {
   ref,
   watchEffect,
 } from "vue"
-import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
-import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { MAIN_EDITOR_ID, SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 const zoomRatioStore = useZoomRatioStore()
-const trackRulerStore = useTrackRulerStore()
-const mixTrackEditorStore = useMixTrackEditorStore()
+
+zoomRatioStore.initZoomRatioMap()
 const HEADER_HEIGHT = 100
 const FOOTER_HEIGHT = 50
 const headerHeight = ref(HEADER_HEIGHT)
@@ -31,8 +29,6 @@ const controller = new AbortController()
 const exceptEditorHeight = computed(() => {
   return headerHeight.value + footerHeight.value
 })
-
-trackRulerStore.mainEditorId = MAIN_EDITOR_ID
 
 const mainEditorViewWidth = ref(window.innerWidth - editorSideBarWidth.value)
 const mainEditorViewHeight = ref(window.innerHeight - exceptEditorHeight.value)
@@ -53,7 +49,6 @@ const isOpenDrawerEditor = ref(false)
 
 onMounted(() => {
   resizeHandler()
-  zoomRatioStore.initZoomRatioMap()
 })
 onUnmounted(() => {
   controller.abort()
