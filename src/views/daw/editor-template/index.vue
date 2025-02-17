@@ -14,7 +14,6 @@ import {
   provide,
 } from "vue"
 import TimeLine from "@/views/daw/editor-template/interactable-layer/TimeLine.vue"
-import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import {
   DEFAULT_ZOOM_RATIO,
   SCROLLBAR_WIDTH,
@@ -27,7 +26,6 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 const beatControllerStore = useBeatControllerStore()
 const editorStore = useEditor()
 const zoomRatioStore = useZoomRatioStore()
-const trackRulerStore = useTrackRulerStore()
 
 const TRACK_ZOOM_RATIO = DEFAULT_ZOOM_RATIO
 
@@ -137,12 +135,6 @@ watch(
   { deep: true },
 )
 onMounted(() => {
-  watch(
-    () => trackRulerStore.timeLineInstanceMap.get(props.id).scrollLeft,
-    (newVal) => {
-      editorContentContainerRef.value.scrollLeft = newVal
-    },
-  )
   watch(
     () => props.editorScrollTop,
     (newVal) => {
@@ -371,7 +363,7 @@ onUnmounted(() => {
         <InteractableLayer
           :id="id"
           :canvas-width="canvasContentWidth"
-          :canvas-height="canvasContentHeight"
+          :editor-view-height="editableViewHeight"
           :modify-timeline-by-click="modifyTimelineByClick"
           v-model:track-zoom-ratio="trackZoomRatio"
           @update:track-zoom-ratio="updateSpecifiedEditorZoomRatio"

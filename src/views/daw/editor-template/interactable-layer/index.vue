@@ -25,7 +25,7 @@ const props = defineProps({
     type: Number,
     default: 2000,
   },
-  canvasHeight: {
+  editorViewHeight: {
     type: Number,
     default: 5000,
   },
@@ -60,13 +60,6 @@ function CreateZoomCanvas(
       return
     }
     emit("update:trackZoomRatio", newZoomVal)
-    trackRulerStore.SynchronizeState(props.id, {
-      trackZoomRatio: newZoomVal,
-      translateXDistance:
-        (trackRulerStore.timeLineInstanceMap.get(props.id).translateXDistance /
-          trackRulerStore.timeLineInstanceMap.get(props.id).trackZoomRatio) *
-        newZoomVal,
-    })
   }
 }
 const zoomCanvas = CreateZoomCanvas(ZOOM_THRESHOLD, [MIN_ZOOM, MAX_ZOOM], emit)
@@ -116,9 +109,10 @@ onMounted(() => {
         const translateX =
           event.clientX -
           interactableContainerRef.value.getBoundingClientRect().left
-        trackRulerStore.SynchronizeState(props.id, {
-          translateXDistance: translateX,
-        })
+        const newTime =
+          (translateX / beatControllerStore.totalLength(props.id)) *
+          beatControllerStore.editableTotalTime
+        trackRulerStore.updateCurrentTime(newTime)
       },
       {
         signal: controller.signal,
@@ -164,14 +158,14 @@ onUnmounted(() => {
           x="0"
           y="0"
           :width="beatControllerStore.dynamicPerBarWidth(id)"
-          height="3240"
+          :height="svgHeight"
           patternUnits="userSpaceOnUse"
           class="is-ignore-second"
         >
           <rect
             v-for="n in beatControllerStore.beatsPerMeasure"
             width="0.5"
-            height="3240"
+            :height="svgHeight"
             fill="var(--graduation-fill)"
             :x="(n - 1) * beatControllerStore.factualDisplayedGridWidth(id)"
           ></rect>
@@ -181,12 +175,12 @@ onUnmounted(() => {
           x="0"
           y="0"
           :width="beatControllerStore.highlightWidth(id)"
-          height="3240"
+          :height="svgHeight"
           patternUnits="userSpaceOnUse"
         >
           <rect
             :width="beatControllerStore.dynamicPerBarWidth(id)"
-            height="3240"
+            :height="svgHeight"
             fill="gray"
             x="0"
           ></rect>
@@ -197,14 +191,14 @@ onUnmounted(() => {
         x="0"
         y="0"
         :width="canvasWidth"
-        height="3240"
+        :height="svgHeight"
       ></rect>
       <rect
         :fill="`url(#${id}-mix-editor-track-grid-pattern)`"
         x="0"
         y="0"
         :width="canvasWidth"
-        height="3240"
+        :height="svgHeight"
       ></rect>
     </svg>
     <div id="interactable-layer"><slot name="interactable-layer"> </slot></div>
@@ -215,7 +209,7 @@ onUnmounted(() => {
 .interactable-container {
   position: relative;
   width: v-bind(canvasWidth + "px");
-  height: v-bind(canvasHeight + "px");
+  height: v-bind(editorViewHeight + "px");
 }
 #interactable-layer {
   position: absolute;

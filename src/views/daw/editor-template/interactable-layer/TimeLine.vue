@@ -1,7 +1,9 @@
 <script setup>
 import { computed, onMounted, useTemplateRef, watchEffect } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 const trackRulerStore = useTrackRulerStore()
+const beatControllerStore = useBeatControllerStore()
 const timelineRef = useTemplateRef("timelineRef")
 const props = defineProps({
   id: {
@@ -29,29 +31,25 @@ const props = defineProps({
   },
 })
 
-trackRulerStore.timeLineInstanceMap.set(props.id, {
-  trackRulerWidth: props.trackRulerWidth,
-  trackRulerViewWidth: props.trackRulerViewWidth,
-  translateXDistance: 0,
-  scrollLeft: 0,
-  trackZoomRatio: props.trackZoomRatio,
-})
-
-watchEffect(() => {
-  const timeLineInstance = trackRulerStore.timeLineInstanceMap.get(props.id)
-  timeLineInstance.trackRulerWidth = props.trackRulerWidth
-  timeLineInstance.trackRulerViewWidth = props.trackRulerViewWidth
-  timeLineInstance.trackZoomRatio = props.trackZoomRatio
-})
-
 const timeLineTranslateDistance = computed(() => {
-  return trackRulerStore.timeLineInstanceMap.get(props.id).translateXDistance
+  return (
+    (trackRulerStore.timelineCurrentTime /
+      beatControllerStore.editableTotalTime) *
+    beatControllerStore.totalLength(props.id)
+  )
+})
+watchEffect(() => {
+  if (props.parentContainer) {
+    const pageIndex = Math.floor(
+      timeLineTranslateDistance.value / props.trackRulerViewWidth,
+    )
+    props.parentContainer.scrollLeft = pageIndex * props.trackRulerViewWidth
+  }
 })
 
 onMounted(() => {
   if (!timelineRef.value) return
   let translateXDistance = 0
-  // trackRulerStore.timelineStateReset()
   timelineRef.value.addEventListener("mousedown", () => {
     const selectionController = new AbortController()
     document.addEventListener(
@@ -75,17 +73,14 @@ onMounted(() => {
       const left =
         event.clientX - props.parentContainer.getBoundingClientRect().left
       translateXDistance = props.parentContainer.scrollLeft + left
-      const scrollLeft = translateXDistance - left
       if (
         translateXDistance >= 0 &&
         translateXDistance <= props.trackRulerWidth
       ) {
-        trackRulerStore.SynchronizeState(props.id, {
-          trackRulerViewWidth: props.trackRulerViewWidth,
-          translateXDistance,
-          scrollLeft,
-          trackZoomRatio: props.trackZoomRatio,
-        })
+        const newTime =
+          (translateXDistance / beatControllerStore.totalLength(props.id)) *
+          beatControllerStore.editableTotalTime
+        trackRulerStore.updateCurrentTime(newTime)
       }
     }
     document.addEventListener("mousemove", mousemoveHandler, {
