@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { computed, ref, watch } from "vue"
+import { computed, ref } from "vue"
 import {
   EDITOR_MODE_ENUM,
   TENSILE_ADSORPTION_GRID_THRESHOLD,
@@ -11,21 +11,21 @@ import {
 } from "@/constants/daw/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
-import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { alignToGrid } from "@/utils/alignToGrid.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const zoomRatioStore = useZoomRatioStore()
   const editorGridParametersStore = useEditorGridParametersStore()
-  const trackRulerStore = useTrackRulerStore()
   const audioStore = useAudioStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
+  const beatControllerStore = useBeatControllerStore()
 
   const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
   const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
@@ -177,17 +177,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const fetchTime = date.getTime()
     return `${insertToSpecifiedPitchName}-${count}-${fetchTime}`
   }
-  function getStartTime(x) {
-    return (
-      (x / editorGridParametersStore.editorWidth) * trackRulerStore.totalTime
-    )
-  }
-  function getLastTime(noteWidth) {
-    return (
-      (noteWidth / editorGridParametersStore.editorWidth) *
-      trackRulerStore.totalTime
-    )
-  }
 
   function getLegalNoteStartPositionAndWidthInWorkspace(
     { noteHorizontalStartPosition, noteWidth },
@@ -207,11 +196,17 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
   }
 
-  function noteItemTemplate(
-    { x, y } = {},
+  function noteItemTemplate({
+    x,
+    y,
     insertToSpecifiedPitchName,
-    newWorkspace,
-  ) {
+    workspaceId,
+    audioTrackId,
+  }) {
+    const newWorkspace = workspaceStore.getWorkspace({
+      workspaceId,
+      audioTrackId,
+    })
     const id = getId(insertToSpecifiedPitchName, newWorkspace.noteItemsMap)
 
     const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack({
@@ -230,18 +225,38 @@ export const useNoteItemStore = defineStore("noteItem", () => {
         },
         newWorkspace,
       )
-    const startTime = getStartTime(legalNoteStartPosition)
-    const duration = getLastTime(legalNoteWidth)
+    const relativeX = legalNoteStartPosition - newWorkspace.startPosition
     return {
       id: id,
+      workspaceId,
+      audioTrackId,
       width: legalNoteWidth,
       height: noteHeight.value,
-      x: legalNoteStartPosition,
+      get x() {
+        return this.relativeX + this.workspaceStartPosition
+      },
+      relativeX,
       y: snappedY,
+      get workspaceStartPosition() {
+        return workspaceStore.getWorkspace({
+          audioTrackId: this.audioTrackId,
+          workspaceId: this.workspaceId,
+        }).startPosition
+      },
       pitchName: snappedPitchName,
-      backGroundColor: "lightblue",
-      startTime,
-      duration,
+      get startTime() {
+        return (
+          (this.x / beatControllerStore.totalLength(SUBORDINATE_EDITOR_ID)) *
+          beatControllerStore.editableTotalTime
+        )
+      },
+      get duration() {
+        return (
+          (this.width /
+            beatControllerStore.totalLength(SUBORDINATE_EDITOR_ID)) *
+          beatControllerStore.editableTotalTime
+        )
+      },
     }
   }
 
@@ -283,16 +298,25 @@ export const useNoteItemStore = defineStore("noteItem", () => {
         workspaceId: id,
       }).subTrackItemId = subTrackItemId
     } else {
-      mixTrackEditorStore.updateSubTrackItemWidth({
-        audioTrackId,
+      mixTrackEditorStore.updateRightEdge({
+        editorId: SUBORDINATE_EDITOR_ID,
+        audioTrackId: audioTrackId,
         subTrackItemId: workspace.subTrackItemId,
-        width,
+        x: startPosition + width,
+        initLeftEdgeX: startPosition,
       })
     }
 
-    const template = noteItemTemplate({ x, y }, specifiedPitchName, workspace)
+    const template = noteItemTemplate({
+      x,
+      y,
+      insertToSpecifiedPitchName: specifiedPitchName,
+      workspaceId: id,
+      audioTrackId,
+    })
     const noteItems = noteItemsMap.get(specifiedPitchName)?.noteItems
     noteItems?.push(template)
+    console.log(template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
   }
@@ -353,7 +377,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       //insert logic
       snappedY = noteItemsMap.get(expectedInsertToPitchName)?.scaleY[0]
       snappedX = alignToGrid(x, {
-        gridSize: editorGridParametersStore.minGridHorizontalMovement,
+        gridSize: beatControllerStore.factualDisplayedGridWidth(
+          SUBORDINATE_EDITOR_ID,
+        ),
         alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
       })
     } else {
@@ -449,7 +475,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
           },
           workspace,
         )
-      updateNoteTarget.x = legalNoteStartPosition
+      updateNoteTarget.relativeX =
+        legalNoteStartPosition - workspace.startPosition
     } else {
       const { legalNoteStartPosition } =
         getLegalNoteStartPositionAndWidthInWorkspace(
@@ -459,7 +486,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
           },
           workspace,
         )
-      updateNoteTarget.x = legalNoteStartPosition
+      updateNoteTarget.relativeX =
+        legalNoteStartPosition - workspace.startPosition
     }
     updateNoteTarget.y = snappedY
     updateNoteTarget.pitchName = snappedPitchName
@@ -488,8 +516,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const oldTargetIndex = oldTargetArr.findIndex((item) => {
       return item.id === oldId
     })
-    const newStartTime = getStartTime(oldTargetArr[oldTargetIndex].x)
-    const newDuration = getLastTime(oldTargetArr[oldTargetIndex].width)
+    const newStartTime = oldTargetArr[oldTargetIndex].startTime
+    const newDuration = oldTargetArr[oldTargetIndex].duration
     oldTargetArr[oldTargetIndex].id = newId
     newTargetArr.push(oldTargetArr[oldTargetIndex])
     oldTargetArr.splice(oldTargetIndex, 1)
@@ -574,14 +602,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
       const maxWidth = initX + initWidth - workspace.startPosition
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
-      const newStartTime = getStartTime(newX)
-      const newDuration = getLastTime(newWidth)
-      updateNoteTarget.x = newX
-      updateNoteTarget.width = newWidth
-      updateNoteTarget.startTime = newStartTime
-      updateNoteTarget.duration = newDuration
-      nextInsertedNoteWidth.value = newWidth
 
+      updateNoteTarget.relativeX = newX - workspace.startPosition
+      updateNoteTarget.width = newWidth
+      nextInsertedNoteWidth.value = newWidth
+      const newStartTime = updateNoteTarget.startTime
+      const newDuration = updateNoteTarget.duration
       audioStore.adjustNodeStartAndLastTime({
         id,
         pitchName,
@@ -623,13 +649,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       }
 
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
-      const newStartTime = getStartTime(updateNoteTarget.x)
-      const newDuration = getLastTime(newWidth)
       updateNoteTarget.width = newWidth
-      updateNoteTarget.startTime = newStartTime
-      updateNoteTarget.duration = newDuration
       nextInsertedNoteWidth.value = newWidth
-
+      const newStartTime = updateNoteTarget.startTime
+      const newDuration = updateNoteTarget.duration
       console.log("right")
       audioStore.adjustNodeStartAndLastTime({
         id,
@@ -659,7 +682,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     for (const { noteItemsMap } of workspaceMap.values()) {
       noteItemsMap.forEach((pitchNameObj) => {
         pitchNameObj.noteItems.forEach((noteItem) => {
-          noteItem.x = (noteItem.x / oldTrackZoomRatio) * newTrackZoomRatio
           noteItem.width =
             (noteItem.width / oldTrackZoomRatio) * newTrackZoomRatio
         })
@@ -686,7 +708,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     topJustifyingGrid,
     noteWidth,
     noteHeight,
-    getStartTime,
     createNoteItemsMap,
     insertNoteItem,
     deleteNoteItem,

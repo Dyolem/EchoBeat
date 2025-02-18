@@ -21,14 +21,33 @@
  * @typedef {Object} NoteItem
  * @property {PitchNameId} pitchName - 音高名称（与Map键严格一致）
  * @property {string} id - note元素自身id
- * @property {string} width - note元素的宽度
- * @property {string} height - note元素的高度
- * @property {string} x - note元素相对于midi编辑器左上角原点的绝对横坐标
- * @property {string} y - note元素相对于midi编辑器左上角原点的绝对纵坐标
+ * @property {WorkspaceId} workspaceId - note元素所属的工作区的id
+ * @property {AudioTrackId} audioTrackId - note元素所属音轨的id
+ * @property {number} width - note元素的宽度
+ * @property {number} height - note元素的高度
+ * @property {number} relativeX - note元素相对于所属工作区的左上角原点的绝对横坐标
+ * @property {number} y - note元素相对于midi编辑器左上角原点的绝对纵坐标
+ * @property {number} workspaceStartPosition - note元素所属的工作区相对于midi编辑器左上角原点的绝对横坐标
  * @property {number} startTime - 以0时刻为起点的时间参考系，note元素的起始播放时刻
  * @property {number} duration - 以0时刻为起点的时间参考系，note元素的播放持续时间
- * @property {AudioContext} audioContext - 创建note对应的音频节点的音频上下文
+ *
+ * @property {number} x - note元素相对于midi编辑器左上角原点的绝对横坐标
+ * @getter
+ * @returns {number}
+ *
+ * @property {number} workspaceStartPosition - note元素所属的工作区相对于midi编辑器左上角原点的绝对横坐标
+ * @getter
+ * @returns {number}
+ *
+ * @property {number} startTime - 以0时刻为起点的时间参考系，note元素的起始播放时刻
+ * @getter
+ * @returns {number}
+ *
+ * @property {number} duration - 以0时刻为起点的时间参考系，note元素的播放持续时间
+ * @getter
+ * @returns {number}
  */
+
 /**
  * @typedef {Object} NoteTrack
  * @property {PitchNameId} pitchName - 音高名称（与Map键严格一致）

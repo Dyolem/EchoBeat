@@ -4,8 +4,10 @@ import { computed, ref } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { MAIN_EDITOR_ID } from "@/constants/daw/index.js"
 const trackRulerStore = useTrackRulerStore()
-
+const beatControllerStore = useBeatControllerStore()
 const audioStore = useAudioStore()
 const accurateTime = computed(() => {
   return trackRulerStore.timelineCurrentTime
@@ -24,13 +26,13 @@ function playAudio() {
       const { audioContext: newAudioContext, controller: newController } =
         initPlay({
           anyStartTime: trackRulerStore.timelineCurrentTime,
-          maxTime: trackRulerStore.totalTime,
+          maxTime: trackRulerStore.maxTime,
         })
 
       audioContext = newAudioContext
       controller = newController
     } else {
-      controller = resume(audioContext, trackRulerStore.totalTime)
+      controller = resume(audioContext, trackRulerStore.maxTime)
     }
   } else {
     if (audioContext) {
@@ -53,13 +55,11 @@ function queryCurrentTime({
   requestAnimationFrame(() => {
     const time = audioContext.currentTime + anyStartTime
     const currentCheckPoint = time
-    trackRulerStore.timelineCurrentTime = time
-    trackRulerStore.synchronizeStateWithCurrentTime(time)
+    trackRulerStore.updateCurrentTime(time)
     if (lastCheckPoint <= checkPoint && currentCheckPoint >= checkPoint) {
-      // console.log("generate")
       checkPoint += dynamicGenerationTimeInterval
       audioStore.generateAudioNode({
-        noteBufferSourceMap: audioStore.noteBufferSourceMap,
+        audioTracksBufferSourceMap: audioStore.audioTracksBufferSourceMap,
         timelinePlayTime: accurateTime.value,
         generableAudioTimeEnd:
           accurateTime.value + dynamicGenerationTimeInterval,
@@ -136,6 +136,10 @@ function resume(audioContext, maxTime) {
     </MixEditorButton>
     <MixEditorButton>
       <div class="time">{{ timeDisplay }}</div>
+      <div>
+        {{ `totalLength${beatControllerStore.totalLength(MAIN_EDITOR_ID)}` }}
+      </div>
+      <div>{{ `totalTime${beatControllerStore.editableTotalTime}` }}</div>
     </MixEditorButton>
   </MixEditorButtonGroup>
 </template>
