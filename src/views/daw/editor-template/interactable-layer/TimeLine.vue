@@ -29,6 +29,10 @@ const props = defineProps({
     type: Number,
     default: 1,
   },
+  isTrusted: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const timeLineTranslateDistance = computed(() => {
@@ -38,12 +42,13 @@ const timeLineTranslateDistance = computed(() => {
     beatControllerStore.totalLength(props.id)
   )
 })
+const pageIndex = computed(() => {
+  return Math.floor(timeLineTranslateDistance.value / props.trackRulerViewWidth)
+})
 watchEffect(() => {
-  if (props.parentContainer) {
-    const pageIndex = Math.floor(
-      timeLineTranslateDistance.value / props.trackRulerViewWidth,
-    )
-    props.parentContainer.scrollLeft = pageIndex * props.trackRulerViewWidth
+  if (props.parentContainer && !props.isTrusted) {
+    props.parentContainer.scrollLeft =
+      pageIndex.value * props.trackRulerViewWidth
   }
 })
 
