@@ -1,7 +1,7 @@
 // mouse.js
 import { ref, onMounted, onUnmounted } from "vue"
 
-export function useMouse(type = "page") {
+export function useMouse({ type = "client", global = document }) {
   const x = ref(0)
   const y = ref(0)
 
@@ -25,8 +25,8 @@ export function useMouse(type = "page") {
     mouseTypeMap.get(type)?.(event)
   }
 
-  onMounted(() => window.addEventListener("mousemove", update))
-  onUnmounted(() => window.removeEventListener("mousemove", update))
+  onMounted(() => global.addEventListener("mousemove", update))
+  onUnmounted(() => global.removeEventListener("mousemove", update))
 
   return { x, y }
 }
