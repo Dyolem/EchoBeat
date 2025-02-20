@@ -8,15 +8,21 @@ import {
   ALIGN_TYPE_ENUM,
   MAIN_EDITOR_ID,
   SUBORDINATE_EDITOR_ID,
+  CHROMATIC_SCALE_SERIAL_NUMBER,
+  CHROMATIC_PITCH_NAME_ENUM,
+  NATURAL_SEMITONE,
+  OCTAVE_KEY_COUNT,
 } from "@/constants/daw/index.js"
 import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { alignToGrid } from "@/utils/alignToGrid.js"
+import { alignToGrid, snapToGrid } from "@/utils/alignToGrid.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { clamp } from "@/utils/clamp.js"
+import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const zoomRatioStore = useZoomRatioStore()
@@ -26,6 +32,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
   const beatControllerStore = useBeatControllerStore()
+  const pianoKeySizeStore = usePianoKeySizeStore()
 
   const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
   const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
@@ -34,10 +41,17 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const noteWidth = computed(() => {
     return (
       nextInsertedNoteWidth.value ||
-      baseWidth * editorGridParametersStore.trackZoomRatio
+      beatControllerStore.factualDisplayedGridWidth(SUBORDINATE_EDITOR_ID)
     )
   })
-  const noteHeight = ref(baseHeight)
+  const noteHeight = computed(() => {
+    return pianoKeySizeStore.noteTrackHeight
+  })
+  const maxY = computed(() => {
+    return (
+      noteHeight.value * OCTAVE_KEY_COUNT * CHROMATIC_SCALE_SERIAL_NUMBER.length
+    )
+  })
 
   const minGridWidth = ref(minWidth)
   const minGridHeight = ref(minHeight) //Temporarily out of use
@@ -45,9 +59,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     TENSILE_ADSORPTION_GRID_THRESHOLD,
   )
 
-  const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
-  const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
-  const NATURAL_SEMITONE = ["E", "B"]
+  // const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
+  // const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
+  // const NATURAL_SEMITONE = ["E", "B"]
   const isSnappedToHorizontalGrid = ref(true)
   const octaveContainerInstance = ref(null)
   const editorMode = ref(EDITOR_MODE_ENUM.SELECT)
@@ -67,7 +81,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
     const pitchNameMappedToAreaArr = []
     let count = 0
-    for (const chromaticScale of CHROMATIC_SCALE_ENUM.toReversed()) {
+    for (const chromaticScale of CHROMATIC_SCALE_SERIAL_NUMBER.toReversed()) {
       for (const chromaticPitchName of CHROMATIC_PITCH_NAME_ENUM.toReversed()) {
         if (!NATURAL_SEMITONE.includes(chromaticPitchName)) {
           pitchNameMappedToAreaArr.push({
@@ -208,42 +222,39 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       audioTrackId,
     })
     const id = getId(insertToSpecifiedPitchName, newWorkspace.noteItemsMap)
-
-    const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack({
-      notePosition: {
-        x,
-        y,
-      },
-      noteItemsMap: newWorkspace.noteItemsMap,
-    })
-    const { snappedX, snappedY } = snappedPosition
-    const { legalNoteStartPosition, legalNoteWidth } =
-      getLegalNoteStartPositionAndWidthInWorkspace(
-        {
-          noteHorizontalStartPosition: snappedX,
-          noteWidth: noteWidth.value,
-        },
-        newWorkspace,
-      )
-    const relativeX = legalNoteStartPosition - newWorkspace.startPosition
+    const scaleX = [
+      newWorkspace.startPosition,
+      newWorkspace.startPosition + newWorkspace.width,
+    ]
+    const scaleY = [0, maxY.value]
+    const { alignedAbsolutePosition, alignedPitchName } =
+      alignToOtherPitchNameTrack({
+        absolutePosition: [x, y],
+        scale: [scaleX, scaleY],
+      })
+    if (!alignedPitchName) return
+    const [alignedX, alignedY] = alignedAbsolutePosition
+    const relativeX = alignedX - newWorkspace.startPosition
+    const minNoteWidth = 0
+    const maxNoteWidth = newWorkspace.width - relativeX
     return {
       id: id,
       workspaceId,
       audioTrackId,
-      width: legalNoteWidth,
+      width: clamp(noteWidth.value, [minNoteWidth, maxNoteWidth]),
       height: noteHeight.value,
       get x() {
         return this.relativeX + this.workspaceStartPosition
       },
       relativeX,
-      y: snappedY,
+      y: alignedY,
       get workspaceStartPosition() {
         return workspaceStore.getWorkspace({
           audioTrackId: this.audioTrackId,
           workspaceId: this.workspaceId,
         }).startPosition
       },
-      pitchName: snappedPitchName,
+      pitchName: alignedPitchName,
       get startTime() {
         return (
           (this.x / beatControllerStore.totalLength(SUBORDINATE_EDITOR_ID)) *
@@ -314,6 +325,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       workspaceId: id,
       audioTrackId,
     })
+    if (!template) return
     const noteItems = noteItemsMap.get(specifiedPitchName)?.noteItems
     noteItems?.push(template)
     console.log(template)
@@ -347,81 +359,62 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const deleteIndex = deleteTargetArr.findIndex((item) => item.id === id)
     if (deleteIndex === -1) return
     deleteTargetArr.splice(deleteIndex, 1)
-    audioStore.removeNodeFromPitchName(id, deleteFromSpecifiedPitchName)
+    audioStore.removeNodeFromNoteId({ audioTrackId, id })
   }
-  function leftJustifyingGrid(x) {
-    return (
-      Math.floor(x / editorGridParametersStore.minGridHorizontalMovement) *
-      editorGridParametersStore.minGridHorizontalMovement
-    )
-  }
-  function topJustifyingGrid(y) {
-    return (
-      Math.floor(y / editorGridParametersStore.minGridVerticalMovement) *
-      editorGridParametersStore.minGridVerticalMovement
-    )
-  }
-  function snapToOtherPitchNameTrack({
-    notePosition,
-    mousedownPositionInNote = [],
-    noteItemsMap,
-  }) {
-    const { x, y } = notePosition
+
+  function alignToOtherPitchNameTrack({ absolutePosition = [], scale }) {
+    const [x, y] = absolutePosition
+    const [scaleX, scaleY] = scale
+    let alignedX = clamp(x, scaleX)
+    let alignedY = clamp(y, scaleY)
     const expectedInsertToPitchName = getInsertToSpecifiedPitchName(
-      { x, y },
+      { x: alignedX, y: alignedY },
       pitchNameMappedToArea.value,
     )
-    let snappedX = 0
-    let snappedY = 0
-    if (mousedownPositionInNote.length === 0) {
-      //insert logic
-      snappedY = noteItemsMap.get(expectedInsertToPitchName)?.scaleY[0]
-      snappedX = alignToGrid(x, {
-        gridSize: beatControllerStore.factualDisplayedGridWidth(
-          SUBORDINATE_EDITOR_ID,
-        ),
-        alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
-      })
-    } else {
-      //update logic
-      const [mousedownXInNote, mousedownYInNote] = mousedownPositionInNote
 
-      /*
-       * const snappedX = Math.floor((x - mousedownXInNote) / minGridWidth.value) * minGridWidth.value
-       * 根据算法，吸附网格的原理是移动位置x是网格值的整数倍时，更新一次x值，
-       * 由于note元素自身有宽度，光标位置在元素内部，并不是元素的左上角，所以需要减去mousedownXInNote的值
-       * 但这样导致一个问题：假设网格值为20，note位于(20,0)，宽度为20,光标相对于note元素的点击位置为(3，0)，相对于noteRegion元素的点击位置为(23，0)
-       * 现在往右拖动17px，此时相对于note元素的点击位置为(20，0)，相对于noteRegion元素的点击位置为(40，0)
-       * 此时40已经是网格值的20整数倍，所以需要进行一次移动，根据计算：Math.floor((40-3)/20)*20=20，可以发现note并不会移动，
-       * 可以看出相对于noteRegion元素的点击位置为要大于等于43时才能让note移动，此后的移动阈值需要x满足63，83...
-       * 这就违反了移动位置x是网格值的整数倍时的规则，而bug的产生原因在于减去的mousedownXInNote值，被提前进行了取整。
-       * 然而减去mousedownXInNote的值是必须，因此可以单独对mousedownXInNote值进行取整，然后将取整的两个值相减。
-       * */
-      snappedX =
-        alignToGrid(x, {
-          gridSize: editorGridParametersStore.minGridHorizontalMovement,
-          alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
-        }) -
-        alignToGrid(mousedownXInNote, {
-          gridSize: editorGridParametersStore.minGridHorizontalMovement,
-          alignType: ALIGN_TYPE_ENUM.LEFT_JUSTIFYING,
-        })
-      snappedY =
-        alignToGrid(y, {
-          gridSize: editorGridParametersStore.minGridVerticalMovement,
-          alignType: ALIGN_TYPE_ENUM.TOP_JUSTIFYING,
-        }) -
-        alignToGrid(mousedownYInNote, {
-          gridSize: editorGridParametersStore.minGridVerticalMovement,
-          alignType: ALIGN_TYPE_ENUM.TOP_JUSTIFYING,
-        })
+    const alignPosition = (position) => {
+      const gridSize = [
+        beatControllerStore.factualDisplayedGridWidth(SUBORDINATE_EDITOR_ID),
+        noteHeight.value,
+      ]
+      return alignToGrid(position, {
+        gridSize,
+        alignType: ALIGN_TYPE_ENUM.TOP_LEFT_JUSTIFYING,
+      })
     }
+    const alignedAbsolutePosition = alignPosition(absolutePosition)
+    if (isSnappedToHorizontalGrid.value) {
+      alignedX = clamp(alignedAbsolutePosition.x, scaleX)
+    }
+
+    alignedY = clamp(alignedAbsolutePosition.y, scaleY)
+
+    // if (mousedownPositionInNote.length === 0) {
+    //   //insert logic
+    //   snappedY = noteItemsMap.get(expectedInsertToPitchName)?.scaleY[0]
+    //   snappedX = convertX(x)
+    // } else {
+    //   //update logic
+    //   const [mousedownXInNote, mousedownYInNote] = mousedownPositionInNote
+    //
+    //   /*
+    //    * const snappedX = Math.floor((x - mousedownXInNote) / minGridWidth.value) * minGridWidth.value
+    //    * 根据算法，吸附网格的原理是移动位置x是网格值的整数倍时，更新一次x值，
+    //    * 由于note元素自身有宽度，光标位置在元素内部，并不是元素的左上角，所以需要减去mousedownXInNote的值
+    //    * 但这样导致一个问题：假设网格值为20，note位于(20,0)，宽度为20,光标相对于note元素的点击位置为(3，0)，相对于noteRegion元素的点击位置为(23，0)
+    //    * 现在往右拖动17px，此时相对于note元素的点击位置为(20，0)，相对于noteRegion元素的点击位置为(40，0)
+    //    * 此时40已经是网格值的20整数倍，所以需要进行一次移动，根据计算：Math.floor((40-3)/20)*20=20，可以发现note并不会移动，
+    //    * 可以看出相对于noteRegion元素的点击位置为要大于等于43时才能让note移动，此后的移动阈值需要x满足63，83...
+    //    * 这就违反了移动位置x是网格值的整数倍时的规则，而bug的产生原因在于减去的mousedownXInNote值，被提前进行了取整。
+    //    * 然而减去mousedownXInNote的值是必须，因此可以单独对mousedownXInNote值进行取整，然后将取整的两个值相减。
+    //    * */
+    //
+    //   snappedX = convertX(x) - convertX(mousedownXInNote)
+    //   snappedY = convertX(y, "column") - convertX(mousedownYInNote, "column")
+    // }
     return {
-      snappedPosition: {
-        snappedX,
-        snappedY,
-      },
-      snappedPitchName: expectedInsertToPitchName,
+      alignedAbsolutePosition: [alignedX, alignedY],
+      alignedPitchName: expectedInsertToPitchName,
     }
   }
 
@@ -430,8 +423,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     audioTrackId,
     workspaceId,
     pitchName,
-    position,
-    mousedownPositionInNote,
+    absolutePosition,
   }) {
     const isCoordinateAxisArray = (arr) => {
       return Array.isArray(arr) && arr.length === 2
@@ -441,10 +433,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       audioTrackId === undefined ||
       workspaceId === undefined ||
       pitchName === undefined ||
-      !isCoordinateAxisArray(position) ||
-      !isCoordinateAxisArray(mousedownPositionInNote)
+      !isCoordinateAxisArray(absolutePosition)
     )
       return
+    const [absoluteX, absoluteY] = absolutePosition
 
     const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId: audioTrackId,
@@ -452,49 +444,31 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     })
     const workspace = workspaceMap.get(workspaceId)
     const noteItemsMap = workspace.noteItemsMap
-
     const updateNoteTarget = noteItemsMap
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
     if (updateNoteTarget === undefined) return
 
-    const [x, y] = position
-    const [mousedownXInNote] = mousedownPositionInNote
-    const { snappedPosition, snappedPitchName } = snapToOtherPitchNameTrack({
-      notePosition: { x, y },
-      mousedownPositionInNote,
-      noteItemsMap,
-    })
-    const { snappedX, snappedY } = snappedPosition
-    if (isSnappedToHorizontalGrid.value) {
-      const { legalNoteStartPosition } =
-        getLegalNoteStartPositionAndWidthInWorkspace(
-          {
-            noteHorizontalStartPosition: snappedX,
-            noteWidth: updateNoteTarget.width,
-          },
-          workspace,
-        )
-      updateNoteTarget.relativeX =
-        legalNoteStartPosition - workspace.startPosition
-    } else {
-      const { legalNoteStartPosition } =
-        getLegalNoteStartPositionAndWidthInWorkspace(
-          {
-            noteHorizontalStartPosition: x - mousedownXInNote,
-            noteWidth: updateNoteTarget.width,
-          },
-          workspace,
-        )
-      updateNoteTarget.relativeX =
-        legalNoteStartPosition - workspace.startPosition
-    }
-    updateNoteTarget.y = snappedY
-    updateNoteTarget.pitchName = snappedPitchName
-    const newNoteId = getId(snappedPitchName, noteItemsMap)
+    const scaleX = [
+      workspace.startPosition,
+      workspace.startPosition + workspace.width - updateNoteTarget.width,
+    ]
+    const scaleY = [0, maxY.value]
+    const { alignedAbsolutePosition, alignedPitchName } =
+      alignToOtherPitchNameTrack({
+        absolutePosition: [absoluteX, absoluteY],
+        scale: [scaleX, scaleY],
+      })
+    if (!alignedPitchName) return
+    const [alignedAbsoluteX, alignedAbsoluteY] = alignedAbsolutePosition
+    updateNoteTarget.relativeX = alignedAbsoluteX - workspace.startPosition
+    updateNoteTarget.y = alignedAbsoluteY
+
+    updateNoteTarget.pitchName = alignedPitchName
+    const newNoteId = getId(alignedPitchName, noteItemsMap)
     return {
       newNoteId,
-      newPitchName: snappedPitchName,
+      newPitchName: alignedPitchName,
     }
   }
 
@@ -516,19 +490,81 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const oldTargetIndex = oldTargetArr.findIndex((item) => {
       return item.id === oldId
     })
-    const newStartTime = oldTargetArr[oldTargetIndex].startTime
-    const newDuration = oldTargetArr[oldTargetIndex].duration
     oldTargetArr[oldTargetIndex].id = newId
     newTargetArr.push(oldTargetArr[oldTargetIndex])
     oldTargetArr.splice(oldTargetIndex, 1)
-
-    audioStore.adjustNodeStartAndLastTime({
-      id: oldId,
+    audioStore.updateSpecifiedNoteBufferSourceMap({
+      audioTrackId,
       newId,
-      pitchName: newPitchName,
-      startTime: newStartTime,
-      duration: newDuration,
+      oldId,
     })
+  }
+
+  function updateNoteRightEdge({
+    id,
+    audioTrackId,
+    workspaceId,
+    pitchName,
+    absoluteX,
+    initLeftEdgeX,
+  }) {
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    const workspace = workspaceMap.get(workspaceId)
+    const noteItemsMap = workspace.noteItemsMap
+    const updateNoteTarget = noteItemsMap
+      .get(pitchName)
+      .noteItems.find((item) => item.id === id)
+
+    const scale = [initLeftEdgeX, workspace.width + workspace.startPosition]
+    const newRightEdgeX = clamp(
+      snapToGrid(absoluteX, {
+        gridSize: beatControllerStore.factualDisplayedGridWidth(
+          SUBORDINATE_EDITOR_ID,
+        ),
+      }),
+      scale,
+    )
+    const newNoteWidth = newRightEdgeX - initLeftEdgeX
+    updateNoteTarget.width = newNoteWidth
+    nextInsertedNoteWidth.value = newNoteWidth
+  }
+
+  function updateNoteLeftEdge({
+    id,
+    audioTrackId,
+    workspaceId,
+    pitchName,
+    absoluteX,
+    initRightEdgeX,
+  }) {
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    const workspace = workspaceMap.get(workspaceId)
+    const workspaceStartPosition = workspace.startPosition
+    const noteItemsMap = workspace.noteItemsMap
+    const updateNoteTarget = noteItemsMap
+      .get(pitchName)
+      .noteItems.find((item) => item.id === id)
+    const scale = [workspaceStartPosition, initRightEdgeX]
+    const newLeftEdgeX = clamp(
+      snapToGrid(absoluteX, {
+        gridSize: beatControllerStore.factualDisplayedGridWidth(
+          SUBORDINATE_EDITOR_ID,
+        ),
+      }),
+      scale,
+    )
+    const newRelativeX = newLeftEdgeX - workspaceStartPosition
+    updateNoteTarget.relativeX = newRelativeX
+    const newNoteWidth =
+      initRightEdgeX - (newRelativeX + workspaceStartPosition)
+    updateNoteTarget.width = newNoteWidth
+    nextInsertedNoteWidth.value = newNoteWidth
   }
 
   function stretchNoteWidth({
@@ -578,26 +614,36 @@ export const useNoteItemStore = defineStore("noteItem", () => {
        * and the minimum moving grid distance, the adsorption is triggered
        * */
       if (isSnappedToHorizontalGrid.value) {
-        let restMovement =
-          newX % editorGridParametersStore.minGridHorizontalMovement
-        if (
-          restMovement <
-          editorGridParametersStore.minGridHorizontalMovement / 2
-        ) {
-          //When stretched from right to left, it attaches to the left
-          if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
-            newX -= restMovement
-            newWidth += restMovement
-          }
-        } else {
-          //When stretched from left to right, it attaches to the right
-          restMovement =
-            editorGridParametersStore.minGridHorizontalMovement - restMovement
-          if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
-            newX += restMovement
-            newWidth -= restMovement
-          }
-        }
+        newX = snapToGrid(newX, {
+          gridSize: beatControllerStore.factualDisplayedGridWidth(
+            SUBORDINATE_EDITOR_ID,
+          ),
+        })
+        newWidth = snapToGrid(newWidth, {
+          gridSize: beatControllerStore.factualDisplayedGridWidth(
+            SUBORDINATE_EDITOR_ID,
+          ),
+        })
+        // let restMovement =
+        //   newX % editorGridParametersStore.minGridHorizontalMovement
+        // if (
+        //   restMovement <
+        //   editorGridParametersStore.minGridHorizontalMovement / 2
+        // ) {
+        //   //When stretched from right to left, it attaches to the left
+        //   if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
+        //     newX -= restMovement
+        //     newWidth += restMovement
+        //   }
+        // } else {
+        //   //When stretched from left to right, it attaches to the right
+        //   restMovement =
+        //     editorGridParametersStore.minGridHorizontalMovement - restMovement
+        //   if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
+        //     newX += restMovement
+        //     newWidth -= restMovement
+        //   }
+        // }
       }
 
       const maxWidth = initX + initWidth - workspace.startPosition
@@ -625,27 +671,32 @@ export const useNoteItemStore = defineStore("noteItem", () => {
        * and the minimum moving grid distance, the adsorption is triggered
        * */
       if (isSnappedToHorizontalGrid.value) {
-        //noteRightSidePositionX: note元素右边界的translateX值
-        const noteRightSidePositionX = updateNoteTarget.x + newWidth
-        let restMovement =
-          noteRightSidePositionX %
-          editorGridParametersStore.minGridHorizontalMovement
-        if (
-          restMovement <
-          editorGridParametersStore.minGridHorizontalMovement / 2
-        ) {
-          //When stretched from right to left, it attaches to the left
-          if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
-            newWidth -= restMovement
-          }
-        } else {
-          //When stretched from left to right, it attaches to the right
-          restMovement =
-            editorGridParametersStore.minGridHorizontalMovement - restMovement
-          if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
-            newWidth += restMovement
-          }
-        }
+        newWidth = snapToGrid(newWidth, {
+          gridSize: beatControllerStore.factualDisplayedGridWidth(
+            SUBORDINATE_EDITOR_ID,
+          ),
+        })
+        // //noteRightSidePositionX: note元素右边界的translateX值
+        // const noteRightSidePositionX = updateNoteTarget.x + newWidth
+        // let restMovement =
+        //   noteRightSidePositionX %
+        //   editorGridParametersStore.minGridHorizontalMovement
+        // if (
+        //   restMovement <
+        //   editorGridParametersStore.minGridHorizontalMovement / 2
+        // ) {
+        //   //When stretched from right to left, it attaches to the left
+        //   if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
+        //     newWidth -= restMovement
+        //   }
+        // } else {
+        //   //When stretched from left to right, it attaches to the right
+        //   restMovement =
+        //     editorGridParametersStore.minGridHorizontalMovement - restMovement
+        //   if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
+        //     newWidth += restMovement
+        //   }
+        // }
       }
 
       if (newWidth < minGridWidth.value || newWidth > maxWidth) return
@@ -674,7 +725,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       oldTrackZoomRatio === undefined
     )
       return
-    editorGridParametersStore.trackZoomRatio = newTrackZoomRatio
     const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId: audioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
@@ -682,13 +732,15 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     for (const { noteItemsMap } of workspaceMap.values()) {
       noteItemsMap.forEach((pitchNameObj) => {
         pitchNameObj.noteItems.forEach((noteItem) => {
-          noteItem.width =
-            (noteItem.width / oldTrackZoomRatio) * newTrackZoomRatio
+          noteItem.relativeX *= newTrackZoomRatio / oldTrackZoomRatio
+          noteItem.width *= newTrackZoomRatio / oldTrackZoomRatio
         })
       })
     }
   }
   function simulatePlaySpecifiedNote(pitchName) {
+    if (!pitchName) return
+    console.log(pitchName)
     octaveContainerInstance.value?.dispatchEvent(
       new CustomEvent("play-sample", {
         detail: {
@@ -704,8 +756,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     isSelectMode,
     isVelocityMode,
     isSnappedToHorizontalGrid,
-    leftJustifyingGrid,
-    topJustifyingGrid,
     noteWidth,
     noteHeight,
     createNoteItemsMap,
@@ -713,6 +763,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     deleteNoteItem,
     updateNoteItemPosition,
     updateNoteItemsMap,
+    updateNoteLeftEdge,
+    updateNoteRightEdge,
     stretchNoteWidth,
     passivePatchUpdateNoteItemsWithZoomRatio,
     simulatePlaySpecifiedNote,

@@ -1,13 +1,5 @@
 <script setup>
-import {
-  computed,
-  inject,
-  onMounted,
-  ref,
-  useTemplateRef,
-  watch,
-  watchEffect,
-} from "vue"
+import { inject, ref, useTemplateRef, watch } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
@@ -49,9 +41,13 @@ const props = defineProps({
     type: Number,
     required: true,
   },
-  notePosition: {
-    type: Object,
-    default: () => [0, 0],
+  x: {
+    type: Number,
+    default: 0,
+  },
+  y: {
+    type: Number,
+    default: 0,
   },
   noteEditorRegionRef: {
     type: Object,
@@ -74,12 +70,6 @@ watch(
     playNoteAudio(newVal)
   },
 )
-
-watchEffect(() => {
-  if (editorNoteRef.value) {
-    editorNoteRef.value.style.transform = `translate(${props.notePosition.value[0] - props.workspaceStartPosition}px,${props.notePosition.value[1]}px)`
-  }
-})
 
 let translateXDistance = 0
 let translateYDistance = 0
@@ -130,20 +120,24 @@ function draggableRegionHandler(event) {
   let newId = ""
   function mouseMoveHandler(event) {
     translateXDistance =
-      event.clientX - props.noteEditorRegionRef.getBoundingClientRect().left
+      event.clientX -
+      props.noteEditorRegionRef.getBoundingClientRect().left -
+      mousedownX
 
     translateYDistance =
-      event.clientY - props.noteEditorRegionRef.getBoundingClientRect().top
+      event.clientY -
+      props.noteEditorRegionRef.getBoundingClientRect().top -
+      mousedownY
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      const { newNoteId } = noteItemMap.updateNoteItemPosition({
-        id,
-        audioTrackId: selectedAudioTrackId.value,
-        workspaceId: props.workspaceId,
-        pitchName: belongedPitchName,
-        position: [translateXDistance, translateYDistance],
-        mousedownPositionInNote: [mousedownX, mousedownY],
-      })
+      const { newNoteId } =
+        noteItemMap.updateNoteItemPosition({
+          id,
+          audioTrackId: selectedAudioTrackId.value,
+          workspaceId: props.workspaceId,
+          pitchName: belongedPitchName,
+          absolutePosition: [translateXDistance, translateYDistance],
+        }) ?? {}
       newId = newNoteId
     }
   }
@@ -175,24 +169,31 @@ function stretchEditorNoteLength(event) {
   const selectionController = clearSelection()
   const { x: mousedownStartX } = getMovementInNoteEditorRegion(event)
   const initWidth = props.noteWidth
-  const [initX] = props.notePosition.value
+  const initX = props.x
   function mousemoveHandler(event) {
     const { x: moveX } = getMovementInNoteEditorRegion(event)
-    const stretchXLength = moveX - mousedownStartX
-
-    const moveInfo = {
-      id: props.id,
-      audioTrackId: selectedAudioTrackId.value,
-      workspaceId: props.workspaceId,
-      pitchName: props.belongedPitchName,
-      stretchXLength: stretchXLength,
-      initWidth: initWidth,
-      mousedownStartX,
-      initX: initX,
-      maxMovementRegionWidth: props.notePadWidth,
+    const deltaX = moveX - mousedownStartX
+    const mousedownXInNote =
+      mousedownStartX - (initX + props.workspaceStartPosition)
+    if (mousedownXInNote < initWidth / 2) {
+      noteItemMap.updateNoteLeftEdge({
+        id: props.id,
+        audioTrackId: selectedAudioTrackId.value,
+        workspaceId: props.workspaceId,
+        pitchName: props.belongedPitchName,
+        absoluteX: initX + props.workspaceStartPosition + deltaX,
+        initRightEdgeX: initX + initWidth + props.workspaceStartPosition,
+      })
+    } else {
+      noteItemMap.updateNoteRightEdge({
+        id: props.id,
+        audioTrackId: selectedAudioTrackId.value,
+        workspaceId: props.workspaceId,
+        pitchName: props.belongedPitchName,
+        absoluteX: initX + props.workspaceStartPosition + initWidth + deltaX,
+        initLeftEdgeX: initX + props.workspaceStartPosition,
+      })
     }
-
-    noteItemMap.stretchNoteWidth(moveInfo)
   }
   document.addEventListener("mousemove", mousemoveHandler)
   document.addEventListener(
@@ -319,6 +320,8 @@ function noteMainMousedownHandler(event) {
 <style scoped>
 .editor-note {
   --note-background-color: v-bind(noteBackGroundColor);
+  --translateX: v-bind(x + "px");
+  --translateY: v-bind(y + "px");
   box-sizing: border-box;
   position: absolute;
   overflow: hidden;
@@ -331,6 +334,7 @@ function noteMainMousedownHandler(event) {
   z-index: v-bind(editorNoteZIndex);
   border: 1px solid
     color-mix(in srgb, var(--note-background-color), #ffffff 50%);
+  transform: translate(var(--translateX), var(--translateY));
 }
 .editor-note-main {
   flex-grow: 1;

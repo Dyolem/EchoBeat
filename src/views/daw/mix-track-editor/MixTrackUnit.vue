@@ -6,6 +6,7 @@ import {
   BEAT_GRID_RATIO,
   BEATS_COUNT,
   FALLBACK_THEME_COLOR,
+  MAIN_EDITOR_ID,
 } from "@/constants/daw/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { deepClone } from "@/utils/deepClone.js"
@@ -65,105 +66,209 @@ onMounted(() => {
     (event) => {
       const selectionController = clearSelection()
       const trackItemTarget = event.target.closest(".track-item")
-      if (!trackItemTarget) return
-      const trackItemId = trackItemTarget.dataset["trackItemId"]
-      const controller = new AbortController()
-      let isDragging = false
-      const { cursorPosition } = props.getGeometryInfoInParentElement(event)
-      let [startX, startY] = cursorPosition
-
-      let deltaX = 0
-      let deltaY = 0
+      const stretchHandleTarget = event.target.closest(".stretch")
+      const trackItemContainer = event.target.closest(".track-item-container")
+      const trackItemId = trackItemContainer?.dataset["trackItemId"]
+      if (!trackItemId) return
 
       const subTrackItemsMap = mixTrackEditorStore.getSubTrackItemsMap({
         audioTrackId: props.id,
       })
       const subTrackItem = subTrackItemsMap.get(trackItemId)
-      const clonedSubTrackItemId = mixTrackEditorStore.generateSubTrackItemId()
-
-      const workspaceMap = workspaceStore.getWorkspaceMap({
-        audioTrackId: props.id,
-      })
-      const workspaceId = subTrackItem.workspaceId
-      const workspace = workspaceMap.get(workspaceId)
-      const clonedWorkspace = deepClone(workspace)
-      const clonedWorkspaceId = workspaceStore.generateWorkspaceId()
-      clonedWorkspace.id = clonedWorkspaceId
-      clonedWorkspace.subTrackItemId = clonedSubTrackItemId
-      workspaceMap.set(clonedWorkspaceId, clonedWorkspace)
-
-      const clonedSubTrackItem = deepClone(subTrackItem)
-      clonedSubTrackItem.subTrackItemId = clonedSubTrackItemId
-      clonedSubTrackItem.workspaceId = clonedWorkspaceId
-      subTrackItemsMap.set(clonedSubTrackItemId, clonedSubTrackItem)
-
-      const minStartPosition = 0
-      const maxStartPosition = props.trackWidth - subTrackItem.trackItemWidth
-
       const initSubTrackItemStartPosition = subTrackItem.startPosition
-      let newSubTrackItemStartPosition = 0
-      document.addEventListener(
-        "mousemove",
-        (event) => {
-          isDragging = true
+      const initSubTrackItemWidth = subTrackItem.trackItemWidth
+      if (trackItemTarget) {
+        // const trackItemId = trackItemTarget.dataset["trackItemId"]
+        const controller = new AbortController()
+        let isDragging = false
+        const { cursorPosition } = props.getGeometryInfoInParentElement(event)
+        let [startX, startY] = cursorPosition
 
-          const { cursorPosition } = props.getGeometryInfoInParentElement(event)
-          const [x, y] = cursorPosition
-          deltaX = x - startX
-          deltaY = y - startY
+        let deltaX = 0
+        let deltaY = 0
 
-          newSubTrackItemStartPosition = initSubTrackItemStartPosition + deltaX
-          workspaceStore.updateWorkspacePosition({
-            workspaceId: clonedWorkspaceId,
-            selectedAudioTrackId: props.id,
-            startPosition: newSubTrackItemStartPosition,
-            positionScale: [minStartPosition, maxStartPosition],
-            isActive: false,
-          })
-          mixTrackEditorStore.updateSubTrackItemStartPosition({
-            audioTrackId: props.id,
-            subTrackItemId: clonedSubTrackItemId,
-            startPosition: newSubTrackItemStartPosition,
-            horizontalScale: [minStartPosition, maxStartPosition],
-          })
-        },
-        { signal: controller.signal },
-      )
-      document.addEventListener(
-        "mouseup",
-        () => {
-          selectionController.abort()
-          controller.abort()
-          workspaceStore.deleteWorkspace({
-            audioTrackId: props.id,
-            workspaceId: clonedWorkspaceId,
-          })
+        const clonedSubTrackItemId =
+          mixTrackEditorStore.generateSubTrackItemId()
 
-          mixTrackEditorStore.deleteSpecifiedSubTrackItem({
-            audioTrackId: props.id,
-            subTrackItemId: clonedSubTrackItemId,
-          })
-          if (isDragging) {
+        const workspaceMap = workspaceStore.getWorkspaceMap({
+          audioTrackId: props.id,
+        })
+        const workspaceId = subTrackItem.workspaceId
+        const workspace = workspaceMap.get(workspaceId)
+        const clonedWorkspace = deepClone(workspace)
+        const clonedWorkspaceId = workspaceStore.generateWorkspaceId()
+        clonedWorkspace.id = clonedWorkspaceId
+        clonedWorkspace.subTrackItemId = clonedSubTrackItemId
+        workspaceMap.set(clonedWorkspaceId, clonedWorkspace)
+
+        const clonedSubTrackItem = deepClone(subTrackItem)
+        clonedSubTrackItem.subTrackItemId = clonedSubTrackItemId
+        clonedSubTrackItem.workspaceId = clonedWorkspaceId
+        subTrackItemsMap.set(clonedSubTrackItemId, clonedSubTrackItem)
+
+        const minStartPosition = 0
+        const maxStartPosition = props.trackWidth - initSubTrackItemWidth
+
+        let newSubTrackItemStartPosition = 0
+        document.addEventListener(
+          "mousemove",
+          (event) => {
+            isDragging = true
+
+            const { cursorPosition } =
+              props.getGeometryInfoInParentElement(event)
+            const [x, y] = cursorPosition
+            deltaX = x - startX
+            deltaY = y - startY
+
+            newSubTrackItemStartPosition =
+              initSubTrackItemStartPosition + deltaX
             workspaceStore.updateWorkspacePosition({
-              workspaceId: workspaceId,
+              editorId: MAIN_EDITOR_ID,
+              workspaceId: clonedWorkspaceId,
               selectedAudioTrackId: props.id,
+              initStartPosition: initSubTrackItemStartPosition,
               startPosition: newSubTrackItemStartPosition,
               positionScale: [minStartPosition, maxStartPosition],
-              isActive: false,
             })
             mixTrackEditorStore.updateSubTrackItemStartPosition({
+              editorId: MAIN_EDITOR_ID,
               audioTrackId: props.id,
-              subTrackItemId: trackItemId,
+              subTrackItemId: clonedSubTrackItemId,
+              initStartPosition: initSubTrackItemStartPosition,
               startPosition: newSubTrackItemStartPosition,
               horizontalScale: [minStartPosition, maxStartPosition],
             })
-          }
-          updateSelectedTrackItemId(trackItemId)
-        },
-        {
-          once: true,
-        },
-      )
+          },
+          { signal: controller.signal },
+        )
+        document.addEventListener(
+          "mouseup",
+          () => {
+            selectionController.abort()
+            controller.abort()
+            workspaceStore.deleteWorkspace({
+              audioTrackId: props.id,
+              workspaceId: clonedWorkspaceId,
+            })
+
+            mixTrackEditorStore.deleteSpecifiedSubTrackItem({
+              audioTrackId: props.id,
+              subTrackItemId: clonedSubTrackItemId,
+            })
+            if (isDragging) {
+              workspaceStore.updateWorkspacePosition({
+                editorId: MAIN_EDITOR_ID,
+                workspaceId: workspaceId,
+                selectedAudioTrackId: props.id,
+                initStartPosition: initSubTrackItemStartPosition,
+                startPosition: newSubTrackItemStartPosition,
+                positionScale: [minStartPosition, maxStartPosition],
+              })
+              mixTrackEditorStore.updateSubTrackItemStartPosition({
+                editorId: MAIN_EDITOR_ID,
+                audioTrackId: props.id,
+                subTrackItemId: trackItemId,
+                initStartPosition: initSubTrackItemStartPosition,
+                startPosition: newSubTrackItemStartPosition,
+                horizontalScale: [minStartPosition, maxStartPosition],
+              })
+            }
+            updateSelectedTrackItemId(trackItemId)
+          },
+          {
+            once: true,
+          },
+        )
+      }
+      if (stretchHandleTarget) {
+        // const trackItemId = stretchHandleTarget.dataset["trackItemId"]
+        const controller = new AbortController()
+        let isDragging = false
+        const { cursorPosition } = props.getGeometryInfoInParentElement(event)
+        let [startX, startY] = cursorPosition
+
+        let deltaX = 0
+        let deltaY = 0
+
+        const subTrackItemsMap = mixTrackEditorStore.getSubTrackItemsMap({
+          audioTrackId: props.id,
+        })
+        const subTrackItem = subTrackItemsMap.get(trackItemId)
+        const workspaceId = subTrackItem.workspaceId
+
+        const minStartPosition = 0
+        const maxStartPosition = props.trackWidth - subTrackItem.trackItemWidth
+
+        const initSubTrackItemStartPosition = subTrackItem.startPosition
+        const initSubTrackItemWidth = subTrackItem.trackItemWidth
+
+        const mousedownX =
+          event.clientX - trackItemContainer.getBoundingClientRect().left
+        document.addEventListener(
+          "mousemove",
+          (event) => {
+            isDragging = true
+
+            const { cursorPosition } =
+              props.getGeometryInfoInParentElement(event)
+            const [x, y] = cursorPosition
+            deltaX = x - startX
+            deltaY = y - startY
+
+            if (mousedownX < initSubTrackItemWidth / 2) {
+              const initRightEdgeX =
+                initSubTrackItemStartPosition + initSubTrackItemWidth
+              const newLeftEdgeX = x - (startX - initSubTrackItemStartPosition)
+              mixTrackEditorStore.updateLeftEdge({
+                x: newLeftEdgeX,
+                initRightEdgeX,
+                editorId: MAIN_EDITOR_ID,
+                subTrackItemId: trackItemId,
+                audioTrackId: props.id,
+              })
+              workspaceStore.updateLeftEdge({
+                editorId: MAIN_EDITOR_ID,
+                audioTrackId: props.id,
+                workspaceId,
+                x: newLeftEdgeX,
+                initRightEdgeX,
+              })
+            } else {
+              const newRightEdgeX =
+                initSubTrackItemStartPosition +
+                initSubTrackItemWidth -
+                startX +
+                x
+              mixTrackEditorStore.updateRightEdge({
+                x: newRightEdgeX,
+                initLeftEdgeX: initSubTrackItemStartPosition,
+                editorId: MAIN_EDITOR_ID,
+                subTrackItemId: trackItemId,
+                audioTrackId: props.id,
+              })
+              workspaceStore.updateRightEdge({
+                x: newRightEdgeX,
+                initLeftEdgeX: initSubTrackItemStartPosition,
+                editorId: MAIN_EDITOR_ID,
+                workspaceId,
+                audioTrackId: props.id,
+              })
+            }
+          },
+          { signal: controller.signal },
+        )
+        document.addEventListener(
+          "mouseup",
+          () => {
+            selectionController.abort()
+            controller.abort()
+          },
+          {
+            once: true,
+          },
+        )
+      }
     },
     {
       signal: dragController.signal,

@@ -72,15 +72,15 @@ const chromaticScaleScrollTop = ref(0)
 function updateChromaticScaleScrollTopHandler(chromaticScaleScrollTop) {
   scrollMovement.value.scrollTop = chromaticScaleScrollTop
 }
-const canvasContentHeight = ref(20)
+const canvasContentHeight = ref(0)
 function updateCanvasContentHeight(height) {
-  console.log(height)
   canvasContentHeight.value = height
 }
 provide("canvasContentHeight", {
   canvasContentHeight,
   updateCanvasContentHeight,
 })
+provide("bgSvgHeight", canvasContentHeight)
 </script>
 
 <template>

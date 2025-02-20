@@ -4,6 +4,7 @@ import clearSelection from "@/utils/clearSelection.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { colorMix } from "@/utils/colorMix.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
 const workspaceStore = useWorkspaceStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 
@@ -58,6 +59,11 @@ function workspaceGrabbingHandler(e) {
   const controller = new AbortController()
   const clearSelectionController = clearSelection()
   const scale = [0, props.notePadWidth - props.workspaceContainerWidth]
+  const workspaceMap = workspaceStore.getWorkspaceMap({
+    audioTrackId: selectedAudioTrackId.value,
+  })
+  const workspace = workspaceMap.get(props.id).startPosition
+  const initWorkspaceStartPosition = workspace.startPosition
 
   document.addEventListener(
     "mousemove",
@@ -66,19 +72,22 @@ function workspaceGrabbingHandler(e) {
         event.clientX -
         props.noteEditorRegionRef.getBoundingClientRect().left -
         mousedownPositionXInWorkSpace
-      const [newStartPosition] = workspaceStore.updateWorkspacePosition({
+      workspaceStore.updateWorkspacePosition({
+        editorId: SUBORDINATE_EDITOR_ID,
         workspaceId: props.id,
         selectedAudioTrackId: selectedAudioTrackId.value,
+        initStartPosition: initWorkspaceStartPosition,
         startPosition: workspaceStartPosition,
         positionScale: scale,
       })
 
       mixTrackEditorStore.updateSubTrackItemStartPosition({
+        editorId: SUBORDINATE_EDITOR_ID,
         audioTrackId: selectedAudioTrackId.value,
+        initStartPosition: initWorkspaceStartPosition,
         subTrackItemId: props.subTrackItemId,
-        startPosition: newStartPosition,
+        startPosition: workspaceStartPosition,
         horizontalScale: scale,
-        isActive: false,
       })
     },
     {

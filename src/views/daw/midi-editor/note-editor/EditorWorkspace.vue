@@ -7,7 +7,9 @@ import WorkspaceHandle from "@/views/daw/midi-editor/note-editor/WorkspaceHandle
 import clearSelection from "@/utils/clearSelection.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
+import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
+import { storeToRefs } from "pinia"
 
 const noteItemStore = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
@@ -67,8 +69,12 @@ const props = defineProps({
     required: true,
   },
 })
+const pianoKeySizeStore = usePianoKeySizeStore()
+const { noteTrackHeight: noteHeight } = storeToRefs(pianoKeySizeStore)
+
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const mainColor = inject("mainColor")
+const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", ref(20))
 
 const workspaceMap = computed(() => {
   return trackFeatureMapStore.getSelectedTrackWorkspaceMap({
@@ -79,31 +85,12 @@ const workspaceMap = computed(() => {
 const workspaceScrollContainerHeight = computed(() => {
   return props.editableViewHeight - props.workspaceHandleHeight
 })
+const workspaceScrollZoneHeight = computed(() => {
+  return props.editorCanvasHeight - workspacePlaceHolderHeight.value
+})
 const noteEditorWorkspaceContainerRef = useTemplateRef(
   "noteEditorWorkspaceContainerRef",
 )
-
-const getNotePosition = (x, y) => {
-  if (x === undefined || y === undefined) return
-  return ref([x, y])
-}
-const chromaticInfo = inject("chromaticInfo")
-const pianoKeySize = inject("pianoKeySize")
-const whiteKeyHeight = computed(() => {
-  return pianoKeySize.value.whiteKeyHeight
-})
-const OCTAVE_KEY_COUNT = 12
-const OCTAVE_WHITE_KEY_COUNT = 7
-const noteHeight = computed(() => {
-  return Number(
-    (
-      (whiteKeyHeight.value *
-        chromaticInfo.value.octaveCount *
-        OCTAVE_WHITE_KEY_COUNT) /
-      (OCTAVE_KEY_COUNT * chromaticInfo.value.octaveCount)
-    ).toFixed(3),
-  )
-})
 
 const { scrollMovement, updateScrollMovement } = inject("scrollMovement")
 const noteEditorWorkspaceRef = useTemplateRef("noteEditorWorkspaceRef")
@@ -181,46 +168,54 @@ function stretchWorkspaceWidth(event) {
   const workspace = workspaceMap.value.get(props.id)
   const initWorkspaceStartPosition = workspace.startPosition
   const initWorkspaceWidth = workspace.width
+  const initRightEdgeX = initWorkspaceStartPosition + initWorkspaceWidth
   const { x: stretchStart } = props.getCursorPositionInNoteEditorRegion(event)
   const mousedownXInNoteEditorWorkspaceContainer =
     event.clientX -
     noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
-  const minWorkspaceWidth = noteItemStore.noteWidth
-  const maxWorkspaceWidth = props.editorCanvasWidth
+
   document.addEventListener(
     "mousemove",
     (event) => {
       const { x: stretchEnd } = props.getCursorPositionInNoteEditorRegion(event)
-      const { newWidth, newStartPosition } =
-        workspaceStore.updateWorkspaceWidth({
+      const newLeftEdgeX =
+        stretchEnd - (stretchStart - initWorkspaceStartPosition)
+      if (mousedownXInNoteEditorWorkspaceContainer < initWorkspaceWidth / 2) {
+        workspaceStore.updateLeftEdge({
+          editorId: SUBORDINATE_EDITOR_ID,
+          audioTrackId: selectedAudioTrackId.value,
           workspaceId: props.id,
-          selectedAudioTrackId: selectedAudioTrackId.value,
-          maxWidth: maxWorkspaceWidth,
-          minWidth: minWorkspaceWidth,
-          initStartPosition: initWorkspaceStartPosition,
-          initWidth: initWorkspaceWidth,
-          mousedownX: mousedownXInNoteEditorWorkspaceContainer,
-          stretchStart,
-          stretchEnd: stretchEnd,
-          stretchableDirection: {
-            leftSide: { positive: false, negative: true },
-            rightSide: { positive: true, negative: true },
-          },
+          x: newLeftEdgeX,
+          initRightEdgeX: initRightEdgeX,
         })
-      mixTrackEditorStore.updateSubTrackItemWidth({
-        audioTrackId: selectedAudioTrackId.value,
-        subTrackItemId: props.subTrackItemId,
-        width: newWidth,
-        scale: [minWorkspaceWidth, maxWorkspaceWidth],
-        isActive: false,
-      })
-      mixTrackEditorStore.updateSubTrackItemStartPosition({
-        audioTrackId: selectedAudioTrackId.value,
-        subTrackItemId: props.subTrackItemId,
-        startPosition: newStartPosition,
-        horizontalScale: [0, maxWorkspaceWidth - newWidth],
-        isActive: false,
-      })
+        mixTrackEditorStore.updateLeftEdge({
+          editorId: SUBORDINATE_EDITOR_ID,
+          audioTrackId: selectedAudioTrackId.value,
+          subTrackItemId: props.subTrackItemId,
+          x: newLeftEdgeX,
+          initRightEdgeX: initRightEdgeX,
+        })
+      } else {
+        const newRightEdgeX =
+          stretchEnd +
+          initWorkspaceWidth +
+          initWorkspaceStartPosition -
+          stretchStart
+        workspaceStore.updateRightEdge({
+          editorId: SUBORDINATE_EDITOR_ID,
+          audioTrackId: selectedAudioTrackId.value,
+          workspaceId: props.id,
+          x: newRightEdgeX,
+          initLeftEdgeX: initWorkspaceStartPosition,
+        })
+        mixTrackEditorStore.updateRightEdge({
+          editorId: SUBORDINATE_EDITOR_ID,
+          audioTrackId: selectedAudioTrackId.value,
+          subTrackItemId: props.subTrackItemId,
+          x: newRightEdgeX,
+          initLeftEdgeX: initWorkspaceStartPosition,
+        })
+      }
     },
     {
       signal: controller.signal,
@@ -285,7 +280,8 @@ function stretchWorkspaceWidth(event) {
             :note-height="noteHeight"
             :note-pad-width="editorCanvasWidth"
             :note-pad-height="editorCanvasHeight"
-            :note-position="getNotePosition(noteItem.x, noteItem.y)"
+            :x="noteItem.relativeX"
+            :y="noteItem.y"
             :workspace-start-position="startPosition"
             :noteEditorRegionRef="noteEditorRegionRef"
             :note-back-ground-color="mainColor"
@@ -321,6 +317,6 @@ function stretchWorkspaceWidth(event) {
 .workspace-scroll-zone {
   position: relative;
   width: 100%;
-  height: v-bind(editorCanvasHeight + "px");
+  height: v-bind(workspaceScrollZoneHeight + "px");
 }
 </style>
