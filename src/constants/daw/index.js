@@ -29,6 +29,8 @@ export const ALIGN_TYPE_ENUM = {
   RIGHT_JUSTIFYING: "ceil",
   TOP_JUSTIFYING: "floor",
   BOTTOM_JUSTIFYING: "ceil",
+  TOP_LEFT_JUSTIFYING: "floor",
+  BOTTOM_RIGHT_JUSTIFYING: "ceil",
 }
 
 export const EDITOR_MODE_ENUM = {
@@ -81,6 +83,25 @@ export const EDITABLE_TOTAL_TIME = 240
 export const INIT_BEATS_PER_MEASURE = 4
 export const INIT_NOTE_VALUE_DENOMINATOR = 4
 
+export const AUDIO_TRACK_ENUM = {
+  VOICE: "voice",
+  VIRTUAL_INSTRUMENTS: "virtual-instruments",
+  DRUM_MACHINE: "drum-machine",
+  SAMPLE: "sample",
+  GUITAR: "guitar",
+  BASS: "bass",
+}
+
+//midi虚拟琴键参数
+export const BLACK_KEY_HEIGHT = 10
+export const WHITE_KEY_HEIGHT = 16
+export const WHITE_KEY_WIDTH = 60
+export const OCTAVE_KEY_COUNT = 12
+export const OCTAVE_WHITE_KEY_COUNT = 7
+export const CHROMATIC_SCALE_SERIAL_NUMBER = ["1", "2", "3", "4", "5", "6", "7"]
+export const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
+export const NATURAL_SEMITONE = ["E", "B"]
+export const CHROMATIC_SCALE_ENUM = ["C1", "C2", "C3", "C4", "C5", "C6", "C7"]
 // 音名的顺序表
 export const NOTES_TABLE = [
   "C",
