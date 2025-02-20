@@ -1,8 +1,10 @@
 <script setup>
-import { computed, inject, useTemplateRef } from "vue"
+import { useTemplateRef } from "vue"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
+import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
+import { storeToRefs } from "pinia"
 const audioGenerator = useAudioGeneratorStore()
-
+const pianoKeySizeStore = usePianoKeySizeStore()
 const props = defineProps({
   id: {
     type: Number,
@@ -16,16 +18,7 @@ const props = defineProps({
     default: 1,
   },
 })
-const pianoKeySize = inject("pianoKeySize")
-const whiteKeyWidth = computed(() => {
-  return pianoKeySize.value.whiteKeyWidth
-})
-const whiteKeyHeight = computed(() => {
-  return pianoKeySize.value.whiteKeyHeight
-})
-const blackKeyHeight = computed(() => {
-  return pianoKeySize.value.blackKeyHeight
-})
+const { pianoKeySize } = storeToRefs(pianoKeySizeStore)
 
 const octaveBoxRef = useTemplateRef("octaveBoxRef")
 function getPitchName(noteName) {
@@ -131,9 +124,9 @@ function resetState(target) {
 
 <style scoped>
 .octave-box {
-  --black-key-height: v-bind(blackKeyHeight + "px");
-  --white-key-height: v-bind(whiteKeyHeight + "px");
-  --white-key-width: v-bind(whiteKeyWidth + "px");
+  --black-key-height: v-bind(pianoKeySize.blackKeyHeight + "px");
+  --white-key-height: v-bind(pianoKeySize.whiteKeyHeight + "px");
+  --white-key-width: v-bind(pianoKeySize.whiteKeyWidth + "px");
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -163,7 +156,7 @@ function resetState(target) {
   text-align: end;
   background-color: white;
   width: var(--white-key-width);
-  height: v-bind(whiteKeyHeight + "px");
+  height: var(--white-key-height);
   border: 1px solid gray;
   border-top: none;
   font-size: 12px;

@@ -17,6 +17,8 @@ import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
+import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
+import { storeToRefs } from "pinia"
 
 const trackFeatureMapStore = useTrackFeatureMapStore()
 const noteItems = useNoteItemStore()
@@ -51,16 +53,13 @@ const props = defineProps({
     default: "Instruments",
   },
 })
-
+const pianoKeySizeStore = usePianoKeySizeStore()
+const { octaveItemHeight, chromaticInfo, noteTrackHeight } =
+  storeToRefs(pianoKeySizeStore)
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const noteEditorContainerRef = useTemplateRef("noteEditorContainerRef")
 const noteEditorRegionRef = useTemplateRef("noteEditorRegionRef")
-const chromaticInfo = inject("chromaticInfo")
-const pianoKeySize = inject("pianoKeySize")
 const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", ref(20))
-const whiteKeyHeight = computed(() => {
-  return pianoKeySize.value.whiteKeyHeight
-})
 
 const workspaceMap = computed(() => {
   return (
@@ -71,17 +70,6 @@ const workspaceMap = computed(() => {
   )
 })
 
-const noteTrackHeight = computed(() => {
-  return (
-    (whiteKeyHeight.value *
-      chromaticInfo.value.octaveCount *
-      OCTAVE_WHITE_KEY_COUNT) /
-    (OCTAVE_KEY_COUNT * chromaticInfo.value.octaveCount)
-  )
-})
-const octaveItemHeight = computed(() => {
-  return noteTrackHeight.value * OCTAVE_KEY_COUNT
-})
 const svgHeight = computed(() => {
   return octaveItemHeight.value * chromaticInfo.value.octaveCount
 })

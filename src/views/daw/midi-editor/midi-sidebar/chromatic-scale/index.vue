@@ -3,15 +3,20 @@ import Octave from "@/views/daw/midi-editor/midi-sidebar/chromatic-scale/octave/
 import { computed, inject, onMounted, useTemplateRef, watch } from "vue"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
+import { storeToRefs } from "pinia"
+import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 
 const audioGenerator = useAudioGeneratorStore()
 const noteItemStore = useNoteItemStore()
+const pianoKeySizeStore = usePianoKeySizeStore()
 
 const props = defineProps({
   chromaticScaleScrollTop: {
     type: Number,
   },
 })
+const { chromaticInfo } = storeToRefs(pianoKeySizeStore)
+
 const mainColor = inject("mainColor")
 const emit = defineEmits(["update:chromaticScaleScrollTop"])
 const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
@@ -22,7 +27,6 @@ watch(
     octaveContainerRef.value.scrollTop = newScrollTopVal
   },
 )
-const chromaticInfo = inject("chromaticInfo")
 const chromaticScaleArr = computed(() => {
   return chromaticInfo.value.chromaticScale
 })
@@ -47,13 +51,12 @@ function scrollHandler(event) {
 onMounted(() => {
   octaveContainerRef.value.addEventListener("play-sample", (event) => {
     const pitchName = event.detail.pitchName
-    if (pitchName === undefined) return
     try {
       const escapedPitchName = pitchName.includes("#")
         ? pitchName.replace("#", "\\#")
         : pitchName
       const target = octaveContainerRef.value.querySelector(
-        `[data-note-name=${escapedPitchName}]`,
+        `[data-note-name="${escapedPitchName}"]`,
       )
       if (!target) return
       target.style.backgroundColor = mainColor.value
