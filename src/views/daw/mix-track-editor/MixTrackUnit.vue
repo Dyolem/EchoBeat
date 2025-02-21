@@ -178,24 +178,15 @@ onMounted(() => {
         )
       }
       if (stretchHandleTarget) {
-        // const trackItemId = stretchHandleTarget.dataset["trackItemId"]
         const controller = new AbortController()
-        let isDragging = false
         const { cursorPosition } = props.getGeometryInfoInParentElement(event)
         let [startX, startY] = cursorPosition
-
-        let deltaX = 0
-        let deltaY = 0
 
         const subTrackItemsMap = mixTrackEditorStore.getSubTrackItemsMap({
           audioTrackId: props.id,
         })
         const subTrackItem = subTrackItemsMap.get(trackItemId)
         const workspaceId = subTrackItem.workspaceId
-
-        const minStartPosition = 0
-        const maxStartPosition = props.trackWidth - subTrackItem.trackItemWidth
-
         const initSubTrackItemStartPosition = subTrackItem.startPosition
         const initSubTrackItemWidth = subTrackItem.trackItemWidth
 
@@ -204,13 +195,9 @@ onMounted(() => {
         document.addEventListener(
           "mousemove",
           (event) => {
-            isDragging = true
-
             const { cursorPosition } =
               props.getGeometryInfoInParentElement(event)
             const [x, y] = cursorPosition
-            deltaX = x - startX
-            deltaY = y - startY
 
             if (mousedownX < initSubTrackItemWidth / 2) {
               const initRightEdgeX =
