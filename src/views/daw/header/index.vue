@@ -2,6 +2,7 @@
 import PlayController from "@/views/daw/header/play-controller/index.vue"
 import Metronome from "@/views/daw/header/beat-controller/metronome.vue"
 import Mode from "@/views/daw/header/beat-controller/mode.vue"
+import HistoryController from "@/views/daw/header/history-edit-record/index.vue"
 </script>
 
 <template>
@@ -9,6 +10,7 @@ import Mode from "@/views/daw/header/beat-controller/mode.vue"
     <nav class="mix-editor-header-content"></nav>
     <nav class="mix-editor-toolbar">
       <div class="mix-editor-toolbar-left">
+        <HistoryController></HistoryController>
         <Metronome></Metronome>
         <Mode></Mode>
       </div>
