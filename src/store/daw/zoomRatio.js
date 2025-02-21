@@ -75,7 +75,10 @@ export const useZoomRatioStore = defineStore("zoomRatio", () => {
         gridSize,
         threshold,
       })
-      return x
+      return {
+        convertedX: x,
+        convertedScale: { min: minEdgeX, max: maxEdgeX },
+      }
     }
   }
 

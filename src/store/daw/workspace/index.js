@@ -285,7 +285,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     editorId,
     workspaceId,
     selectedAudioTrackId,
-    initStartPosition,
     startPosition,
     positionScale,
   }) {
@@ -293,14 +292,12 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       audioTrackId: selectedAudioTrackId,
       workspaceId,
     })
-    let oldStartPosition = initStartPosition
-    let newStartPosition = convert({
+    const { convertedX: newStartPosition } = convert({
       x: startPosition,
       editorId,
       scale: positionScale,
     })
-    if (!workspace) return [newStartPosition, oldStartPosition]
-
+    const oldStartPosition = workspace.startPosition
     workspace.startPosition = newStartPosition
     return [newStartPosition, oldStartPosition]
   }
@@ -398,10 +395,11 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       workspaceId,
     })
     const scale = [initLeftEdgeX, beatControllerStore.totalLength(editorId)]
-    const convertedX = convert({ x, editorId, scale })
-    workspace.width = convertedX - initLeftEdgeX
+    const { convertedX, convertedScale } = convert({ x, editorId, scale })
+    const { min: convertedLeftEdgeX } = convertedScale
+    workspace.width = convertedX - convertedLeftEdgeX
 
-    return [convertedX, initLeftEdgeX]
+    return [convertedX, x]
   }
 
   function updateLeftEdge({
@@ -416,8 +414,9 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       workspaceId,
     })
     const scale = [0, initRightEdgeX]
-    const convertedX = convert({ x, editorId, scale })
-    const newWorkspaceWidth = initRightEdgeX - convertedX
+    const { convertedX, convertedScale } = convert({ x, editorId, scale })
+    const { max: convertedRightEdgeX } = convertedScale
+    const newWorkspaceWidth = convertedRightEdgeX - convertedX
 
     const deltaWidth = newWorkspaceWidth - workspace.width
     workspace.startPosition = convertedX

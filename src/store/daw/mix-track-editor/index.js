@@ -141,8 +141,9 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       subTrackItemId,
     })
     const scale = [initLeftEdgeX, beatControllerStore.totalLength(editorId)]
-    const convertedX = convert({ x, editorId, scale })
-    subTrackItem.trackItemWidth = convertedX - initLeftEdgeX
+    const { convertedX, convertedScale } = convert({ x, editorId, scale })
+    const { min: convertedLeftEdgeX } = convertedScale
+    subTrackItem.trackItemWidth = convertedX - convertedLeftEdgeX
     return [convertedX, x]
   }
 
@@ -158,8 +159,9 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       subTrackItemId,
     })
     const scale = [0, initRightEdgeX]
-    const convertedX = convert({ x, editorId, scale })
-    const newTrackItemWidth = initRightEdgeX - convertedX
+    const { convertedX, convertedScale } = convert({ x, editorId, scale })
+    const { max: convertedRightEdgeX } = convertedScale
+    const newTrackItemWidth = convertedRightEdgeX - convertedX
     subTrackItem.startPosition = convertedX
     subTrackItem.trackItemWidth = newTrackItemWidth
     return [convertedX, x]
@@ -217,17 +219,18 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     audioTrackId,
     subTrackItemId,
     startPosition,
-    initStartPosition,
     horizontalScale,
   }) {
     const subTrackItem = getSubTrackItem({ audioTrackId, subTrackItemId })
-    const newStartPosition = convert({
+    const { convertedX: newStartPosition } = convert({
       x: startPosition,
       editorId,
       scale: horizontalScale,
     })
+
+    const oldStartPosition = subTrackItem.startPosition
     subTrackItem.startPosition = newStartPosition
-    return [newStartPosition, initStartPosition]
+    return [newStartPosition, oldStartPosition]
   }
 
   function passivePatchUpdateAudioTracksWithZoomRatio({

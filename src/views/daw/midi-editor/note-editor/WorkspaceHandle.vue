@@ -59,11 +59,6 @@ function workspaceGrabbingHandler(e) {
   const controller = new AbortController()
   const clearSelectionController = clearSelection()
   const scale = [0, props.notePadWidth - props.workspaceContainerWidth]
-  const workspaceMap = workspaceStore.getWorkspaceMap({
-    audioTrackId: selectedAudioTrackId.value,
-  })
-  const workspace = workspaceMap.get(props.id).startPosition
-  const initWorkspaceStartPosition = workspace.startPosition
 
   document.addEventListener(
     "mousemove",
@@ -76,7 +71,6 @@ function workspaceGrabbingHandler(e) {
         editorId: SUBORDINATE_EDITOR_ID,
         workspaceId: props.id,
         selectedAudioTrackId: selectedAudioTrackId.value,
-        initStartPosition: initWorkspaceStartPosition,
         startPosition: workspaceStartPosition,
         positionScale: scale,
       })
@@ -84,7 +78,6 @@ function workspaceGrabbingHandler(e) {
       mixTrackEditorStore.updateSubTrackItemStartPosition({
         editorId: SUBORDINATE_EDITOR_ID,
         audioTrackId: selectedAudioTrackId.value,
-        initStartPosition: initWorkspaceStartPosition,
         subTrackItemId: props.subTrackItemId,
         startPosition: workspaceStartPosition,
         horizontalScale: scale,

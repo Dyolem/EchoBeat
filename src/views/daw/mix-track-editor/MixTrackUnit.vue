@@ -127,7 +127,6 @@ onMounted(() => {
               editorId: MAIN_EDITOR_ID,
               workspaceId: clonedWorkspaceId,
               selectedAudioTrackId: props.id,
-              initStartPosition: initSubTrackItemStartPosition,
               startPosition: newSubTrackItemStartPosition,
               positionScale: [minStartPosition, maxStartPosition],
             })
@@ -135,7 +134,6 @@ onMounted(() => {
               editorId: MAIN_EDITOR_ID,
               audioTrackId: props.id,
               subTrackItemId: clonedSubTrackItemId,
-              initStartPosition: initSubTrackItemStartPosition,
               startPosition: newSubTrackItemStartPosition,
               horizontalScale: [minStartPosition, maxStartPosition],
             })
@@ -161,7 +159,6 @@ onMounted(() => {
                 editorId: MAIN_EDITOR_ID,
                 workspaceId: workspaceId,
                 selectedAudioTrackId: props.id,
-                initStartPosition: initSubTrackItemStartPosition,
                 startPosition: newSubTrackItemStartPosition,
                 positionScale: [minStartPosition, maxStartPosition],
               })
@@ -169,7 +166,6 @@ onMounted(() => {
                 editorId: MAIN_EDITOR_ID,
                 audioTrackId: props.id,
                 subTrackItemId: trackItemId,
-                initStartPosition: initSubTrackItemStartPosition,
                 startPosition: newSubTrackItemStartPosition,
                 horizontalScale: [minStartPosition, maxStartPosition],
               })
