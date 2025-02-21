@@ -20,11 +20,9 @@ import {
   ZIndex,
 } from "@/constants/daw/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
-import { useEditor } from "@/store/daw/editor.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 const beatControllerStore = useBeatControllerStore()
-const editorStore = useEditor()
 const zoomRatioStore = useZoomRatioStore()
 
 const TRACK_ZOOM_RATIO = DEFAULT_ZOOM_RATIO
@@ -143,7 +141,6 @@ onMounted(() => {
   )
   const x = editorContentRef.value.getBoundingClientRect().left
   const y = editorContentRef.value.getBoundingClientRect().top
-  editorStore.initEditor(props.id, { x, y })
   if (!props.resizable) return
 
   const box = editorContentContainerRef.value
@@ -332,7 +329,6 @@ function scrollHandler(event) {
 }
 function updateSpecifiedEditorZoomRatio(newZoomRatio) {
   zoomRatioStore.updateSpecifiedEditorZoomRatio(props.id, newZoomRatio)
-  editorStore.updateEditorParams(props.id, { zoomRatio: newZoomRatio })
   if (newZoomRatio >= 3) {
     beatControllerStore.maxGridWidth = 240
   } else {

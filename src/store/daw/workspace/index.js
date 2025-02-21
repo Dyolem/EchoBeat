@@ -1,4 +1,4 @@
-import { defineStore } from "pinia"
+import { defineStore, storeToRefs } from "pinia"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { alignToGrid } from "@/utils/alignToGrid.js"
@@ -9,16 +9,24 @@ import {
   SUBORDINATE_EDITOR_ID,
 } from "@/constants/daw/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
-import { useEditor } from "@/store/daw/editor.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { computed } from "vue"
 
 export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const noteItemStore = useNoteItemStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const zoomRatioStore = useZoomRatioStore()
-  const editor = useEditor()
   const beatControllerStore = useBeatControllerStore()
 
+  const widthPerMeasure = computed(() => {
+    return beatControllerStore.widthPerMeasure(SUBORDINATE_EDITOR_ID)
+  })
+  const factualDisplayedGridWidth = computed(() => {
+    return beatControllerStore.factualDisplayedGridWidth(SUBORDINATE_EDITOR_ID)
+  })
+  const maxEditorWidth = computed(() => {
+    return beatControllerStore.totalLength(SUBORDINATE_EDITOR_ID)
+  })
   const generateWorkspaceId = (prefix) => ID_SET.WORKSPACE(prefix)
   const convert = zoomRatioStore.createConvert(SUBORDINATE_EDITOR_ID)
   function createNewWorkspaceAtLeftSide({
@@ -26,15 +34,14 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     rightWorkspace,
     maxNewWorkspaceWidth,
   }) {
-    const { widthPerBeat, minGridHorizontalMovement } =
-      editor.editorMap.get(MAIN_EDITOR_ID)
+    const minGridHorizontalMovement = factualDisplayedGridWidth.value
     let startPosition = 0
     let width = 0
-    if (maxNewWorkspaceWidth >= widthPerBeat) {
-      width = widthPerBeat
+    if (maxNewWorkspaceWidth >= widthPerMeasure.value) {
+      width = widthPerMeasure.value
       startPosition = Math.min(
         createPosition,
-        rightWorkspace.startPosition - widthPerBeat,
+        rightWorkspace.startPosition - widthPerMeasure.value,
       )
     } else {
       width = maxNewWorkspaceWidth
@@ -58,19 +65,18 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     leftWorkspace,
     maxStretchableSpace,
   }) {
-    const { widthPerBeat } = editor.editorMap.get(MAIN_EDITOR_ID)
-    const createNewWorkspaceThreshold = widthPerBeat * 2
+    const createNewWorkspaceThreshold = widthPerMeasure.value * 2
     let stretchIncrement = 0
     if (
       createPosition - (leftWorkspace.startPosition + leftWorkspace.width) >
-      widthPerBeat
+      widthPerMeasure.value
     ) {
       stretchIncrement = Math.min(
         createNewWorkspaceThreshold,
         maxStretchableSpace,
       )
     } else {
-      stretchIncrement = Math.min(widthPerBeat, maxStretchableSpace)
+      stretchIncrement = Math.min(widthPerMeasure.value, maxStretchableSpace)
     }
     const newWidth = leftWorkspace.width + stretchIncrement
     return {
@@ -84,9 +90,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   }
   function computedStartPosition(createPosition, workspaceMap) {
     // if(!workspaceMap) return
-    const { widthPerBeat, width: maxEditorWidth } =
-      editor.editorMap.get(MAIN_EDITOR_ID)
-    const createNewWorkspaceThreshold = widthPerBeat * 2
+    const createNewWorkspaceThreshold = widthPerMeasure.value * 2
     const x = createPosition
     const sortedWorkspaceArr = Array.from(workspaceMap.values()).sort(
       (a, b) => {
@@ -95,12 +99,12 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     )
     if (sortedWorkspaceArr.length === 0) {
       const rightWorkspace = {
-        startPosition: maxEditorWidth,
+        startPosition: maxEditorWidth.value,
       }
       return createNewWorkspaceAtLeftSide({
         createPosition,
         rightWorkspace,
-        maxNewWorkspaceWidth: maxEditorWidth,
+        maxNewWorkspaceWidth: maxEditorWidth.value,
       })
     }
     for (const workspace of sortedWorkspaceArr) {
@@ -155,7 +159,8 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     } else if (index === -1) {
       const leftWorkspace = sortedWorkspaceArr[sortedWorkspaceArr.length - 1]
       const restSpace =
-        maxEditorWidth - (leftWorkspace.startPosition + leftWorkspace.width)
+        maxEditorWidth.value -
+        (leftWorkspace.startPosition + leftWorkspace.width)
       if (
         x - (leftWorkspace.startPosition + leftWorkspace.width) <=
         createNewWorkspaceThreshold
@@ -167,7 +172,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         })
       } else {
         const rightWorkspace = {
-          startPosition: maxEditorWidth,
+          startPosition: maxEditorWidth.value,
         }
         return createNewWorkspaceAtLeftSide({
           createPosition,
@@ -247,6 +252,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       selectedAudioTrackId: audioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     })
+    if (!midiWorkspaceInfo) return
     midiWorkspaceInfo.zoomRatio = newZoomRatio
     const workspaceMap = midiWorkspaceInfo.workspaceMap
     for (const workspace of workspaceMap.values()) {

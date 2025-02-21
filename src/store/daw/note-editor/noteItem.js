@@ -548,6 +548,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       selectedAudioTrackId: audioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
     })
+    if (!workspaceMap) return
     for (const { noteItemsMap } of workspaceMap.values()) {
       noteItemsMap.forEach((pitchNameObj) => {
         pitchNameObj.noteItems.forEach((noteItem) => {
