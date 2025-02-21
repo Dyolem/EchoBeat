@@ -1,8 +1,7 @@
 import { defineStore } from "pinia"
-import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
-import { alignToGrid, snapToGrid } from "@/utils/alignToGrid.js"
+import { alignToGrid } from "@/utils/alignToGrid.js"
 import {
   ALIGN_TYPE_ENUM,
   ID_SET,
@@ -10,12 +9,10 @@ import {
   SUBORDINATE_EDITOR_ID,
 } from "@/constants/daw/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
-import { clamp } from "@/utils/clamp.js"
 import { useEditor } from "@/store/daw/editor.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 export const useWorkspaceStore = defineStore("workspaceStore", () => {
-  const editorGridParametersStore = useEditorGridParametersStore()
   const noteItemStore = useNoteItemStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const zoomRatioStore = useZoomRatioStore()

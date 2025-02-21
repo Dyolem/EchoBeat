@@ -11,9 +11,6 @@ import { useAudioTrackMainColorStore } from "@/store/daw/audio-track-color/index
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
-import { clamp } from "@/utils/clamp.js"
-import { snapToGrid } from "@/utils/alignToGrid.js"
-import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 
@@ -21,9 +18,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const audioTrackMainColorStore = useAudioTrackMainColorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
-  const baseTrackHeight = BASE_GRID_HEIGHT
   const zoomRatioStore = useZoomRatioStore()
-  const editorGridParametersStore = useEditorGridParametersStore()
   const beatControllerStore = useBeatControllerStore()
   const audioStore = useAudioStore()
 

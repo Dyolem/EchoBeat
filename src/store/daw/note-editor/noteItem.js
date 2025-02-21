@@ -13,7 +13,6 @@ import {
   NATURAL_SEMITONE,
   OCTAVE_KEY_COUNT,
 } from "@/constants/daw/index.js"
-import { useEditorGridParametersStore } from "@/store/daw/editor-parameters/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
@@ -26,7 +25,6 @@ import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const zoomRatioStore = useZoomRatioStore()
-  const editorGridParametersStore = useEditorGridParametersStore()
   const audioStore = useAudioStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
