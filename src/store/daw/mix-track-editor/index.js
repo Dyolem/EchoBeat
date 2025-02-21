@@ -166,53 +166,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     subTrackItem.trackItemWidth = newTrackItemWidth
     return [convertedX, x]
   }
-  function updateSubTrackItemWidth({
-    audioTrackId,
-    subTrackItemId,
-    width,
-    startPosition,
-    scale,
-    isActive = true,
-  }) {
-    const subTrackItem = getSubTrackItem({ audioTrackId, subTrackItemId })
-    const oldWidth = subTrackItem.trackItemWidth
-    const oldStartPosition = subTrackItem.startPosition
-    let [minWidth, maxWidth] = scale
-    let newWidth = width
-    if (!isActive) {
-      minWidth = convertDataFromSubToMain(minWidth)
-      maxWidth = convertDataFromSubToMain(maxWidth)
-      newWidth = convertDataFromSubToMain(width)
-      if (startPosition !== undefined)
-        startPosition = convertDataFromSubToMain(startPosition)
-    }
-    newWidth = clamp(newWidth, [minWidth, maxWidth])
-    if (startPosition !== undefined) {
-      newWidth += startPosition
-      newWidth = isActive
-        ? snapToGrid(newWidth, {
-            gridSize: convertDataFromSubToMain(
-              editorGridParametersStore.minGridHorizontalMovement,
-            ),
-          })
-        : newWidth
-      newWidth -= startPosition
-    } else {
-      const mirrorStartPosition = maxWidth - (oldStartPosition + oldWidth)
-      newWidth += mirrorStartPosition
-      newWidth = isActive
-        ? snapToGrid(newWidth, {
-            gridSize: convertDataFromSubToMain(
-              editorGridParametersStore.minGridHorizontalMovement,
-            ),
-          })
-        : newWidth
-      newWidth -= mirrorStartPosition
-    }
-
-    subTrackItem.trackItemWidth = newWidth
-    return [newWidth, oldWidth]
-  }
 
   function updateSubTrackItemStartPosition({
     editorId,
@@ -268,7 +221,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     createSubTrackItem,
     updateLeftEdge,
     updateRightEdge,
-    updateSubTrackItemWidth,
     updateSubTrackItemStartPosition,
     passivePatchUpdateAudioTracksWithZoomRatio,
     deleteSpecifiedSubTrackItem,
