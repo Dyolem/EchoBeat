@@ -178,16 +178,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     }
   }
 
-  /**
-   * @typedef {import('../type.js').NoteItemsMap} NoteItemsMap
-   * @param {string} audioTrackId
-   * @param {string} workspaceBadgeName
-   * @param {number} startPosition
-   * @param {number} zoomRatio
-   * @param {NoteItemsMap} noteItemsMap
-   * @returns {{id: string, workspaceBadgeName:string, noteItemsMap:NoteItemsMap, width: number, startPosition: number}}
-   */
-
   function shallCreateWorkspace({ audioTrackId, startPosition }) {
     const { workspaceBadgeName, workspaceMap, zoomRatio } =
       trackFeatureMapStore.getSelectedTrackFeature({

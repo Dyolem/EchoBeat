@@ -2,9 +2,6 @@ import { defineStore } from "pinia"
 import { computed, ref } from "vue"
 import {
   EDITOR_MODE_ENUM,
-  TENSILE_ADSORPTION_GRID_THRESHOLD,
-  NOTE_ELEMENT_SIZE,
-  NOTE_ELEMENT_MIN_SIZE,
   ALIGN_TYPE_ENUM,
   MAIN_EDITOR_ID,
   SUBORDINATE_EDITOR_ID,
@@ -32,9 +29,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const beatControllerStore = useBeatControllerStore()
   const pianoKeySizeStore = usePianoKeySizeStore()
 
-  const { baseWidth, baseHeight } = NOTE_ELEMENT_SIZE
-  const { minWidth, minHeight } = NOTE_ELEMENT_MIN_SIZE
-
   const nextInsertedNoteWidth = ref(0)
   const noteWidth = computed(() => {
     return (
@@ -51,15 +45,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     )
   })
 
-  const minGridWidth = ref(minWidth)
-  const minGridHeight = ref(minHeight) //Temporarily out of use
-  const stretchNoteWidthSnappedToGridThreshold = ref(
-    TENSILE_ADSORPTION_GRID_THRESHOLD,
-  )
-
-  // const CHROMATIC_SCALE_ENUM = ["1", "2", "3", "4", "5", "6", "7"]
-  // const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
-  // const NATURAL_SEMITONE = ["E", "B"]
   const isSnappedToHorizontalGrid = ref(true)
   const octaveContainerInstance = ref(null)
   const editorMode = ref(EDITOR_MODE_ENUM.SELECT)
@@ -188,24 +173,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const date = new Date()
     const fetchTime = date.getTime()
     return `${insertToSpecifiedPitchName}-${count}-${fetchTime}`
-  }
-
-  function getLegalNoteStartPositionAndWidthInWorkspace(
-    { noteHorizontalStartPosition, noteWidth },
-    workspace,
-  ) {
-    const { startPosition, width: workspaceWidth } = workspace
-    const legalNoteStartPosition =
-      Math.min(
-        Math.max(noteHorizontalStartPosition, startPosition) + noteWidth,
-        workspace.startPosition + workspaceWidth,
-      ) - noteWidth
-    const maxNoteWidth = startPosition + workspaceWidth - legalNoteStartPosition
-    const legalNoteWidth = Math.min(maxNoteWidth, noteWidth)
-    return {
-      legalNoteStartPosition,
-      legalNoteWidth,
-    }
   }
 
   function noteItemTemplate({
@@ -565,152 +532,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     nextInsertedNoteWidth.value = newNoteWidth
   }
 
-  function stretchNoteWidth({
-    id,
-    audioTrackId,
-    workspaceId,
-    pitchName,
-    stretchXLength,
-    initWidth,
-    mousedownStartX,
-    initX,
-  }) {
-    if (
-      id === undefined ||
-      audioTrackId === undefined ||
-      workspaceId === undefined ||
-      pitchName === undefined ||
-      stretchXLength === undefined ||
-      initWidth === undefined ||
-      initX === undefined ||
-      mousedownStartX === undefined
-    )
-      return
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
-    const workspace = workspaceMap.get(workspaceId)
-    const noteItemsMap = workspace.noteItemsMap
-    const updateNoteTarget = noteItemsMap
-      .get(pitchName)
-      .noteItems.find((item) => item.id === id)
-
-    if (updateNoteTarget === undefined) return
-    let newWidth = 0
-    let newX = 0
-    const middlePoint = initWidth / 2
-
-    if (mousedownStartX - initX < middlePoint) {
-      //left side drag
-      newWidth = initWidth - stretchXLength
-      newX = initX + stretchXLength
-
-      /*
-       * If the stretched values of the coordinates of the left
-       * and right borders of the note element are within the threshold (3px)
-       * and the minimum moving grid distance, the adsorption is triggered
-       * */
-      if (isSnappedToHorizontalGrid.value) {
-        newX = snapToGrid(newX, {
-          gridSize: beatControllerStore.factualDisplayedGridWidth(
-            SUBORDINATE_EDITOR_ID,
-          ),
-        })
-        newWidth = snapToGrid(newWidth, {
-          gridSize: beatControllerStore.factualDisplayedGridWidth(
-            SUBORDINATE_EDITOR_ID,
-          ),
-        })
-        // let restMovement =
-        //   newX % editorGridParametersStore.minGridHorizontalMovement
-        // if (
-        //   restMovement <
-        //   editorGridParametersStore.minGridHorizontalMovement / 2
-        // ) {
-        //   //When stretched from right to left, it attaches to the left
-        //   if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
-        //     newX -= restMovement
-        //     newWidth += restMovement
-        //   }
-        // } else {
-        //   //When stretched from left to right, it attaches to the right
-        //   restMovement =
-        //     editorGridParametersStore.minGridHorizontalMovement - restMovement
-        //   if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
-        //     newX += restMovement
-        //     newWidth -= restMovement
-        //   }
-        // }
-      }
-
-      const maxWidth = initX + initWidth - workspace.startPosition
-      if (newWidth < minGridWidth.value || newWidth > maxWidth) return
-
-      updateNoteTarget.relativeX = newX - workspace.startPosition
-      updateNoteTarget.width = newWidth
-      nextInsertedNoteWidth.value = newWidth
-      const newStartTime = updateNoteTarget.startTime
-      const newDuration = updateNoteTarget.duration
-      audioStore.adjustNodeStartAndLastTime({
-        id,
-        pitchName,
-        startTime: newStartTime,
-        duration: newDuration,
-      })
-    } else {
-      //right side drag
-      const maxWidth = workspace.startPosition + workspace.width - initX
-      newWidth = initWidth + stretchXLength
-
-      /*
-       * If the stretched values of the coordinates of the left
-       * and right borders of the note element are within the threshold (3px)
-       * and the minimum moving grid distance, the adsorption is triggered
-       * */
-      if (isSnappedToHorizontalGrid.value) {
-        newWidth = snapToGrid(newWidth, {
-          gridSize: beatControllerStore.factualDisplayedGridWidth(
-            SUBORDINATE_EDITOR_ID,
-          ),
-        })
-        // //noteRightSidePositionX: note元素右边界的translateX值
-        // const noteRightSidePositionX = updateNoteTarget.x + newWidth
-        // let restMovement =
-        //   noteRightSidePositionX %
-        //   editorGridParametersStore.minGridHorizontalMovement
-        // if (
-        //   restMovement <
-        //   editorGridParametersStore.minGridHorizontalMovement / 2
-        // ) {
-        //   //When stretched from right to left, it attaches to the left
-        //   if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
-        //     newWidth -= restMovement
-        //   }
-        // } else {
-        //   //When stretched from left to right, it attaches to the right
-        //   restMovement =
-        //     editorGridParametersStore.minGridHorizontalMovement - restMovement
-        //   if (restMovement <= stretchNoteWidthSnappedToGridThreshold.value) {
-        //     newWidth += restMovement
-        //   }
-        // }
-      }
-
-      if (newWidth < minGridWidth.value || newWidth > maxWidth) return
-      updateNoteTarget.width = newWidth
-      nextInsertedNoteWidth.value = newWidth
-      const newStartTime = updateNoteTarget.startTime
-      const newDuration = updateNoteTarget.duration
-      console.log("right")
-      audioStore.adjustNodeStartAndLastTime({
-        id,
-        startTime: newStartTime,
-        duration: newDuration,
-        pitchName,
-      })
-    }
-  }
   function passivePatchUpdateNoteItemsWithZoomRatio({
     audioTrackId,
     newTrackZoomRatio,
@@ -763,7 +584,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteItemsMap,
     updateNoteLeftEdge,
     updateNoteRightEdge,
-    stretchNoteWidth,
     passivePatchUpdateNoteItemsWithZoomRatio,
     simulatePlaySpecifiedNote,
   }
