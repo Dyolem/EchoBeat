@@ -310,8 +310,6 @@ onMounted(() => {
   )
 })
 
-const isTrustedScroll = ref(false)
-let resetTimer = null
 function scrollHandler(event) {
   const editorScrollTop = event.target.scrollTop
   const editorScrollLeft = event.target.scrollLeft
@@ -319,14 +317,8 @@ function scrollHandler(event) {
     scrollTop: editorScrollTop,
     scrollLeft: editorScrollLeft,
   })
-  if (resetTimer !== null) clearTimeout(resetTimer)
-  isTrustedScroll.value = true
-  resetTimer = setTimeout(() => {
-    isTrustedScroll.value = false
-    clearTimeout(resetTimer)
-    resetTimer = null
-  }, 3000)
 }
+
 function updateSpecifiedEditorZoomRatio(newZoomRatio) {
   zoomRatioStore.updateSpecifiedEditorZoomRatio(props.id, newZoomRatio)
   if (newZoomRatio >= 3) {
@@ -362,7 +354,6 @@ onUnmounted(() => {
           :track-ruler-width="canvasContentWidth"
           :track-ruler-view-width="editorViewWidth"
           :track-zoom-ratio="trackZoomRatio"
-          :is-trusted="isTrustedScroll"
         ></TimeLine>
       </div>
 

@@ -29,10 +29,6 @@ const props = defineProps({
     type: Number,
     default: 1,
   },
-  isTrusted: {
-    type: Boolean,
-    default: false,
-  },
 })
 
 const timeLineTranslateDistance = computed(() => {
@@ -42,13 +38,35 @@ const timeLineTranslateDistance = computed(() => {
     beatControllerStore.totalLength(props.id)
   )
 })
+
 const pageIndex = computed(() => {
   return Math.floor(timeLineTranslateDistance.value / props.trackRulerViewWidth)
 })
+
+let hasChangedScrollLeft = false
+const triggerBufferEdge = 3
 watchEffect(() => {
-  if (props.parentContainer && !props.isTrusted) {
+  if (!props.parentContainer) return
+  if (trackRulerStore.isDraggingTimelineByUser) {
+    //用户手动拖动任意编辑器内的时间线时，滚动距离遵循分页算法逻辑，编辑器各自计算滚动距离
     props.parentContainer.scrollLeft =
       pageIndex.value * props.trackRulerViewWidth
+  } else {
+    //用户未手动拖动时间线，由播放控件控制移动时，所有编辑器的横向滚动距离遵循以下逻辑:
+    //当时间线处于当前编辑器视口内时，时间线如果即将进入编辑器的更新触发条件范围（相差值的绝对值小于3px），滚动距离将增加一个编辑器视口宽度
+    const absoluteDelta = Math.abs(
+      timeLineTranslateDistance.value -
+        (props.parentContainer.scrollLeft + props.trackRulerViewWidth),
+    )
+    if (absoluteDelta <= triggerBufferEdge) {
+      //由于触发条件是一个范围值，而检测为多次检测，触发更新后后续不能再更新
+      if (!hasChangedScrollLeft) {
+        props.parentContainer.scrollLeft += props.trackRulerViewWidth
+        hasChangedScrollLeft = true
+      }
+    } else {
+      hasChangedScrollLeft = false
+    }
   }
 })
 
@@ -56,6 +74,8 @@ onMounted(() => {
   if (!timelineRef.value) return
   let translateXDistance = 0
   timelineRef.value.addEventListener("mousedown", () => {
+    if (trackRulerStore.isPlaying) return
+    trackRulerStore.isDraggingTimelineByUser = true
     const selectionController = new AbortController()
     document.addEventListener(
       "selectionchange",
@@ -94,6 +114,7 @@ onMounted(() => {
     document.addEventListener(
       "mouseup",
       () => {
+        trackRulerStore.isDraggingTimelineByUser = false
         controller.abort()
         selectionController.abort()
       },

@@ -6,18 +6,20 @@ import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonG
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { MAIN_EDITOR_ID } from "@/constants/daw/index.js"
+import { storeToRefs } from "pinia"
 const trackRulerStore = useTrackRulerStore()
 const beatControllerStore = useBeatControllerStore()
 const audioStore = useAudioStore()
+
+const { isPlaying, timelineCurrentTime } = storeToRefs(trackRulerStore)
 const accurateTime = computed(() => {
-  return trackRulerStore.timelineCurrentTime
+  return timelineCurrentTime.value
 })
 const timeDisplay = computed(() => {
   return accurateTime.value.toFixed(1)
 })
 
 let audioContext = null
-let isPlaying = ref(false)
 let controller = null
 const dynamicGenerationTimeInterval = 2
 function playAudio() {
