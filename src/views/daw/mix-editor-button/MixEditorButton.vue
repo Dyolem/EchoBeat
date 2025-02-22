@@ -76,8 +76,10 @@ const buttonBorderRadius = computed(() => {
   background-color: #191b1e;
   color: #ffffff;
   transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
+  user-select: none;
 }
 .mix-editor-button-box:hover {
   background-color: #3f4143;
+  cursor: pointer;
 }
 </style>
