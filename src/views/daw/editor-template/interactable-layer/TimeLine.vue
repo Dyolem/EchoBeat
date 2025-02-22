@@ -75,7 +75,7 @@ onMounted(() => {
   let translateXDistance = 0
   timelineRef.value.addEventListener("mousedown", () => {
     if (trackRulerStore.isPlaying) return
-    trackRulerStore.isDraggingTimelineByUser = true
+    trackRulerStore.updateTimelineDraggingState(true)
     const selectionController = new AbortController()
     document.addEventListener(
       "selectionchange",
@@ -114,7 +114,7 @@ onMounted(() => {
     document.addEventListener(
       "mouseup",
       () => {
-        trackRulerStore.isDraggingTimelineByUser = false
+        trackRulerStore.updateTimelineDraggingState(false)
         controller.abort()
         selectionController.abort()
       },

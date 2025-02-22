@@ -13,11 +13,15 @@ export const useTrackRulerStore = defineStore("dawTrackRulerTimeLine", () => {
     timelineCurrentTime.value = newTime
   }
   const isDraggingTimelineByUser = ref(false)
+  function updateTimelineDraggingState(newState) {
+    isDraggingTimelineByUser.value = newState
+  }
   return {
     isPlaying,
     isDraggingTimelineByUser,
     timelineCurrentTime,
     maxTime,
     updateCurrentTime,
+    updateTimelineDraggingState,
   }
 })
