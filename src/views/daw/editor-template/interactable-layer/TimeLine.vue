@@ -2,6 +2,7 @@
 import { computed, onMounted, useTemplateRef, watchEffect } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import clearSelection from "@/utils/clearSelection.js"
 const trackRulerStore = useTrackRulerStore()
 const beatControllerStore = useBeatControllerStore()
 const timelineRef = useTemplateRef("timelineRef")
@@ -76,22 +77,7 @@ onMounted(() => {
   timelineRef.value.addEventListener("mousedown", () => {
     if (trackRulerStore.isPlaying) return
     trackRulerStore.updateTimelineDraggingState(true)
-    const selectionController = new AbortController()
-    document.addEventListener(
-      "selectionchange",
-      (event) => {
-        const selection = window.getSelection()
-        if (selection && selection.toString()) {
-          // 清空选区，禁用弹出选项
-          selection.removeAllRanges()
-        }
-        console.log("selectionchange")
-      },
-      {
-        // once: true,
-        signal: selectionController.signal,
-      },
-    )
+    const selectionController = clearSelection()
 
     const controller = new AbortController()
     function mousemoveHandler(event) {
