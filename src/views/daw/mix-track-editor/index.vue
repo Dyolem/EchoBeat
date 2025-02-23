@@ -80,16 +80,17 @@ function updateMainEditorSidebarScrollTop(newMainEditorSidebarScrollTop) {
 
 <style scoped>
 .editor-main {
+  --main-editor-height: v-bind(mainEditorViewHeight + "px");
+  height: var(--main-editor-height);
   position: relative;
   width: 100vw;
   display: flex;
-  height: v-bind(mainEditorViewHeight + "px");
 }
 .editor-side-bar {
   flex-grow: 1;
   flex-basis: 100px;
   flex-shrink: 0;
-  height: v-bind("`calc(100% - ${SCROLLBAR_WIDTH}px)`");
+  height: var(--main-editor-height);
   background-color: gray;
   margin-right: 10px;
 }

@@ -11,10 +11,13 @@ import {
   onUnmounted,
   provide,
   ref,
+  useTemplateRef,
   watchEffect,
 } from "vue"
 import { MAIN_EDITOR_ID, SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
+import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 const zoomRatioStore = useZoomRatioStore()
 
 zoomRatioStore.initZoomRatioMap()
@@ -24,7 +27,21 @@ const headerHeight = ref(HEADER_HEIGHT)
 const footerHeight = ref(FOOTER_HEIGHT)
 
 const editorSideBarWidth = ref(300)
-
+const footerContainerRef = useTemplateRef("footerContainerRef")
+// // 创建一个 ResizeObserver 实例
+const resizeObserver = new ResizeObserver((entries) => {
+  entries.forEach((entry) => {
+    footerHeight.value = entry.contentRect.height
+  })
+})
+onMounted(() => {
+  // 开始观察
+  if (footerContainerRef.value) resizeObserver.observe(footerContainerRef.value)
+})
+onUnmounted(() => {
+  // 不再需要观察，调用 unobserve() 取消监听
+  resizeObserver.unobserve(footerContainerRef.value)
+})
 const controller = new AbortController()
 const exceptEditorHeight = computed(() => {
   return headerHeight.value + footerHeight.value
@@ -79,59 +96,79 @@ provide("selectedTrackItemId", {
     <header>
       <EditorHeader />
     </header>
-    <main>
+    <main class="main-editor-container">
       <MixTrackEditor
         :main-editor-id="MAIN_EDITOR_ID"
         :main-editor-view-width="mainEditorViewWidth"
         :main-editor-view-height="mainEditorViewHeight"
       ></MixTrackEditor>
     </main>
-    <footer class="footer">
-      <button @click="isOpenDrawerEditor = !isOpenDrawerEditor">
-        instrument
-      </button>
-      <teleport to="body">
-        <Transition name="drawer">
-          <MidiEditor
-            :id="SUBORDINATE_EDITOR_ID"
-            class="drawer-box"
-            v-show="isOpenDrawerEditor"
-          ></MidiEditor>
-          <!--          <DrawerEditor-->
-          <!--            class="drawer-box"-->
-          <!--            v-show="isOpenDrawerEditor"-->
-          <!--          ></DrawerEditor>-->
-        </Transition>
-      </teleport>
+    <footer class="footer" ref="footerContainerRef">
+      <MidiEditor
+        :id="SUBORDINATE_EDITOR_ID"
+        v-show="isOpenDrawerEditor"
+      ></MidiEditor>
+      <div class="footer-tool-bar">
+        <div class="left-side-tool">
+          <MixEditorButtonGroup>
+            <MixEditorButton>
+              <div class="tool-name">
+                <echo-lucide:piano></echo-lucide:piano>
+                <span>Instrument</span>
+              </div>
+            </MixEditorButton>
+            <MixEditorButton>
+              <div class="tool-name">
+                <echo-solar:special-effects-linear></echo-solar:special-effects-linear>
+                <span>Effects</span>
+              </div>
+            </MixEditorButton>
+            <MixEditorButton @click="isOpenDrawerEditor = !isOpenDrawerEditor">
+              <div class="tool-name">
+                <echo-fluent:midi-24-regular></echo-fluent:midi-24-regular>
+                <span>MIDI Editor</span>
+              </div>
+            </MixEditorButton>
+          </MixEditorButtonGroup>
+        </div>
+        <div class="right-side-tool"></div>
+      </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
 #main {
-  --header-height: 100px;
-  --footer-height: 50px;
-  --content-height: calc(100vh - var(--header-height) - var(--footer-height));
-}
-
-.drawer-box {
-  position: absolute;
-  bottom: v-bind(footerHeight + "px");
-  z-index: 100;
+  --default-header-height: v-bind(HEADER_HEIGHT + "px");
+  --default-footer-height: v-bind(FOOTER_HEIGHT + "px");
+  display: flex;
+  flex-direction: column;
 }
 .footer {
   position: relative;
+  display: flex;
+  align-items: center;
   width: 100vw;
-  height: v-bind(footerHeight + "px");
+  min-height: var(--default-footer-height);
   background-color: lightpink;
 }
-.drawer-enter-active,
-.drawer-leave-active {
-  transition: opacity 0.5s ease;
+.footer-tool-bar {
+  height: fit-content;
+  width: 100%;
+  padding: 0 30px;
+  display: flex;
+  justify-content: space-between;
 }
-
-.drawer-enter-from,
-.drawer-leave-to {
-  opacity: 0;
+.left-side-tool,
+.right-side-tool {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.tool-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
 }
 </style>

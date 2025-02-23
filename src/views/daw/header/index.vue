@@ -25,7 +25,7 @@ import HistoryController from "@/views/daw/header/history-edit-record/index.vue"
 <style scoped>
 .studio-header {
   width: 100vw;
-  height: var(--header-height);
+  height: var(--default-header-height);
   display: flex;
   flex-direction: column;
   background-color: black;
