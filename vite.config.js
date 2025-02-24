@@ -3,6 +3,8 @@ import vue from "@vitejs/plugin-vue"
 import Icons from "unplugin-icons/vite"
 import IconsResolver from "unplugin-icons/resolver"
 import Components from "unplugin-vue-components/vite"
+import { ElementPlusResolver } from "unplugin-vue-components/resolvers"
+import AutoImport from "unplugin-auto-import/vite"
 import vueJsx from "@vitejs/plugin-vue-jsx"
 import path from "path"
 
@@ -14,6 +16,9 @@ export default defineConfig({
     Icons({
       /* options */
       compiler: "vue3",
+    }),
+    AutoImport({
+      resolvers: [ElementPlusResolver()],
     }),
     Components({
       resolvers: [
@@ -27,6 +32,7 @@ export default defineConfig({
           //   "test-color-icons",
           // ],
         }),
+        ElementPlusResolver(),
       ],
     }),
   ],
