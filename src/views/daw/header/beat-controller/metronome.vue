@@ -17,7 +17,7 @@ function validateBpm(event) {
         <echo-f7:metronome class="metronome-icon"></echo-f7:metronome>
       </i>
     </MixEditorButton>
-    <MixEditorButton :padding="4">
+    <MixEditorButton>
       <i class="metronome-settings">
         <echo-ooui:collapse></echo-ooui:collapse> </i
     ></MixEditorButton>
