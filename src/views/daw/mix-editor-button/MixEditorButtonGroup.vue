@@ -24,15 +24,18 @@ provide("size", toRef(props, "size"))
   display: flex;
   align-items: center;
 }
-:slotted(div):not(:only-child):not(:first-child):not(:last-child) {
-  border-radius: 0;
-}
-:slotted(div):not(:only-child):first-child {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-:slotted(div):not(:only-child):last-child {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+
+.button-group-container :deep(.mix-editor-button-box):not(:only-child) {
+  &:not(:first-child):not(:last-child) {
+    border-radius: 0;
+  }
+  &:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  &:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
 }
 </style>
