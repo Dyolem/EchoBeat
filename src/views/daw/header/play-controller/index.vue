@@ -4,11 +4,8 @@ import { computed } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
-import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import { MAIN_EDITOR_ID } from "@/constants/daw/index.js"
 import { storeToRefs } from "pinia"
 const trackRulerStore = useTrackRulerStore()
-const beatControllerStore = useBeatControllerStore()
 const audioStore = useAudioStore()
 
 const { isPlaying, timelineCurrentTime } = storeToRefs(trackRulerStore)
@@ -138,15 +135,20 @@ function resume(audioContext, maxTime) {
         v-if="isPlaying"
       ></echo-material-symbols:pause-rounded>
     </MixEditorButton>
-    <MixEditorButton>
+    <MixEditorButton v-if="!isPlaying">
       <echo-ri:skip-back-fill></echo-ri:skip-back-fill>
+    </MixEditorButton>
+    <MixEditorButton v-if="isPlaying">
+      <echo-ri:stop-fill></echo-ri:stop-fill>
+    </MixEditorButton>
+    <MixEditorButton>
+      <echo-mdi:record :style="{ color: '#f12c18' }"></echo-mdi:record>
+    </MixEditorButton>
+    <MixEditorButton>
+      <echo-oi:loop></echo-oi:loop>
     </MixEditorButton>
     <MixEditorButton circle>
       <div class="time">{{ timeDisplay }}</div>
-      <div>
-        {{ `totalLength${beatControllerStore.totalLength(MAIN_EDITOR_ID)}` }}
-      </div>
-      <div>{{ `totalTime${beatControllerStore.editableTotalTime}` }}</div>
     </MixEditorButton>
   </MixEditorButtonGroup>
 </template>
