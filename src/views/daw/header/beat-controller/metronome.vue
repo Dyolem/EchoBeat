@@ -1,6 +1,13 @@
 <script setup>
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { MAX_BPM, MIN_BPM } from "@/constants/daw/index.js"
+const beatControllerStore = useBeatControllerStore()
+function validateBpm(event) {
+  const newBpm = event.target.value
+  beatControllerStore.updateBpm(newBpm)
+}
 </script>
 
 <template>
@@ -16,7 +23,14 @@ import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonG
     ></MixEditorButton>
     <MixEditorButton>
       <div class="bpm">
-        <input id="bpm-number" type="number" value="1" min="40" max="240" />
+        <input
+          id="bpm-number"
+          type="number"
+          :value="beatControllerStore.bpm"
+          :min="MIN_BPM"
+          :max="MAX_BPM"
+          @blur="validateBpm"
+        />
         <span class="unit">bpm</span>
       </div>
     </MixEditorButton>

@@ -79,6 +79,8 @@ export const BEAT_GRID_RATIO = 4
 
 export const BASE_GRID_HEIGHT = 90
 export const INIT_BPM = 120
+export const MAX_BPM = 240
+export const MIN_BPM = 60
 export const BASE_GRID_WIDTH = 20
 export const MIN_GRID_WIDTH = 15
 export const MAX_GRID_WIDTH = 30

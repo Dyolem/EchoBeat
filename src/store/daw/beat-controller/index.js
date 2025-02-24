@@ -9,9 +9,12 @@ import {
   INIT_BEATS_PER_MEASURE,
   INIT_BPM,
   INIT_NOTE_VALUE_DENOMINATOR,
+  MAX_BPM,
   MAX_GRID_WIDTH,
+  MIN_BPM,
   MIN_GRID_WIDTH,
 } from "@/constants/daw/index.js"
+import { clamp } from "@/utils/clamp.js"
 
 export const useBeatControllerStore = defineStore("beatController", () => {
   const zoomRatioStore = useZoomRatioStore()
@@ -84,6 +87,9 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const dynamicSvgHeight = computed(() => {
     return mixTrackEditorStore.mixTracksMap.size * BASE_GRID_HEIGHT
   })
+  function updateBpm(newBpm) {
+    bpm.value = clamp(newBpm, [MIN_BPM, MAX_BPM])
+  }
   return {
     bpm,
     editableTotalTime,
@@ -105,5 +111,6 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     dynamicBarsCount,
     highlightWidth,
     dynamicSvgHeight,
+    updateBpm,
   }
 })
