@@ -47,35 +47,37 @@ function updateMainEditorSidebarScrollTop(newMainEditorSidebarScrollTop) {
 </script>
 
 <template>
-  <div class="editor-main">
-    <div class="editor-side-bar">
-      <AddTrackSidebar
-        :main-editor-sidebar-scroll-top="addTrackSidebarScrollTop"
-        @update:main-editor-sidebar-scroll-top="
-          updateMainEditorSidebarScrollTop
-        "
-      ></AddTrackSidebar>
-    </div>
-    <Editor
-      :id="mainEditorId"
-      :editor-view-height="mainEditorViewHeight"
-      :editor-view-width="mainEditorViewWidth"
-    >
-      <template
-        #default-interactable-layer="{
-          interactableLayerWidth,
-          interactableLayerHeight,
-          zoomRatio,
-        }"
+  <main>
+    <div class="editor-main">
+      <div class="editor-side-bar">
+        <AddTrackSidebar
+          :main-editor-sidebar-scroll-top="addTrackSidebarScrollTop"
+          @update:main-editor-sidebar-scroll-top="
+            updateMainEditorSidebarScrollTop
+          "
+        ></AddTrackSidebar>
+      </div>
+      <Editor
+        :id="mainEditorId"
+        :editor-view-height="mainEditorViewHeight"
+        :editor-view-width="mainEditorViewWidth"
       >
-        <MixTrackUnitManagement
-          :width="interactableLayerWidth"
-          :height="interactableLayerHeight"
-          :zoom-ratio="zoomRatio"
-        ></MixTrackUnitManagement>
-      </template>
-    </Editor>
-  </div>
+        <template
+          #default-interactable-layer="{
+            interactableLayerWidth,
+            interactableLayerHeight,
+            zoomRatio,
+          }"
+        >
+          <MixTrackUnitManagement
+            :width="interactableLayerWidth"
+            :height="interactableLayerHeight"
+            :zoom-ratio="zoomRatio"
+          ></MixTrackUnitManagement>
+        </template>
+      </Editor>
+    </div>
+  </main>
 </template>
 
 <style scoped>

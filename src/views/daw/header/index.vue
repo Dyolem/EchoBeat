@@ -6,20 +6,22 @@ import HistoryController from "@/views/daw/header/history-edit-record/index.vue"
 </script>
 
 <template>
-  <div class="studio-header">
-    <nav class="mix-editor-header-content"></nav>
-    <nav class="mix-editor-toolbar">
-      <div class="mix-editor-toolbar-left">
-        <HistoryController></HistoryController>
-        <Metronome></Metronome>
-        <Mode></Mode>
-      </div>
-      <div class="mix-editor-toolbar-center">
-        <PlayController></PlayController>
-      </div>
-      <div class="mix-editor-toolbar-right"></div>
-    </nav>
-  </div>
+  <header>
+    <div class="studio-header">
+      <nav class="mix-editor-header-content"></nav>
+      <nav class="mix-editor-toolbar">
+        <div class="mix-editor-toolbar-left">
+          <HistoryController></HistoryController>
+          <Metronome></Metronome>
+          <Mode></Mode>
+        </div>
+        <div class="mix-editor-toolbar-center">
+          <PlayController></PlayController>
+        </div>
+        <div class="mix-editor-toolbar-right"></div>
+      </nav>
+    </div>
+  </header>
 </template>
 
 <style scoped>
