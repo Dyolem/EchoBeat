@@ -1,6 +1,6 @@
 <script setup>
 import { useAudioStore } from "@/store/daw/audio/index.js"
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
@@ -16,7 +16,12 @@ const accurateTime = computed(() => {
   return timelineCurrentTime.value
 })
 const timeDisplay = computed(() => {
-  return accurateTime.value.toFixed(1)
+  const time = accurateTime.value
+  const minutes = Math.floor(time / 60)
+  const seconds = (Math.round((time - minutes * 60) * 10) / 10).toFixed(1)
+  const m = String(minutes).padStart(2, "0")
+  const s = String(seconds).padStart(4, "0")
+  return `${m}:${s}`
 })
 
 let audioContext = null
