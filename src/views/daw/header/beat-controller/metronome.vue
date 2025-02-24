@@ -5,7 +5,7 @@ import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonG
 
 <template>
   <MixEditorButtonGroup size="large">
-    <MixEditorButton>
+    <MixEditorButton circle>
       <i>
         <echo-f7:metronome class="metronome-icon"></echo-f7:metronome>
       </i>
@@ -20,7 +20,7 @@ import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonG
         <span class="unit">bpm</span>
       </div>
     </MixEditorButton>
-    <MixEditorButton>
+    <MixEditorButton circle>
       <div class="time-signature">
         <span class="beats-per-measure">4</span>
         <span>/</span>

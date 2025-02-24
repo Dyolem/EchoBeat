@@ -3,6 +3,7 @@ import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { inject } from "vue"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { MAIN_EDITOR_ID, SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
+import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 const mixTrackEditorStore = useMixTrackEditorStore()
 const zoomRatioStore = useZoomRatioStore()
 
@@ -22,14 +23,15 @@ function addAudioTrackHandler() {
 
 <template>
   <div class="feature-bar">
-    <button
-      class="add-track-button"
-      title="Add Track (Shift + T)"
+    <MixEditorButton
+      circle
       @click="addAudioTrackHandler"
+      title="Add Track (Shift + T)"
     >
-      <echo-tabler:plus class="add-icon"></echo-tabler:plus>
-      Add Track
-    </button>
+      <div class="add-track-button">
+        <echo-tabler:plus class="add-icon"></echo-tabler:plus> Add Track
+      </div>
+    </MixEditorButton>
   </div>
 </template>
 
@@ -46,21 +48,9 @@ function addAudioTrackHandler() {
   z-index: 1;
 }
 .add-track-button {
-  --button-height: 30px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 120px;
-  height: var(--button-height);
-  padding: 0 10px;
-  border-radius: calc(var(--button-height) / 2);
-  border: none;
-  background-color: #191b1e;
-  color: #ffffff;
-}
-.add-track-button:hover {
-  background-color: #202428;
-  cursor: pointer;
+  gap: 10px;
 }
 .add-icon {
   color: #fff;

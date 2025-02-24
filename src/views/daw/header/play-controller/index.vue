@@ -127,7 +127,7 @@ function resume(audioContext, maxTime) {
 
 <template>
   <MixEditorButtonGroup>
-    <MixEditorButton @click="playAudio">
+    <MixEditorButton @click="playAudio" circle>
       <echo-iconoir:play-solid v-if="!isPlaying"></echo-iconoir:play-solid>
       <echo-material-symbols:pause-rounded
         v-if="isPlaying"
@@ -136,7 +136,7 @@ function resume(audioContext, maxTime) {
     <MixEditorButton>
       <echo-ri:skip-back-fill></echo-ri:skip-back-fill>
     </MixEditorButton>
-    <MixEditorButton>
+    <MixEditorButton circle>
       <div class="time">{{ timeDisplay }}</div>
       <div>
         {{ `totalLength${beatControllerStore.totalLength(MAIN_EDITOR_ID)}` }}

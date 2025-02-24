@@ -39,7 +39,7 @@ onUnmounted(() => {
     <div class="footer-tool-bar">
       <div class="left-side-tool">
         <MixEditorButtonGroup>
-          <MixEditorButton>
+          <MixEditorButton circle>
             <div class="tool-name">
               <echo-lucide:piano></echo-lucide:piano>
               <span>Instrument</span>
@@ -51,7 +51,10 @@ onUnmounted(() => {
               <span>Effects</span>
             </div>
           </MixEditorButton>
-          <MixEditorButton @click="isOpenDrawerEditor = !isOpenDrawerEditor">
+          <MixEditorButton
+            @click="isOpenDrawerEditor = !isOpenDrawerEditor"
+            circle
+          >
             <div class="tool-name">
               <echo-fluent:midi-24-regular></echo-fluent:midi-24-regular>
               <span>MIDI Editor</span>

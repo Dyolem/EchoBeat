@@ -5,10 +5,10 @@ import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonG
 
 <template>
   <MixEditorButtonGroup>
-    <MixEditorButton title="Undo (Ctrl + Z)"
+    <MixEditorButton title="Undo (Ctrl + Z)" circle
       ><echo-octicon:undo-24></echo-octicon:undo-24>
     </MixEditorButton>
-    <MixEditorButton title="Redo (Ctrl + Shift + Z)">
+    <MixEditorButton title="Redo (Ctrl + Shift + Z)" circle>
       <echo-octicon:redo-24></echo-octicon:redo-24
     ></MixEditorButton>
   </MixEditorButtonGroup>
