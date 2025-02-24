@@ -128,7 +128,7 @@ function resume(audioContext, maxTime) {
 </script>
 
 <template>
-  <MixEditorButtonGroup>
+  <MixEditorButtonGroup size="large">
     <MixEditorButton @click="playAudio" circle>
       <echo-iconoir:play-solid v-if="!isPlaying"></echo-iconoir:play-solid>
       <echo-material-symbols:pause-rounded
