@@ -1,10 +1,34 @@
 <script setup>
-import { computed, inject, toRef } from "vue"
-
+import { computed, inject, ref } from "vue"
+const sizeEnum = {
+  SMALL: "small",
+  DEFAULT: "default",
+  LARGE: "large",
+}
+const sizeStyleMap = {
+  [sizeEnum.SMALL]: {
+    height: 24,
+    padding: 8,
+    radius: 4,
+    fontSize: 12,
+  },
+  [sizeEnum.DEFAULT]: {
+    height: 32,
+    padding: 12,
+    radius: 8,
+    fontSize: 14,
+  },
+  [sizeEnum.LARGE]: {
+    height: 40,
+    padding: 16,
+    radius: 12,
+    fontSize: 16,
+  },
+}
 const props = defineProps({
   size: {
     type: String,
-    default: "default",
+    default: "",
   },
   round: {
     type: Boolean,
@@ -14,46 +38,28 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  padding: {
-    type: Number,
-  },
 })
-const sizeStyleMap = {
-  small: {
-    height: 24,
-    padding: 8,
-    radius: 4,
-  },
-  default: {
-    height: 32,
-    padding: 12,
-    radius: 8,
-  },
-  large: {
-    height: 40,
-    padding: 16,
-    radius: 12,
-  },
-}
 
-const size = inject("size", toRef(props, "size"))
-const round = inject("round", true)
-const circle = inject("circle", false)
+const injectedSize = inject("size", ref(sizeEnum.DEFAULT))
+const size = computed(() => {
+  return props.size || injectedSize.value
+})
 const buttonSize = computed(() => {
   return sizeStyleMap[size.value].height
 })
 const buttonPadding = computed(() => {
-  return props.padding === undefined
-    ? sizeStyleMap[size.value].padding
-    : props.padding
+  return sizeStyleMap[size.value].padding
 })
 
 const buttonBorderRadius = computed(() => {
-  if (props.circle || circle) {
+  if (props.circle) {
     return sizeStyleMap[size.value].height / 2
   } else {
-    return !round || !props.round ? 0 : sizeStyleMap[size.value].radius
+    return !props.round ? 0 : sizeStyleMap[size.value].radius
   }
+})
+const buttonFontSize = computed(() => {
+  return sizeStyleMap[size.value].fontSize
 })
 </script>
 
@@ -67,13 +73,15 @@ const buttonBorderRadius = computed(() => {
 .mix-editor-button-box {
   --button-box-height: v-bind(buttonSize + "px");
   --button-padding: v-bind(buttonPadding + "px");
-  --border-radius: v-bind(buttonBorderRadius + "px");
+  --button-border-radius: v-bind(buttonBorderRadius + "px");
+  --button-font-size: v-bind(buttonFontSize + "px");
   display: flex;
   align-items: center;
   height: var(--button-box-height);
   padding: 0 var(--button-padding);
-  border-radius: var(--border-radius);
+  border-radius: var(--button-border-radius);
   background-color: #191b1e;
+  font-size: var(--button-font-size);
   color: #ffffff;
   transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
   user-select: none;

@@ -1,5 +1,5 @@
 <script setup>
-import { toRef, provide, useTemplateRef, computed } from "vue"
+import { toRef, provide, useTemplateRef } from "vue"
 
 const props = defineProps({
   size: {
@@ -8,12 +8,7 @@ const props = defineProps({
   },
 })
 const buttonGroupRef = useTemplateRef("buttonGroupRef")
-const height = computed(() => {
-  return buttonGroupRef.value?.getBoundingClientRect().height ?? 0
-})
 provide("size", toRef(props, "size"))
-provide("round", false)
-provide("circle", false)
 </script>
 
 <template>
@@ -24,12 +19,20 @@ provide("circle", false)
 
 <style scoped>
 .button-group-container {
-  --button-group-container-height: v-bind(height + "px");
   height: fit-content;
-  border-radius: var(--button-group-container-height);
-  padding: 0 calc(var(--button-group-container-height) / 2);
+  width: fit-content;
   display: flex;
   align-items: center;
-  background-color: #191b1e;
+}
+:slotted(div):not(:only-child):not(:first-child):not(:last-child) {
+  border-radius: 0;
+}
+:slotted(div):not(:only-child):first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+:slotted(div):not(:only-child):last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 </style>
