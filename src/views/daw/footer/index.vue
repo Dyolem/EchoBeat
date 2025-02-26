@@ -6,7 +6,7 @@ import {
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import MidiEditor from "@/views/daw/midi-editor/index.vue"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
-import { onMounted, onUnmounted, ref, useTemplateRef } from "vue"
+import { onMounted, onBeforeUnmount, ref, useTemplateRef } from "vue"
 
 const footerHeight = defineModel("footerHeight", {
   type: Number,
@@ -24,7 +24,7 @@ onMounted(() => {
   // 开始观察
   if (footerContainerRef.value) resizeObserver.observe(footerContainerRef.value)
 })
-onUnmounted(() => {
+onBeforeUnmount(() => {
   // 不再需要观察，调用 unobserve() 取消监听
   resizeObserver.unobserve(footerContainerRef.value)
 })
