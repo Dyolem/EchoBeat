@@ -1,9 +1,17 @@
 <script setup>
 import { computed, ref } from "vue"
+import { storeToRefs } from "pinia"
 import ContextMenu from "@/components/ContextMenu.vue"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 const beatControllerStore = useBeatControllerStore()
+const {
+  totalMeasures,
+  beatsPerMeasure,
+  dynamicPerBarWidth,
+  dynamicBarsCount,
+  factualDisplayedGridWidth,
+} = storeToRefs(beatControllerStore)
 const props = defineProps({
   id: {
     type: String,
@@ -24,16 +32,10 @@ const props = defineProps({
 })
 
 const dynamicBarInfo = computed(() => {
-  const barWidth = beatControllerStore.dynamicPerBarWidth(props.id)
+  const barWidth = dynamicPerBarWidth.value(props.id)
   const barInfo = []
-  const serialIncrement =
-    beatControllerStore.totalMeasures /
-    beatControllerStore.dynamicBarsCount(props.id)
-  for (
-    let i = 1;
-    i < beatControllerStore.totalMeasures + 1;
-    i += serialIncrement
-  ) {
+  const serialIncrement = totalMeasures.value / dynamicBarsCount.value(props.id)
+  for (let i = 1; i < totalMeasures.value + 1; i += serialIncrement) {
     barInfo.push({
       id: i,
       serialNumber: i,
@@ -69,17 +71,17 @@ const rulerSpanHeight = ref(36)
             :id="`${id}-mix-editor-track-ruler-grid-pattern`"
             x="0"
             y="0"
-            :width="beatControllerStore.dynamicPerBarWidth(id)"
+            :width="dynamicPerBarWidth(id)"
             :height="trackRulerHeight"
             patternUnits="userSpaceOnUse"
             class="is-ignore-second"
           >
             <rect
-              v-for="n in beatControllerStore.beatsPerMeasure"
+              v-for="n in beatsPerMeasure"
               width="0.5"
               :height="trackRulerHeight"
               fill="var(--graduation-fill)"
-              :x="(n - 1) * beatControllerStore.factualDisplayedGridWidth(id)"
+              :x="(n - 1) * factualDisplayedGridWidth(id)"
               :y="n === 1 ? 0 : rulerSpanHeight"
             ></rect>
           </pattern>

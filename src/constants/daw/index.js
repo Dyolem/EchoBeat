@@ -77,6 +77,8 @@ export const BEATS_COUNT = 95
 
 export const BEAT_GRID_RATIO = 4
 
+export const BEATS_PER_MEASURE_ENUM = [1, 2, 3, 4, 5, 6]
+export const NOTE_VALUE_DENOMINATOR_ENUM = [1, 2, 4, 8]
 export const BASE_GRID_HEIGHT = 90
 export const INIT_BPM = 120
 export const MAX_BPM = 240

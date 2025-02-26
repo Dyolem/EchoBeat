@@ -21,7 +21,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const mixTrackEditorStore = useMixTrackEditorStore()
   const bpm = ref(INIT_BPM) //bpm
   const baseGridWidth = BASE_GRID_WIDTH //起始状态的基础网格宽度
-  const minGridWidth = MIN_GRID_WIDTH //网格最小宽度
+  const minGridWidth = ref(MIN_GRID_WIDTH) //网格最小宽度
   const maxGridWidth = ref(MAX_GRID_WIDTH) //网格最大宽度
   const editableTotalTime = ref(EDITABLE_TOTAL_TIME) //可编辑总时长，单位秒，时长可被增加
 
@@ -63,10 +63,10 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const n = computed(() => {
     return (editorId) => {
       const gridWidth = gridWidthWithZoomRatio.value(editorId)
-      if (gridWidth > minGridWidth) {
+      if (gridWidth > minGridWidth.value) {
         return Math.floor(gridWidth / maxGridWidth.value)
-      } else if (gridWidth <= minGridWidth) {
-        return -Math.floor(minGridWidth / gridWidth)
+      } else if (gridWidth <= minGridWidth.value) {
+        return -Math.floor(minGridWidth.value / gridWidth)
       }
     }
   })

@@ -1,5 +1,6 @@
 <script setup>
 import { inject, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
+import { storeToRefs } from "pinia"
 import { debounce } from "@/utils/debounce.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import {
@@ -13,6 +14,14 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 const trackRulerStore = useTrackRulerStore()
 const beatControllerStore = useBeatControllerStore()
+const {
+  dynamicPerBarWidth,
+  totalLength,
+  editableTotalTime,
+  beatsPerMeasure,
+  factualDisplayedGridWidth,
+  highlightWidth,
+} = storeToRefs(beatControllerStore)
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
 
@@ -110,8 +119,7 @@ onMounted(() => {
           event.clientX -
           interactableContainerRef.value.getBoundingClientRect().left
         const newTime =
-          (translateX / beatControllerStore.totalLength(props.id)) *
-          beatControllerStore.editableTotalTime
+          (translateX / totalLength.value(props.id)) * editableTotalTime.value
         trackRulerStore.updateCurrentTime(newTime)
       },
       {
@@ -157,29 +165,29 @@ onUnmounted(() => {
           :id="`${id}-mix-editor-track-grid-pattern`"
           x="0"
           y="0"
-          :width="beatControllerStore.dynamicPerBarWidth(id)"
+          :width="dynamicPerBarWidth(id)"
           :height="svgHeight"
           patternUnits="userSpaceOnUse"
           class="is-ignore-second"
         >
           <rect
-            v-for="n in beatControllerStore.beatsPerMeasure"
+            v-for="n in beatsPerMeasure"
             width="0.5"
             :height="svgHeight"
             fill="var(--graduation-fill)"
-            :x="(n - 1) * beatControllerStore.factualDisplayedGridWidth(id)"
+            :x="(n - 1) * factualDisplayedGridWidth(id)"
           ></rect>
         </pattern>
         <pattern
           :id="`${id}-mix-editor-track-highlight-pattern`"
           x="0"
           y="0"
-          :width="beatControllerStore.highlightWidth(id)"
+          :width="highlightWidth(id)"
           :height="svgHeight"
           patternUnits="userSpaceOnUse"
         >
           <rect
-            :width="beatControllerStore.dynamicPerBarWidth(id)"
+            :width="dynamicPerBarWidth(id)"
             :height="svgHeight"
             fill="gray"
             x="0"

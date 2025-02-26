@@ -2,7 +2,13 @@
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import { MAX_BPM, MIN_BPM } from "@/constants/daw/index.js"
+import {
+  BEATS_PER_MEASURE_ENUM,
+  MAX_BPM,
+  MIN_BPM,
+  NOTE_VALUE_DENOMINATOR_ENUM,
+} from "@/constants/daw/index.js"
+import SelectValue from "@/views/daw/header/beat-controller/SelectValue.vue"
 const beatControllerStore = useBeatControllerStore()
 function validateBpm(event) {
   const newBpm = event.target.value
@@ -36,9 +42,39 @@ function validateBpm(event) {
     </MixEditorButton>
     <MixEditorButton circle>
       <div class="time-signature">
-        <span class="beats-per-measure">4</span>
+        <el-popover
+          trigger="hover"
+          popper-class="custom-popper"
+          :teleported="false"
+          effect="dark"
+        >
+          <template #reference>
+            <span class="beats-per-measure">{{
+              beatControllerStore.beatsPerMeasure
+            }}</span>
+          </template>
+          <SelectValue
+            :options="BEATS_PER_MEASURE_ENUM"
+            v-model:selected-value="beatControllerStore.beatsPerMeasure"
+          ></SelectValue>
+        </el-popover>
         <span>/</span>
-        <span class="note-denominator">4</span>
+        <el-popover
+          trigger="hover"
+          popper-class="custom-popper"
+          :teleported="false"
+          effect="dark"
+        >
+          <template #reference>
+            <span class="note-denominator">{{
+              beatControllerStore.noteValueDenominator
+            }}</span>
+          </template>
+          <SelectValue
+            :options="NOTE_VALUE_DENOMINATOR_ENUM"
+            v-model:selected-value="beatControllerStore.noteValueDenominator"
+          ></SelectValue>
+        </el-popover>
       </div>
     </MixEditorButton>
   </MixEditorButtonGroup>
@@ -84,5 +120,14 @@ input[type="number"]::-webkit-inner-spin-button {
 /* Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
+}
+:deep(.custom-popper) {
+  width: auto !important;
+  min-width: 0;
+  padding: 0;
+}
+.note-denominator,
+.beats-per-measure {
+  padding: 2px 8px;
 }
 </style>
