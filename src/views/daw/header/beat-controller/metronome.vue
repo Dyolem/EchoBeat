@@ -8,7 +8,7 @@ import {
   MIN_BPM,
   NOTE_VALUE_DENOMINATOR_ENUM,
 } from "@/constants/daw/index.js"
-import SelectValue from "@/views/daw/header/beat-controller/SelectValue.vue"
+import SelectValue from "@/views/daw/components/SelectValue.vue"
 const beatControllerStore = useBeatControllerStore()
 function validateBpm(event) {
   const newBpm = event.target.value
