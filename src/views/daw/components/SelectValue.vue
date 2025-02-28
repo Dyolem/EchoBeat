@@ -1,18 +1,22 @@
 <script setup>
 import { computed } from "vue"
-const enumValue = defineModel("options", {
-  type: Array,
-  default: () => ["1", "2", "3"],
+const props = defineProps({
+  options: {
+    type: Array,
+    default: () => ["1", "2", "3"],
+  },
 })
 const selectedValue = defineModel("selectedValue", {
-  type: Number,
+  type: [Number, String],
   default: "",
 })
 const selectedId = computed(() => {
   return selectedValue.value
 })
 function selectValue(event) {
-  selectedValue.value = Number(event.target.textContent)
+  const newValue = event.target.textContent
+  selectedValue.value =
+    typeof selectedValue.value === "number" ? Number(newValue) : newValue
 }
 </script>
 
@@ -21,7 +25,7 @@ function selectValue(event) {
     <span
       class="enum-value"
       :class="selectedId === value ? 'selected-value' : ''"
-      v-for="value in enumValue"
+      v-for="value in options"
       :key="value"
       >{{ value }}</span
     >
@@ -37,6 +41,7 @@ function selectValue(event) {
 }
 .enum-value {
   padding: 6px 20px;
+  color: #ffffff;
 }
 .enum-value:not(.selected-value):hover {
   background-color: rgba(0, 0, 0, 0.5);
