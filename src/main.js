@@ -6,6 +6,7 @@ import axios from "axios"
 import router from "./router/index"
 import "./assets/icofont/iconfont.css"
 import loadDirective from "./directives/load"
+import elementSizeObserverDirective from "./directives/elementSizeObserver.js"
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate"
 
 const pinia = createPinia()
@@ -16,5 +17,6 @@ app.config.globalProperties.$http = axios
 app.use(pinia)
 app.use(router)
 app.directive("load", loadDirective)
+app.directive("size-ob", elementSizeObserverDirective)
 
 app.mount("#app")
