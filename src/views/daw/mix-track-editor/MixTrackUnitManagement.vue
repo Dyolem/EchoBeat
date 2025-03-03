@@ -1,7 +1,8 @@
 <script setup>
 import MixTrackUnit from "@/views/daw/mix-track-editor/MixTrackUnit.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { computed, provide, useTemplateRef, watch } from "vue"
+import { ref, computed, provide, useTemplateRef, watch } from "vue"
+import { GRID_OPTIONS } from "@/constants/daw/index.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const props = defineProps({
@@ -18,6 +19,17 @@ const props = defineProps({
     default: 1,
   },
 })
+const mixTrackContextMenu = ref([
+  { value: "paste", label: "Paste", disable: true },
+  {
+    value: "gridSize",
+    label: "GridSize",
+    children: Object.keys(GRID_OPTIONS).map((type) => ({
+      value: type,
+      label: type.toUpperCase(),
+    })),
+  },
+])
 const mainEditorZoomRatio = computed(() => {
   return props.zoomRatio
 })
@@ -69,6 +81,7 @@ const getGeometryInfoInScrollableContainer = computed(() => {
       :get-geometry-info-in-parent-element="
         getGeometryInfoInScrollableContainer
       "
+      :context-menu="mixTrackContextMenu"
     >
       <template #mix-content-thumbnail> </template>
     </MixTrackUnit>

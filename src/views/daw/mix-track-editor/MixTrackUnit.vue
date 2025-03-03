@@ -1,5 +1,5 @@
 <script setup>
-import { inject, onMounted, onUnmounted, useTemplateRef } from "vue"
+import { inject, onMounted, onUnmounted, useTemplateRef, ref } from "vue"
 import TrackItem from "@/views/daw/mix-track-editor/TrackItem.vue"
 import {
   BASE_GRID_WIDTH,
@@ -12,8 +12,11 @@ import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { deepClone } from "@/utils/deepClone.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import clearSelection from "@/utils/clearSelection.js"
+import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 const workspaceStore = useWorkspaceStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
+const beatControllerStore = useBeatControllerStore()
 
 const props = defineProps({
   id: {
@@ -39,6 +42,10 @@ const props = defineProps({
   getGeometryInfoInParentElement: {
     type: Function,
     required: true,
+  },
+  contextMenu: {
+    type: Array,
+    default: () => [],
   },
 })
 const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
@@ -258,30 +265,35 @@ onMounted(() => {
     },
   )
 })
+const handleSelect = (selectedOption) => {
+  beatControllerStore.updateGridType(selectedOption)
+}
 onUnmounted(() => {
   dragController.abort()
 })
 </script>
 
 <template>
-  <div
-    class="track-unit-grid"
-    ref="trackUnitGridRef"
-    :class="selectedAudioTrackId === id ? 'track-unit-grid-selected' : ''"
-    @click="updateSelectedId"
-  >
-    <TrackItem
-      v-for="[subTrackItemId, subTrackItem] in subTrackItemsMap"
-      :key="subTrackItemId"
-      :id="subTrackItemId"
-      :main-color="mainColor"
-      :width="subTrackItem.trackItemWidth"
-      :height="subTrackItem.trackItemHeight"
-      :start-position="subTrackItem.startPosition"
-      :track-name="subTrackItem.trackName"
-      :track-zoom-ratio="subTrackItem.trackZoomRatio"
-    ></TrackItem>
-  </div>
+  <context-menu :menu="contextMenu" @select="handleSelect">
+    <div
+      class="track-unit-grid"
+      ref="trackUnitGridRef"
+      :class="selectedAudioTrackId === id ? 'track-unit-grid-selected' : ''"
+      @click="updateSelectedId"
+    >
+      <TrackItem
+        v-for="[subTrackItemId, subTrackItem] in subTrackItemsMap"
+        :key="subTrackItemId"
+        :id="subTrackItemId"
+        :main-color="mainColor"
+        :width="subTrackItem.trackItemWidth"
+        :height="subTrackItem.trackItemHeight"
+        :start-position="subTrackItem.startPosition"
+        :track-name="subTrackItem.trackName"
+        :track-zoom-ratio="subTrackItem.trackZoomRatio"
+      ></TrackItem>
+    </div>
+  </context-menu>
 </template>
 
 <style scoped>
