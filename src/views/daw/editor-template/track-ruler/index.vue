@@ -1,16 +1,22 @@
 <script setup>
 import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
-import ContextMenu from "@/components/ContextMenu.vue"
+import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { SERIAL_NUMBER_FONT_SIZE } from "@/constants/daw/index.js"
 
 const beatControllerStore = useBeatControllerStore()
 const {
   totalMeasures,
   beatsPerMeasure,
-  dynamicPerBarWidth,
-  dynamicBarsCount,
-  factualDisplayedGridWidth,
+  widthPerMeasure,
+  widthPerBeat,
+  gridLayerUnitsCount,
+  gridLayerWidth,
+  splitPow,
+  barsCount,
+  barWidth,
+  isDisplayBeatLine,
 } = storeToRefs(beatControllerStore)
 const props = defineProps({
   id: {
@@ -32,15 +38,29 @@ const props = defineProps({
 })
 
 const dynamicBarInfo = computed(() => {
-  const barWidth = dynamicPerBarWidth.value(props.id)
+  const _barWidth = barWidth.value(props.id)
+  const _isDisplayBeatLine = isDisplayBeatLine.value(props.id)
+  let spanWidth = _barWidth
   const barInfo = []
-  const serialIncrement = totalMeasures.value / dynamicBarsCount.value(props.id)
+  if (_isDisplayBeatLine) {
+    spanWidth = _barWidth / beatsPerMeasure.value
+  }
+  const serialIncrement = totalMeasures.value / barsCount.value(props.id)
   for (let i = 1; i < totalMeasures.value + 1; i += serialIncrement) {
     barInfo.push({
       id: i,
       serialNumber: i,
-      width: barWidth,
+      width: spanWidth,
     })
+    if (_isDisplayBeatLine) {
+      for (let j = 2; j <= beatsPerMeasure.value; j++) {
+        barInfo.push({
+          id: `${i}.${j}`,
+          serialNumber: `${i}.${j}`,
+          width: spanWidth,
+        })
+      }
+    }
   }
   return barInfo
 })
@@ -67,11 +87,30 @@ const rulerSpanHeight = ref(36)
         :height="trackRulerHeight"
       >
         <defs>
+          <!--小节层-->
           <pattern
-            :id="`${id}-mix-editor-track-ruler-grid-pattern`"
+            :id="`${id}-mix-editor-track-ruler-grid-measure-layer-pattern`"
             x="0"
             y="0"
-            :width="dynamicPerBarWidth(id)"
+            :width="barWidth(id)"
+            :height="trackRulerHeight"
+            patternUnits="userSpaceOnUse"
+            class="is-ignore-second"
+          >
+            <rect
+              width="0.5"
+              :height="trackRulerHeight"
+              fill="var(--graduation-fill)"
+              :x="0"
+              :y="0"
+            ></rect>
+          </pattern>
+          <!--节拍层-->
+          <pattern
+            :id="`${id}-mix-editor-track-ruler-grid-beat-layer-pattern`"
+            x="0"
+            y="0"
+            :width="widthPerMeasure(id)"
             :height="trackRulerHeight"
             patternUnits="userSpaceOnUse"
             class="is-ignore-second"
@@ -81,14 +120,48 @@ const rulerSpanHeight = ref(36)
               width="0.5"
               :height="trackRulerHeight"
               fill="var(--graduation-fill)"
-              :x="(n - 1) * factualDisplayedGridWidth(id)"
-              :y="n === 1 ? 0 : rulerSpanHeight"
+              :x="widthPerBeat(id) * (n - 1)"
+              :y="rulerSpanHeight"
+            ></rect>
+          </pattern>
+          <!--网格层-->
+          <pattern
+            :id="`${id}-mix-editor-track-ruler-grid-layer-pattern`"
+            x="0"
+            y="0"
+            :width="widthPerBeat(id)"
+            :height="trackRulerHeight"
+            patternUnits="userSpaceOnUse"
+            class="is-ignore-second"
+          >
+            <rect
+              v-if="splitPow(widthPerBeat(id)) >= 0"
+              v-for="n in gridLayerUnitsCount(widthPerBeat(id))"
+              width="0.5"
+              :height="trackRulerHeight"
+              fill="var(--graduation-fill)"
+              :x="gridLayerWidth(widthPerBeat(id)) * (n - 1)"
+              :y="rulerSpanHeight"
             ></rect>
           </pattern>
         </defs>
 
         <rect
-          :fill="`url(#${id}-mix-editor-track-ruler-grid-pattern)`"
+          :fill="`url(#${id}-mix-editor-track-ruler-grid-measure-layer-pattern)`"
+          x="0"
+          y="0"
+          :width="trackRulerWidth"
+          :height="trackRulerHeight"
+        ></rect>
+        <rect
+          :fill="`url(#${id}-mix-editor-track-ruler-grid-beat-layer-pattern)`"
+          x="0"
+          y="0"
+          :width="trackRulerWidth"
+          :height="trackRulerHeight"
+        ></rect>
+        <rect
+          :fill="`url(#${id}-mix-editor-track-ruler-grid-layer-pattern)`"
           x="0"
           y="0"
           :width="trackRulerWidth"
@@ -96,16 +169,6 @@ const rulerSpanHeight = ref(36)
         ></rect>
       </svg>
     </div>
-    <template #context-menu>
-      <div
-        class="context-menu-content"
-        style="width: 500px; height: 800px; background-color: antiquewhite"
-      >
-        <div class="context-menu-item">Option 1</div>
-        <div class="context-menu-item">Option 2</div>
-        <div class="context-menu-item">Option 3</div>
-      </div>
-    </template>
   </ContextMenu>
 </template>
 
@@ -114,6 +177,7 @@ const rulerSpanHeight = ref(36)
   --ruler-span-height: v-bind(rulerSpanHeight + "px");
   --track-ruler-height: v-bind(trackRulerHeight + "px");
   --track-ruler-width: v-bind(trackRulerWidth + "px");
+  --serial-number-font-size: v-bind(SERIAL_NUMBER_FONT_SIZE + "px");
   width: var(--track-ruler-width);
   height: var(--track-ruler-height);
   background-color: #000000;
@@ -142,6 +206,6 @@ const rulerSpanHeight = ref(36)
   padding-left: 4px;
   text-align: start;
   color: #ffffff;
-  font-size: 14px;
+  font-size: var(--serial-number-font-size);
 }
 </style>

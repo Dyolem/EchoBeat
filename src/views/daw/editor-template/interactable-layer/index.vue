@@ -11,17 +11,12 @@ import {
   ZIndex,
 } from "@/constants/daw/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 
 const trackRulerStore = useTrackRulerStore()
 const beatControllerStore = useBeatControllerStore()
-const {
-  dynamicPerBarWidth,
-  totalLength,
-  editableTotalTime,
-  beatsPerMeasure,
-  factualDisplayedGridWidth,
-  highlightWidth,
-} = storeToRefs(beatControllerStore)
+const { totalLength, editableTotalTime, highlightWidth, noteGridWidth } =
+  storeToRefs(beatControllerStore)
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
 
@@ -154,63 +149,66 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    class="interactable-container"
-    ref="interactableContainerRef"
-    tabindex="-1"
-  >
-    <svg class="mix-editor-grid" :width="canvasWidth" :height="svgHeight">
-      <defs>
-        <pattern
-          :id="`${id}-mix-editor-track-grid-pattern`"
-          x="0"
-          y="0"
-          :width="dynamicPerBarWidth(id)"
-          :height="svgHeight"
-          patternUnits="userSpaceOnUse"
-          class="is-ignore-second"
-        >
-          <rect
-            v-for="n in beatsPerMeasure"
-            width="0.5"
-            :height="svgHeight"
-            fill="var(--graduation-fill)"
-            :x="(n - 1) * factualDisplayedGridWidth(id)"
-          ></rect>
-        </pattern>
-        <pattern
-          :id="`${id}-mix-editor-track-highlight-pattern`"
-          x="0"
-          y="0"
-          :width="highlightWidth(id)"
-          :height="svgHeight"
-          patternUnits="userSpaceOnUse"
-        >
-          <rect
-            :width="dynamicPerBarWidth(id)"
-            :height="svgHeight"
-            fill="gray"
+  <context-menu>
+    <div
+      class="interactable-container"
+      ref="interactableContainerRef"
+      tabindex="-1"
+    >
+      <svg class="mix-editor-grid" :width="canvasWidth" :height="svgHeight">
+        <defs>
+          <pattern
+            :id="`${id}-mix-editor-track-grid-pattern`"
             x="0"
-          ></rect>
-        </pattern>
-      </defs>
-      <rect
-        :fill="`url(#${id}-mix-editor-track-highlight-pattern)`"
-        x="0"
-        y="0"
-        :width="canvasWidth"
-        :height="svgHeight"
-      ></rect>
-      <rect
-        :fill="`url(#${id}-mix-editor-track-grid-pattern)`"
-        x="0"
-        y="0"
-        :width="canvasWidth"
-        :height="svgHeight"
-      ></rect>
-    </svg>
-    <div id="interactable-layer"><slot name="interactable-layer"> </slot></div>
-  </div>
+            y="0"
+            :width="noteGridWidth(id)"
+            :height="svgHeight"
+            patternUnits="userSpaceOnUse"
+            class="is-ignore-second"
+          >
+            <rect
+              width="0.5"
+              :height="svgHeight"
+              fill="var(--graduation-fill)"
+              x="0"
+            ></rect>
+          </pattern>
+          <pattern
+            :id="`${id}-mix-editor-track-highlight-pattern`"
+            x="0"
+            y="0"
+            :width="highlightWidth(id)"
+            :height="svgHeight"
+            patternUnits="userSpaceOnUse"
+          >
+            <rect
+              :width="highlightWidth(id) / 2"
+              :height="svgHeight"
+              fill="gray"
+              x="0"
+            ></rect>
+          </pattern>
+        </defs>
+        <rect
+          :fill="`url(#${id}-mix-editor-track-highlight-pattern)`"
+          x="0"
+          y="0"
+          :width="canvasWidth"
+          :height="svgHeight"
+        ></rect>
+        <rect
+          :fill="`url(#${id}-mix-editor-track-grid-pattern)`"
+          x="0"
+          y="0"
+          :width="canvasWidth"
+          :height="svgHeight"
+        ></rect>
+      </svg>
+      <div id="interactable-layer">
+        <slot name="interactable-layer"> </slot>
+      </div>
+    </div>
+  </context-menu>
 </template>
 
 <style scoped>

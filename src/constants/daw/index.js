@@ -77,6 +77,26 @@ export const BEATS_COUNT = 95
 
 export const BEAT_GRID_RATIO = 4
 
+//核心常量
+export const PPQ = 480 // 480 ticks/quarter note
+export const SERIAL_NUMBER_FONT_SIZE = 12
+export const PIXELS_PER_QUARTER = 40 //一个四分音符的在缩放倍率为1时的初始宽度像素
+export const TICKS_PER_PIXEL = 12 //1px等于12个tick时间
+export const BASE_PIXELS_PER_QUARTER = 40 // 1拍默认占120px（可调整缩放）
+export const GRID_OPTIONS = {
+  smart: "smart",
+  bar: "bar",
+  "1/2": "1 / 2",
+  "1/4": "1 / 4",
+  "1/8": "1 / 8",
+  "1/16": "1 / 16",
+  "1/32": "1 / 32",
+  "1/2T": "1 / 2T",
+  "1/4T": "1 / 4T",
+  "1/8T": "1 / 8T",
+  "1/16T": "1 / 16T",
+  "1/32T": "1 / 32T",
+}
 export const BEATS_PER_MEASURE_ENUM = [1, 2, 3, 4, 5, 6]
 export const NOTE_VALUE_DENOMINATOR_ENUM = [1, 2, 4, 8]
 export const BASE_GRID_HEIGHT = 90
