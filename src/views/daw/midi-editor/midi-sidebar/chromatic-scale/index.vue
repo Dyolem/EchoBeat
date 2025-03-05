@@ -34,11 +34,12 @@ const octaveInfoArr = computed(() => {
   return chromaticScaleArr.value
     .slice()
     .reverse()
-    .map((item, index) => {
+    .map((item) => {
+      const octaveIndex = item.split("")[1]
       return {
-        id: index,
+        id: item,
         octaveName: item,
-        octaveIndex: chromaticScaleArr.value.length - index,
+        octaveIndex: octaveIndex,
       }
     })
 })

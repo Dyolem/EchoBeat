@@ -7,14 +7,14 @@ const audioGenerator = useAudioGeneratorStore()
 const pianoKeySizeStore = usePianoKeySizeStore()
 const props = defineProps({
   id: {
-    type: Number,
+    type: String,
   },
   octaveName: {
     type: String,
     default: "C",
   },
   octaveIndex: {
-    type: Number,
+    type: [Number, String],
     default: 1,
   },
 })

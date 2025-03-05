@@ -36,6 +36,7 @@ export const ALIGN_TYPE_ENUM = {
   BOTTOM_RIGHT_JUSTIFYING: "ceil",
 }
 
+export const DEFAULT_INIT_VELOCITY = 100
 export const EDITOR_MODE_ENUM = {
   SELECT: "select",
   INSERT: "insert",
@@ -102,11 +103,12 @@ export const NOTE_VALUE_DENOMINATOR_ENUM = [1, 2, 4, 8]
 export const BASE_GRID_HEIGHT = 90
 export const INIT_BPM = 120
 export const MAX_BPM = 240
-export const MIN_BPM = 60
+export const MIN_BPM = 50
 export const BASE_GRID_WIDTH = 20
 export const MIN_GRID_WIDTH = 15
 export const MAX_GRID_WIDTH = 30
-export const EDITABLE_TOTAL_TIME = 240
+export const EDITABLE_TOTAL_TIME = 300
+export const EDITABlE_TOTAL_BEATS = 600
 export const INIT_BEATS_PER_MEASURE = 4
 export const INIT_NOTE_VALUE_DENOMINATOR = 4
 
@@ -125,10 +127,30 @@ export const WHITE_KEY_HEIGHT = 16
 export const WHITE_KEY_WIDTH = 60
 export const OCTAVE_KEY_COUNT = 12
 export const OCTAVE_WHITE_KEY_COUNT = 7
-export const CHROMATIC_SCALE_SERIAL_NUMBER = ["1", "2", "3", "4", "5", "6", "7"]
+export const CHROMATIC_SCALE_SERIAL_NUMBER = [
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+]
 export const CHROMATIC_PITCH_NAME_ENUM = ["C", "D", "E", "F", "G", "A", "B"]
 export const NATURAL_SEMITONE = ["E", "B"]
-export const CHROMATIC_SCALE_ENUM = ["C1", "C2", "C3", "C4", "C5", "C6", "C7"]
+export const CHROMATIC_SCALE_ENUM = [
+  "C0",
+  "C1",
+  "C2",
+  "C3",
+  "C4",
+  "C5",
+  "C6",
+  "C7",
+  "C8",
+]
 // 音名的顺序表
 export const NOTES_TABLE = [
   "C",
@@ -144,6 +166,26 @@ export const NOTES_TABLE = [
   "A#",
   "B",
 ]
+export function midiToNoteName(midiNumber) {
+  const noteNames = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B",
+  ]
+  const noteIndex = midiNumber % 12
+  const octave = Math.floor(midiNumber / 12) - 1
+  return noteNames[noteIndex] + octave.toString()
+}
+
 export function generateNoteFrequencyMap(notes = NOTES_TABLE) {
   // 创建音名与频率映射的 Map
   const noteFrequencyMap = new Map()
