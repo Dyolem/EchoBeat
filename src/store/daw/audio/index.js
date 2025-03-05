@@ -100,7 +100,12 @@ export const useAudioStore = defineStore("audio", () => {
     return fadeGainNode
   }
 
-  function createVelocityGainNode({ audioTrackId, id, audioContext }) {
+  function createVelocityGainNode({
+    audioTrackId,
+    id,
+    audioContext,
+    velocity,
+  }) {
     const velocityGainNodesMap = getSpecifiedAudioTracksProperty({
       audioTrackId,
       property: virtualInstrumentTypeDataProperty.VELOCITY_GAIN_NODES_MAP,
@@ -110,6 +115,25 @@ export const useAudioStore = defineStore("audio", () => {
     velocityGainNode.connect(audioContext.destination)
     velocityGainNodesMap.set(id, velocityGainNode)
 
+    // 动态范围配置（此处使用-48dB到0dB作为示例）
+    const MIN_DB = -48 // 最低分贝值（可调节声音响度范围）
+    const MAX_VELOCITY = 127
+
+    // 空值保护和数值约束
+    const safeVelocity = Math.max(0, Math.min(velocity, MAX_VELOCITY))
+
+    // 计算对数增益（包含静音处理）
+    let gainValue = 0
+    if (safeVelocity > 0) {
+      const velocityRatio = (safeVelocity - 1) / (MAX_VELOCITY - 1) // 映射到0-1非线性区间
+      const decibels = MIN_DB + velocityRatio * -MIN_DB // 计算分贝值变化
+      gainValue = 10 ** (decibels / 20) // 转线性增益
+    }
+
+    // 原子化增益设置（避免click声）
+    const now = audioContext.currentTime
+    velocityGainNode.gain.cancelScheduledValues(now)
+    velocityGainNode.gain.setValueAtTime(gainValue, now)
     return velocityGainNode
   }
 
@@ -120,7 +144,12 @@ export const useAudioStore = defineStore("audio", () => {
     audioContext,
   }) {
     const mixingGainNode = audioContext.createGain()
-    mixingGainNode.connect(audioContext.destination)
+    const compressor = new DynamicsCompressorNode(audioContext, {
+      threshold: -20,
+      ratio: 12,
+    })
+    mixingGainNode.connect(compressor).connect(audioContext.destination)
+
     for (const [audioTrackId, audioInfo] of audioTracksBufferSourceMap) {
       const noteBufferSourceMap = getSpecifiedAudioTracksProperty({
         audioTrackId,
@@ -152,6 +181,7 @@ export const useAudioStore = defineStore("audio", () => {
           pitchName,
           startTime: _startTime,
           duration: _duration,
+          velocity,
         } = noteBufferSourceInstance
         if (_startTime >= generableAudioTimeEnd) continue
         if (timelinePlayTime > _startTime + _duration) continue
@@ -179,6 +209,7 @@ export const useAudioStore = defineStore("audio", () => {
           audioTrackId,
           id,
           audioContext,
+          velocity,
         })
         const audioController = new AbortController()
         audioControllerMap.set(id, audioController)
