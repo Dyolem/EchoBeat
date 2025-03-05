@@ -9,6 +9,7 @@ import {
   CHROMATIC_PITCH_NAME_ENUM,
   NATURAL_SEMITONE,
   OCTAVE_KEY_COUNT,
+  DEFAULT_INIT_VELOCITY,
 } from "@/constants/daw/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
@@ -175,12 +176,18 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return `${insertToSpecifiedPitchName}-${count}-${fetchTime}`
   }
 
-  function noteItemTemplate({
+  function getNoteItemTemplate({
     x,
     y,
-    insertToSpecifiedPitchName,
+    noteItemWidth = noteWidth.value,
+    insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
+      { x, y },
+      pitchNameMappedToArea.value,
+    ),
     workspaceId,
     audioTrackId,
+    velocity = DEFAULT_INIT_VELOCITY,
+    isDirectPosition = false,
   }) {
     const newWorkspace = workspaceStore.getWorkspace({
       workspaceId,
@@ -192,34 +199,41 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       newWorkspace.startPosition + newWorkspace.width,
     ]
     const scaleY = [0, maxY.value]
-    const { alignedAbsolutePosition, alignedPitchName } =
-      alignToOtherPitchNameTrack({
-        absolutePosition: [x, y],
-        scale: [scaleX, scaleY],
-      })
-    if (!alignedPitchName) return
-    const [alignedX, alignedY] = alignedAbsolutePosition
-    const relativeX = alignedX - newWorkspace.startPosition
+    let position = [x, y]
+    let pitchName = insertToSpecifiedPitchName
+    if (!isDirectPosition) {
+      const { alignedAbsolutePosition, alignedPitchName } =
+        alignToOtherPitchNameTrack({
+          absolutePosition: [x, y],
+          scale: [scaleX, scaleY],
+        })
+      if (!alignedPitchName) return
+      pitchName = alignedPitchName
+      position = alignedAbsolutePosition
+    }
+
+    const [computedX, computedY] = position
+    const relativeX = computedX - newWorkspace.startPosition
     const minNoteWidth = 0
     const maxNoteWidth = newWorkspace.width - relativeX
     return {
       id: id,
       workspaceId,
       audioTrackId,
-      width: clamp(noteWidth.value, [minNoteWidth, maxNoteWidth]),
+      width: clamp(noteItemWidth, [minNoteWidth, maxNoteWidth]),
       height: noteHeight.value,
       get x() {
         return this.relativeX + this.workspaceStartPosition
       },
       relativeX,
-      y: alignedY,
+      y: computedY,
       get workspaceStartPosition() {
         return workspaceStore.getWorkspace({
           audioTrackId: this.audioTrackId,
           workspaceId: this.workspaceId,
         }).startPosition
       },
-      pitchName: alignedPitchName,
+      pitchName: pitchName,
       get startTime() {
         return (
           (this.x / beatControllerStore.totalLength(SUBORDINATE_EDITOR_ID)) *
@@ -233,6 +247,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
           beatControllerStore.editableTotalTime
         )
       },
+      velocity,
     }
   }
 
@@ -283,7 +298,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       })
     }
 
-    const template = noteItemTemplate({
+    const template = getNoteItemTemplate({
       x,
       y,
       insertToSpecifiedPitchName: specifiedPitchName,
@@ -327,7 +342,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     audioStore.removeNodeFromNoteId({ audioTrackId, id })
   }
 
-  function alignToOtherPitchNameTrack({ absolutePosition = [], scale }) {
+  function alignToOtherPitchNameTrack({
+    absolutePosition = [],
+    scale,
+    snappedToHorizontalGrid = isSnappedToHorizontalGrid.value,
+  }) {
     const [x, y] = absolutePosition
     const [scaleX, scaleY] = scale
     let alignedX = clamp(x, scaleX)
@@ -348,7 +367,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       })
     }
     const alignedAbsolutePosition = alignPosition(absolutePosition)
-    if (isSnappedToHorizontalGrid.value) {
+    if (snappedToHorizontalGrid) {
       alignedX = clamp(alignedAbsolutePosition.x, scaleX)
     }
 
@@ -579,6 +598,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     noteWidth,
     noteHeight,
     createNoteItemsMap,
+    getNoteItemTemplate,
     insertNoteItem,
     deleteNoteItem,
     updateNoteItemPosition,

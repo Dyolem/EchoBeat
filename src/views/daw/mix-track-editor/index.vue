@@ -5,6 +5,7 @@ import { computed, provide, ref } from "vue"
 import AddTrackSidebar from "@/views/daw/add-track-sidebar/index.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { BASE_GRID_HEIGHT } from "@/constants/daw/index.js"
+import MixTrackPlaceholder from "@/views/daw/mix-track-editor/MixTrackPlaceholder.vue"
 const mixTrackEditorStore = useMixTrackEditorStore()
 const props = defineProps({
   mainEditorId: {
@@ -74,6 +75,9 @@ function updateMainEditorSidebarScrollTop(newMainEditorSidebarScrollTop) {
             :height="interactableLayerHeight"
             :zoom-ratio="zoomRatio"
           ></MixTrackUnitManagement>
+          <MixTrackPlaceholder
+            :width="mainEditorViewWidth"
+          ></MixTrackPlaceholder>
         </template>
       </Editor>
     </div>

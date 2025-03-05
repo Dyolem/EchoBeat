@@ -236,6 +236,32 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     return new Map()
   }
 
+  function addNewWorkspace({
+    audioTrackId,
+    badgeName,
+    width,
+    startPosition,
+    zoomRatio,
+  }) {
+    const { workspaceMap } = trackFeatureMapStore.getSelectedTrackFeature({
+      selectedAudioTrackId: audioTrackId,
+      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    })
+    const newId = generateWorkspaceId()
+    const noteItemsMap = noteItemStore.createNoteItemsMap()
+    const workspaceContent = {
+      id: newId,
+      audioTrackId,
+      workspaceBadgeName: badgeName,
+      noteItemsMap,
+      width,
+      startPosition,
+      zoomRatio,
+      subTrackItemId: "",
+    }
+    workspaceMap.set(newId, workspaceContent)
+    return newId
+  }
   function passivePatchUpdateWorkspaceWithZoomRatio({
     audioTrackId,
     newZoomRatio,
@@ -363,6 +389,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     generateWorkspaceId,
     shallCreateWorkspace,
     createNewWorkspaceMap,
+    addNewWorkspace,
     updateWorkspacePosition,
     updateLeftEdge,
     updateRightEdge,
