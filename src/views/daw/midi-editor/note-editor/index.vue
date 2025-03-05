@@ -197,7 +197,7 @@ watch(
         :workspace-container-width="workspace.width"
         :start-position="workspace.startPosition"
         :note-items-map="workspace.noteItemsMap"
-        :workspace-badge-name="workspaceBadgeName"
+        :workspace-badge-name="workspace.workspaceBadgeName"
         :get-cursor-position-in-note-editor-region="
           getCursorPositionInNoteEditorRegion
         "

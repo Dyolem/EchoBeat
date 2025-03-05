@@ -249,6 +249,7 @@ function stretchWorkspaceWidth(event) {
         :note-pad-width="editorCanvasWidth"
         :start-position="startPosition"
         :workspace-container-width="workspaceContainerWidth"
+        :workspace-badge-name="workspaceBadgeName"
       ></WorkspaceHandle>
     </div>
     <div
