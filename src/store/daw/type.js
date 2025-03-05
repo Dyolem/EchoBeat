@@ -108,3 +108,54 @@
  * @property {Number} zoomRatio - midi编辑区的当前的缩放倍率
  * @property {WorkspaceMap} workspaceMap - 存储midi工作区的Map结构
  */
+
+/**
+ * mid解析数据结构
+ * @typedef {Object} MidiEvent
+ * @property {string} type
+ * @property {number} tick
+ * @property {string | undefined} program
+ */
+
+/**
+ * @typedef {Object} MidiNote
+ * @property {number} channel
+ * @property {number} durationTicks
+ * @property {number} midi
+ * @property {number} startTicks
+ * @property {number} velocity
+ */
+
+/**
+ * @typedef {Object} Track
+ * @property {number} channel
+ * @property {string} color
+ * @property {number | string} id
+ * @property {string | undefined} instrument
+ * @property {boolean} isMuted
+ * @property {string} name
+ * @property {MidiEvent[]} events
+ * @property {MidiNote[]} notes
+ * @property {{startTick:number,endTick:number}} timeRange
+ */
+
+/**
+ * @typedef {Object} MidiMeta
+ * @property {number} formatType
+ * @property {number} ppqn
+ * @property {number} bpm
+ * @property {string} timeSignature
+ * @property {number} durationTicks
+ */
+
+/**
+ * @typedef {Object} MidiData
+ * @property {number} version
+ * @property {MidiMeta} meta
+ * @property {Track[]} tracks
+ */
+
+/**
+ * @param midiObject
+ * @returns {MidiData}
+ */
