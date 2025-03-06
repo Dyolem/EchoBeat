@@ -1,5 +1,5 @@
 <script setup>
-import ContextMenu from "@/components/ContextMenu.vue"
+import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 import { computed, inject } from "vue"
 
 const props = defineProps({
@@ -88,6 +88,12 @@ const serialNumbering = computed(() => {
   justify-content: space-between;
   width: 100%;
   height: 30px;
+}
+.track-name {
+  max-width: 120px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 .track-info {
   display: flex;
