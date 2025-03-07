@@ -209,7 +209,9 @@ export const useBeatControllerStore = defineStore("beatController", () => {
       _editableTotalTime !== undefined &&
       _editableTotalTime > editableTotalTime.value
     ) {
-      addBeats(60)
+      const beyondTime =
+        _editableTotalTime - editableTotalTime.value + 60 * timePerBeat.value
+      addBeats(beyondTime, false)
     }
   }
   return {
