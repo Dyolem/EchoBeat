@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { computed, ref, watchEffect } from "vue"
+import { computed, ref } from "vue"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import {
@@ -26,7 +26,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const zoomRatioStore = useZoomRatioStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
   const ppqn = ref(PPQ) //一个四分音符的tick数
-  const bpm = ref(INIT_BPM) //bpm
+  const bpm = ref(INIT_BPM) // 每分钟的四分音符个数
   const baseGridWidth = BASE_GRID_WIDTH //起始状态的基础网格宽度
   const minGridWidth = ref(MIN_GRID_WIDTH) //网格最小宽度
   const maxGridWidth = ref(MAX_GRID_WIDTH) //网格最大宽度
@@ -41,13 +41,13 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const noteFraction = computed(() => {
     return 1 / noteValueDenominator.value
   }) //音符分式值
-  const timePerBeat = computed(() => {
+  const timePerQuarter = computed(() => {
     return 60 / bpm.value
+  })
+  const timePerBeat = computed(() => {
+    return timePerQuarter.value * (4 / noteValueDenominator.value)
   }) //根据bpm计算每拍多少秒
 
-  const absoluteTimePerTick = computed(() => {
-    return timePerBeat.value / ppqn.value / (noteValueDenominator.value / 4)
-  })
   const pixelsPerQuarter = ref(PIXELS_PER_QUARTER)
   const pixelsPerTick = computed(() => {
     return (editorId) =>
@@ -69,11 +69,16 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const totalMeasures = computed(() => {
     return beats.value / beatsPerMeasure.value
   }) //总共小节数
-  const totalTicks = computed(() => {
-    return editableTotalTime.value / absoluteTimePerTick.value
-  })
+
   const ticksPerBeat = computed(() => {
-    return totalTicks.value / beats.value
+    return ppqn.value * (4 / noteValueDenominator.value)
+  })
+
+  const totalTicks = computed(() => {
+    return ticksPerBeat.value * beats.value
+  })
+  const absoluteTimePerTick = computed(() => {
+    return timePerQuarter.value / ppqn.value
   })
 
   const totalLength = computed(() => {
@@ -100,16 +105,17 @@ export const useBeatControllerStore = defineStore("beatController", () => {
       baseGridWidth * zoomRatioStore.getSpecifiedEditorZoomRatio(editorId)
   }) //随缩放被倍率变化的网格宽度，并不是最终格子的显示宽度
 
+  const widthPerBeat = computed(() => {
+    return (editorId) => {
+      return pixelsPerTick.value(editorId) * ticksPerBeat.value
+    }
+  })
+
   //每一个小节的宽度
   const widthPerMeasure = computed(() => {
-    return (editorId) => totalLength.value(editorId) / totalMeasures.value
+    return (editorId) => widthPerBeat.value(editorId) * beatsPerMeasure.value
   })
-  const widthPerBeat = computed(() => {
-    return (editorId) => widthPerMeasure.value(editorId) / beatsPerMeasure.value
-  })
-  watchEffect(() => {
-    console.log(beatsPerMeasure.value)
-  })
+
   const barsCount = computed(() => {
     return (editorId) => {
       return (
@@ -171,47 +177,38 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const dynamicSvgHeight = computed(() => {
     return mixTrackEditorStore.mixTracksMap.size * BASE_GRID_HEIGHT
   })
-  function updateBpm(newBpm) {
-    bpm.value = clamp(newBpm, [MIN_BPM, MAX_BPM])
-  }
-  function addBeats(value, isBeat = true) {
-    if (typeof value !== "number") return
-    if (isBeat) {
-      editableTotalBeats.value += value
-    } else {
-      const beatCount = Math.ceil(value / timePerBeat.value)
-      editableTotalBeats.value += beatCount
-    }
-  }
+
   function updateGridType(newType) {
     if (!Object.keys(GRID_OPTIONS).includes(newType)) return
     gridType.value = newType
   }
   function updateChoreAudioParams({
-    bpm,
+    bpm: _bpm,
     ppqn: _ppqn,
     timeSignature,
     editableTotalTime: _editableTotalTime,
   }) {
-    if (bpm !== undefined) {
-      updateBpm(bpm)
+    if (_bpm !== undefined) {
+      bpm.value = clamp(_bpm, [MIN_BPM, MAX_BPM])
     }
     if (_ppqn !== undefined) {
       ppqn.value = _ppqn
     }
     if (timeSignature !== undefined) {
       const [time_sig_n, time_sig_M] = timeSignature.split("/")
-      beatsPerMeasure.value = time_sig_n
-      noteValueDenominator.value = time_sig_M
+      beatsPerMeasure.value = Number(time_sig_n)
+      noteValueDenominator.value = Number(time_sig_M)
     }
 
     if (
       _editableTotalTime !== undefined &&
       _editableTotalTime > editableTotalTime.value
     ) {
-      const beyondTime =
-        _editableTotalTime - editableTotalTime.value + 60 * timePerBeat.value
-      addBeats(beyondTime, false)
+      const newEditableBeats = Math.ceil(_editableTotalTime / timePerBeat.value)
+      if (newEditableBeats > editableTotalBeats.value) {
+        const newBarCount = Math.ceil(newEditableBeats / beatsPerMeasure.value)
+        editableTotalBeats.value = (newBarCount + 60) * beatsPerMeasure.value
+      }
     }
   }
   return {
@@ -243,7 +240,6 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     barWidth,
     noteGridWidth,
     isDisplayBeatLine,
-    updateBpm,
     updateGridType,
     updateChoreAudioParams,
   }
