@@ -35,6 +35,7 @@ export const ALIGN_TYPE_ENUM = {
   TOP_LEFT_JUSTIFYING: "floor",
   BOTTOM_RIGHT_JUSTIFYING: "ceil",
 }
+export const SNAPPED_THRESHOLD = 5
 
 export const DEFAULT_INIT_VELOCITY = 100
 export const EDITOR_MODE_ENUM = {
