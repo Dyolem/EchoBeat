@@ -1,23 +1,20 @@
-import { defineStore, storeToRefs } from "pinia"
+import { defineStore } from "pinia"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { alignToGrid } from "@/utils/alignToGrid.js"
 import {
   ALIGN_TYPE_ENUM,
   ID_SET,
-  MAIN_EDITOR_ID,
   SUBORDINATE_EDITOR_ID,
 } from "@/constants/daw/index.js"
-import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { computed } from "vue"
+import { snapToTickUnitGrid } from "@/core/grid-size/snapToTickUnitGrid.js"
 
 export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const noteItemStore = useNoteItemStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
-  const zoomRatioStore = useZoomRatioStore()
   const beatControllerStore = useBeatControllerStore()
-
   const widthPerMeasure = computed(() => {
     return beatControllerStore.widthPerMeasure(SUBORDINATE_EDITOR_ID)
   })
@@ -27,8 +24,16 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const maxEditorWidth = computed(() => {
     return beatControllerStore.totalLength(SUBORDINATE_EDITOR_ID)
   })
+
   const generateWorkspaceId = (prefix) => ID_SET.WORKSPACE(prefix)
-  const convert = zoomRatioStore.createConvert(SUBORDINATE_EDITOR_ID)
+
+  /**
+   * 传入参数与返回值均为tick单位
+   * @param {number} createPosition
+   * @param {number} rightWorkspace
+   * @param {number} maxNewWorkspaceWidth
+   * @returns {{isCreateNewWorkspace: boolean, workspaceInfo: {id: string, startPosition: (*|{x, y}), width: number}}}
+   */
   function createNewWorkspaceAtLeftSide({
     createPosition,
     rightWorkspace,
@@ -60,6 +65,14 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       },
     }
   }
+
+  /**
+   * 传入参数与返回值均为tick单位
+   * @param {number} createPosition
+   * @param {number} leftWorkspace
+   * @param {number} maxStretchableSpace
+   * @returns {{isCreateNewWorkspace: boolean, workspaceInfo: {id, width: number, startPosition: number}}}
+   */
   function stretchWorkspaceAtRightSide({
     createPosition,
     leftWorkspace,
@@ -88,29 +101,34 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       },
     }
   }
+
+  /**
+   * createPosition参数为tick单位，返回值均为tick单位
+   * @param {number} createPosition
+   * @param workspaceMap
+   */
   function computedStartPosition(createPosition, workspaceMap) {
     // if(!workspaceMap) return
     const createNewWorkspaceThreshold = widthPerMeasure.value * 2
-    const x = createPosition
+    const xTickUnit = createPosition
     const sortedWorkspaceArr = Array.from(workspaceMap.values()).sort(
       (a, b) => {
         return a.startPosition - b.startPosition
       },
     )
     if (sortedWorkspaceArr.length === 0) {
-      const rightWorkspace = {
-        startPosition: maxEditorWidth.value,
-      }
       return createNewWorkspaceAtLeftSide({
-        createPosition,
-        rightWorkspace,
+        createPosition: xTickUnit,
+        rightWorkspace: {
+          startPosition: maxEditorWidth.value,
+        },
         maxNewWorkspaceWidth: maxEditorWidth.value,
       })
     }
     for (const workspace of sortedWorkspaceArr) {
       if (
-        x >= workspace.startPosition &&
-        x < workspace.startPosition + workspace.width
+        xTickUnit >= workspace.startPosition &&
+        xTickUnit < workspace.startPosition + workspace.width
       ) {
         return {
           isCreateNewWorkspace: false,
@@ -124,7 +142,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     }
 
     const index = sortedWorkspaceArr.findIndex((workspace) => {
-      return workspace.startPosition > x
+      return workspace.startPosition > xTickUnit
     })
     if (index >= 1) {
       const leftWorkspace = sortedWorkspaceArr[index - 1]
@@ -133,17 +151,17 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         rightWorkspace.startPosition -
         (leftWorkspace.startPosition + leftWorkspace.width)
       if (
-        x - (leftWorkspace.startPosition + leftWorkspace.width) <=
+        xTickUnit - (leftWorkspace.startPosition + leftWorkspace.width) <=
         createNewWorkspaceThreshold
       ) {
         return stretchWorkspaceAtRightSide({
-          createPosition,
+          createPosition: xTickUnit,
           leftWorkspace,
           maxStretchableSpace: restSpace,
         })
       } else {
         return createNewWorkspaceAtLeftSide({
-          createPosition,
+          createPosition: xTickUnit,
           rightWorkspace,
           maxNewWorkspaceWidth: restSpace,
         })
@@ -152,7 +170,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       const rightWorkspace = sortedWorkspaceArr[index]
       const restSpace = rightWorkspace.startPosition
       return createNewWorkspaceAtLeftSide({
-        createPosition,
+        createPosition: xTickUnit,
         rightWorkspace,
         maxNewWorkspaceWidth: restSpace,
       })
@@ -162,11 +180,11 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         maxEditorWidth.value -
         (leftWorkspace.startPosition + leftWorkspace.width)
       if (
-        x - (leftWorkspace.startPosition + leftWorkspace.width) <=
+        xTickUnit - (leftWorkspace.startPosition + leftWorkspace.width) <=
         createNewWorkspaceThreshold
       ) {
         return stretchWorkspaceAtRightSide({
-          createPosition,
+          createPosition: xTickUnit,
           leftWorkspace,
           maxStretchableSpace: restSpace,
         })
@@ -175,7 +193,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
           startPosition: maxEditorWidth.value,
         }
         return createNewWorkspaceAtLeftSide({
-          createPosition,
+          createPosition: xTickUnit,
           rightWorkspace,
           maxNewWorkspaceWidth: restSpace,
         })
@@ -183,6 +201,11 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     }
   }
 
+  /**
+   * startPosition参数为tick单位，返回值中的长度值均为tick单位
+   * @param audioTrackId
+   * @param startPosition
+   */
   function shallCreateWorkspace({ audioTrackId, startPosition }) {
     const { workspaceBadgeName, workspaceMap, zoomRatio } =
       trackFeatureMapStore.getSelectedTrackFeature({
@@ -262,44 +285,10 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     workspaceMap.set(newId, workspaceContent)
     return newId
   }
-  function passivePatchUpdateWorkspaceWithZoomRatio({
-    audioTrackId,
-    newZoomRatio,
-    oldZoomRatio,
-  }) {
-    if (
-      audioTrackId === undefined ||
-      newZoomRatio === oldZoomRatio ||
-      newZoomRatio === undefined ||
-      oldZoomRatio === undefined
-    )
-      return
-    const midiWorkspaceInfo = trackFeatureMapStore.getSelectedTrackFeature({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
-    if (!midiWorkspaceInfo) return
-    midiWorkspaceInfo.zoomRatio = newZoomRatio
-    const workspaceMap = midiWorkspaceInfo.workspaceMap
-    for (const workspace of workspaceMap.values()) {
-      workspace.width *= newZoomRatio / oldZoomRatio
-      workspace.startPosition =
-        (workspace.startPosition / oldZoomRatio) * newZoomRatio
-      if (workspace.audioTrackId === audioTrackId)
-        workspace.zoomRatio = newZoomRatio
-    }
-  }
 
-  const convertDataFromMainToSub = (value) => {
-    return zoomRatioStore.convertDataBetweenEditors({
-      fromValue: value,
-      fromZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
-      toZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
-        SUBORDINATE_EDITOR_ID,
-      ),
-    })
-  }
-
+  /**
+   * 传入参数中的长度值和函数返回值均为tick单位
+   */
   function updateWorkspacePosition({
     editorId,
     workspaceId,
@@ -311,16 +300,19 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       audioTrackId: selectedAudioTrackId,
       workspaceId,
     })
-    const { convertedX: newStartPosition } = convert({
-      x: startPosition,
+    const newStartPosition = snapToTickUnitGrid({
       editorId,
-      scale: positionScale,
+      tickX: startPosition,
+      tickScale: positionScale,
     })
     const oldStartPosition = workspace.startPosition
     workspace.startPosition = newStartPosition
     return [newStartPosition, oldStartPosition]
   }
 
+  /**
+   * 传入参数中的长度值和函数返回值均为tick单位
+   */
   function updateRightEdge({
     editorId,
     audioTrackId,
@@ -333,13 +325,23 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       workspaceId,
     })
     const scale = [initLeftEdgeX, beatControllerStore.totalLength(editorId)]
-    const { convertedX, convertedScale } = convert({ x, editorId, scale })
-    const { min: convertedLeftEdgeX } = convertedScale
-    workspace.width = convertedX - convertedLeftEdgeX
-
-    return [convertedX, x]
+    const newRightEdgeX = snapToTickUnitGrid({
+      editorId,
+      tickX: x,
+      tickScale: scale,
+    })
+    workspace.width = newRightEdgeX - initLeftEdgeX
+    return [newRightEdgeX, x]
   }
 
+  /**
+   * 传入参数中的长度值和函数返回值均为tick单位
+   * @param editorId
+   * @param audioTrackId
+   * @param workspaceId
+   * @param x
+   * @param initRightEdgeX
+   */
   function updateLeftEdge({
     editorId,
     audioTrackId,
@@ -352,12 +354,15 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       workspaceId,
     })
     const scale = [0, initRightEdgeX]
-    const { convertedX, convertedScale } = convert({ x, editorId, scale })
-    const { max: convertedRightEdgeX } = convertedScale
-    const newWorkspaceWidth = convertedRightEdgeX - convertedX
+    const newLeftEdgeX = snapToTickUnitGrid({
+      editorId,
+      tickX: x,
+      tickScale: scale,
+    })
+    const newWorkspaceWidth = initRightEdgeX - newLeftEdgeX
 
     const deltaWidth = newWorkspaceWidth - workspace.width
-    workspace.startPosition = convertedX
+    workspace.startPosition = newLeftEdgeX
     workspace.width = newWorkspaceWidth
     const noteItemsMap = workspace.noteItemsMap
     for (const noteItemsMapItem of noteItemsMap.values()) {
@@ -365,7 +370,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         noteItem.relativeX += deltaWidth
       }
     }
-    return [convertedX, x]
+    return [newLeftEdgeX, x]
   }
 
   function deleteWorkspace({ audioTrackId, workspaceId }) {
@@ -396,6 +401,5 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     getWorkspace,
     getWorkspaceMap,
     deleteWorkspace,
-    passivePatchUpdateWorkspaceWithZoomRatio,
   }
 })

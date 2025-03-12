@@ -3,7 +3,6 @@ import { computed, ref } from "vue"
 import {
   EDITOR_MODE_ENUM,
   ALIGN_TYPE_ENUM,
-  MAIN_EDITOR_ID,
   SUBORDINATE_EDITOR_ID,
   CHROMATIC_SCALE_SERIAL_NUMBER,
   CHROMATIC_PITCH_NAME_ENUM,
@@ -15,20 +14,23 @@ import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { alignToGrid, snapToGrid } from "@/utils/alignToGrid.js"
-import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { alignToGrid } from "@/utils/alignToGrid.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { clamp } from "@/utils/clamp.js"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
+import { snapToTickUnitGrid } from "@/core/grid-size/snapToTickUnitGrid.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
-  const zoomRatioStore = useZoomRatioStore()
   const audioStore = useAudioStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
   const beatControllerStore = useBeatControllerStore()
   const pianoKeySizeStore = usePianoKeySizeStore()
+
+  const absoluteTimePerTick = computed(() => {
+    return beatControllerStore.absoluteTimePerTick
+  })
 
   const nextInsertedNoteWidth = ref(0)
   const noteWidth = computed(() => {
@@ -154,8 +156,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return noteItemsMap
   }
 
-  function getInsertToSpecifiedPitchName({ x, y } = {}, pitchNameMappedToArea) {
-    if (x === undefined || y === undefined) return
+  function getInsertToSpecifiedPitchName({ y, pitchNameMappedToArea } = {}) {
+    if (pitchNameMappedToArea === undefined || y === undefined) return
     let insertToSpecifiedPitchName = ""
     const res = pitchNameMappedToArea.find((item) => {
       const [startY, endY] = item.scale
@@ -177,13 +179,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }
 
   function getNoteItemTemplate({
-    x,
+    x: tickX,
     y,
     noteItemWidth = noteWidth.value,
-    insertToSpecifiedPitchName = getInsertToSpecifiedPitchName(
-      { x, y },
-      pitchNameMappedToArea.value,
-    ),
+    insertToSpecifiedPitchName = getInsertToSpecifiedPitchName({
+      y,
+      pitchNameMappedToArea: pitchNameMappedToArea.value,
+    }),
     workspaceId,
     audioTrackId,
     velocity = DEFAULT_INIT_VELOCITY,
@@ -199,12 +201,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       newWorkspace.startPosition + newWorkspace.width,
     ]
     const scaleY = [0, maxY.value]
-    let position = [x, y]
+    let position = [tickX, y]
     let pitchName = insertToSpecifiedPitchName
     if (!isDirectPosition) {
       const { alignedAbsolutePosition, alignedPitchName } =
         alignToOtherPitchNameTrack({
-          absolutePosition: [x, y],
+          absolutePosition: [tickX, y],
           scale: [scaleX, scaleY],
         })
       if (!alignedPitchName) return
@@ -212,8 +214,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       position = alignedAbsolutePosition
     }
 
-    const [computedX, computedY] = position
-    const relativeX = computedX - newWorkspace.startPosition
+    const [computedTickX, computedY] = position
+    const relativeX = computedTickX - newWorkspace.startPosition
     const minNoteWidth = 0
     const maxNoteWidth = newWorkspace.width - relativeX
     return {
@@ -235,53 +237,43 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       },
       pitchName: pitchName,
       get startTime() {
-        return (
-          (this.x / beatControllerStore.totalLength(SUBORDINATE_EDITOR_ID)) *
-          beatControllerStore.editableTotalTime
-        )
+        return this.x * absoluteTimePerTick.value
       },
       get duration() {
-        return (
-          (this.width /
-            beatControllerStore.totalLength(SUBORDINATE_EDITOR_ID)) *
-          beatControllerStore.editableTotalTime
-        )
+        return this.width * absoluteTimePerTick.value
       },
       velocity,
     }
   }
 
+  /**
+   * 参数x为tick单位，参数y为px单位
+   */
   function insertNoteItem(
-    { audioTrackId, x, y, insertToSpecifiedPitchName } = {},
+    { editorId, audioTrackId, x, y, insertToSpecifiedPitchName } = {},
     returnInsertedItemFullInfo = false,
   ) {
     if (x === undefined || y === undefined || !audioTrackId) return
 
     const specifiedPitchName =
       insertToSpecifiedPitchName ??
-      getInsertToSpecifiedPitchName({ x, y }, pitchNameMappedToArea.value)
+      getInsertToSpecifiedPitchName({
+        y,
+        pitchNameMappedToArea: pitchNameMappedToArea.value,
+      })
 
     const { workspace, isCreated } = workspaceStore.shallCreateWorkspace({
       audioTrackId,
       startPosition: x,
     })
-    const dataConvert = (value) => {
-      return zoomRatioStore.convertDataBetweenEditors({
-        fromValue: value,
-        fromZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
-          SUBORDINATE_EDITOR_ID,
-        ),
-        toZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
-      })
-    }
     const { width, workspaceBadgeName, startPosition, id } = workspace
     const noteItemsMap = workspace.noteItemsMap
     if (isCreated) {
       const subTrackItemId = mixTrackEditorStore.createSubTrackItem({
         audioTrackId,
         workspaceId: id,
-        trackItemWidth: dataConvert(width),
-        startPosition: dataConvert(startPosition),
+        trackItemWidth: width,
+        startPosition: startPosition,
         trackName: workspaceBadgeName,
       })
       workspaceStore.getWorkspace({
@@ -290,7 +282,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       }).subTrackItemId = subTrackItemId
     } else {
       mixTrackEditorStore.updateRightEdge({
-        editorId: SUBORDINATE_EDITOR_ID,
+        editorId: editorId,
         audioTrackId: audioTrackId,
         subTrackItemId: workspace.subTrackItemId,
         x: startPosition + width,
@@ -351,10 +343,10 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const [scaleX, scaleY] = scale
     let alignedX = clamp(x, scaleX)
     let alignedY = clamp(y, scaleY)
-    const expectedInsertToPitchName = getInsertToSpecifiedPitchName(
-      { x: alignedX, y: alignedY },
-      pitchNameMappedToArea.value,
-    )
+    const expectedInsertToPitchName = getInsertToSpecifiedPitchName({
+      y: alignedY,
+      pitchNameMappedToArea: pitchNameMappedToArea.value,
+    })
 
     const alignPosition = (position) => {
       const gridSize = [
@@ -402,25 +394,26 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
   }
 
+  /**
+   * 传入参数中absolutePosition的横向长度值为tick单位,纵向为px单位
+   */
   function updateNoteItemPosition({
     id,
     audioTrackId,
     workspaceId,
     pitchName,
-    absolutePosition,
+    x,
+    y,
   }) {
-    const isCoordinateAxisArray = (arr) => {
-      return Array.isArray(arr) && arr.length === 2
-    }
     if (
       id === undefined ||
       audioTrackId === undefined ||
       workspaceId === undefined ||
       pitchName === undefined ||
-      !isCoordinateAxisArray(absolutePosition)
+      x === undefined ||
+      y === undefined
     )
       return
-    const [absoluteX, absoluteY] = absolutePosition
 
     const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       selectedAudioTrackId: audioTrackId,
@@ -440,12 +433,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const scaleY = [0, maxY.value]
     const { alignedAbsolutePosition, alignedPitchName } =
       alignToOtherPitchNameTrack({
-        absolutePosition: [absoluteX, absoluteY],
+        absolutePosition: [x, y],
         scale: [scaleX, scaleY],
       })
     if (!alignedPitchName) return
-    const [alignedAbsoluteX, alignedAbsoluteY] = alignedAbsolutePosition
-    updateNoteTarget.relativeX = alignedAbsoluteX - workspace.startPosition
+    const [tickAlignedAbsoluteX, alignedAbsoluteY] = alignedAbsolutePosition
+    updateNoteTarget.relativeX = tickAlignedAbsoluteX - workspace.startPosition
     updateNoteTarget.y = alignedAbsoluteY
 
     updateNoteTarget.pitchName = alignedPitchName
@@ -484,7 +477,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     })
   }
 
+  /**
+   * 传入参数中的长度值和函数返回值均为tick单位
+   */
   function updateNoteRightEdge({
+    editorId,
     id,
     audioTrackId,
     workspaceId,
@@ -503,20 +500,21 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       .noteItems.find((item) => item.id === id)
 
     const scale = [initLeftEdgeX, workspace.width + workspace.startPosition]
-    const newRightEdgeX = clamp(
-      snapToGrid(absoluteX, {
-        gridSize: beatControllerStore.factualDisplayedGridWidth(
-          SUBORDINATE_EDITOR_ID,
-        ),
-      }),
-      scale,
-    )
+    const newRightEdgeX = snapToTickUnitGrid({
+      editorId,
+      tickX: absoluteX,
+      tickScale: scale,
+    })
     const newNoteWidth = newRightEdgeX - initLeftEdgeX
     updateNoteTarget.width = newNoteWidth
     nextInsertedNoteWidth.value = newNoteWidth
   }
 
+  /**
+   * 传入参数中的长度值和函数返回值均为tick单位
+   */
   function updateNoteLeftEdge({
+    editorId,
     id,
     audioTrackId,
     workspaceId,
@@ -535,14 +533,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       .get(pitchName)
       .noteItems.find((item) => item.id === id)
     const scale = [workspaceStartPosition, initRightEdgeX]
-    const newLeftEdgeX = clamp(
-      snapToGrid(absoluteX, {
-        gridSize: beatControllerStore.factualDisplayedGridWidth(
-          SUBORDINATE_EDITOR_ID,
-        ),
-      }),
-      scale,
-    )
+    const newLeftEdgeX = snapToTickUnitGrid({
+      editorId,
+      tickX: absoluteX,
+      tickScale: scale,
+    })
     const newRelativeX = newLeftEdgeX - workspaceStartPosition
     updateNoteTarget.relativeX = newRelativeX
     const newNoteWidth =
@@ -551,32 +546,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     nextInsertedNoteWidth.value = newNoteWidth
   }
 
-  function passivePatchUpdateNoteItemsWithZoomRatio({
-    audioTrackId,
-    newTrackZoomRatio,
-    oldTrackZoomRatio,
-  }) {
-    if (
-      audioTrackId === undefined ||
-      newTrackZoomRatio === oldTrackZoomRatio ||
-      newTrackZoomRatio === undefined ||
-      oldTrackZoomRatio === undefined
-    )
-      return
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
-    if (!workspaceMap) return
-    for (const { noteItemsMap } of workspaceMap.values()) {
-      noteItemsMap.forEach((pitchNameObj) => {
-        pitchNameObj.noteItems.forEach((noteItem) => {
-          noteItem.relativeX *= newTrackZoomRatio / oldTrackZoomRatio
-          noteItem.width *= newTrackZoomRatio / oldTrackZoomRatio
-        })
-      })
-    }
-  }
   function simulatePlaySpecifiedNote(pitchName) {
     if (!pitchName) return
     console.log(pitchName)
@@ -605,7 +574,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteItemsMap,
     updateNoteLeftEdge,
     updateNoteRightEdge,
-    passivePatchUpdateNoteItemsWithZoomRatio,
     simulatePlaySpecifiedNote,
   }
 })

@@ -4,21 +4,18 @@ import {
   AUDIO_TRACK_ENUM,
   BASE_GRID_HEIGHT,
   ID_SET,
-  MAIN_EDITOR_ID,
-  SUBORDINATE_EDITOR_ID,
 } from "@/constants/daw/index.js"
 import { useAudioTrackMainColorStore } from "@/store/daw/audio-track-color/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
-import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
+import { snapToTickUnitGrid } from "@/core/grid-size/snapToTickUnitGrid.js"
 
 export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const audioTrackMainColorStore = useAudioTrackMainColorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
-  const zoomRatioStore = useZoomRatioStore()
   const beatControllerStore = useBeatControllerStore()
   const audioStore = useAudioStore()
 
@@ -97,15 +94,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     return newTrackId
   }
 
-  const convertDataFromSubToMain = (value) => {
-    return zoomRatioStore.convertDataBetweenEditors({
-      fromValue: value,
-      fromZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
-        SUBORDINATE_EDITOR_ID,
-      ),
-      toZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
-    })
-  }
   function getSubTrackItemsMap({ audioTrackId }) {
     return mixTracksMap.value.get(audioTrackId).subTrackItemsMap
   }
@@ -113,9 +101,8 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     return getSubTrackItemsMap({ audioTrackId }).get(subTrackItemId)
   }
 
-  const convert = zoomRatioStore.createConvert(MAIN_EDITOR_ID)
   /**
-   *
+   * 传入参数中的长度值和函数返回值均为px单位
    * @param {string} editorId - 调用该方法的编辑器id
    * @param {string} audioTrackId - 音轨id
    * @param {string} subTrackItemId - 子轨道id
@@ -123,7 +110,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
    * @param {[number,number]} scale - 数值范围
    * @param {number} initLeftEdgeX - 初始左边界的横坐标
    */
-
   function updateRightEdge({
     editorId,
     audioTrackId,
@@ -136,12 +122,24 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       subTrackItemId,
     })
     const scale = [initLeftEdgeX, beatControllerStore.totalLength(editorId)]
-    const { convertedX, convertedScale } = convert({ x, editorId, scale })
-    const { min: convertedLeftEdgeX } = convertedScale
-    subTrackItem.trackItemWidth = convertedX - convertedLeftEdgeX
-    return [convertedX, x]
+    const newRightEdgeX = snapToTickUnitGrid({
+      editorId,
+      tickX: x,
+      tickScale: scale,
+    })
+
+    subTrackItem.trackItemWidth = newRightEdgeX - initLeftEdgeX
+    return [newRightEdgeX, x]
   }
 
+  /**
+   * 传入参数中的长度值和函数返回值均为px单位
+   * @param editorId
+   * @param audioTrackId
+   * @param subTrackItemId
+   * @param x
+   * @param initRightEdgeX
+   */
   function updateLeftEdge({
     editorId,
     audioTrackId,
@@ -154,14 +152,21 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       subTrackItemId,
     })
     const scale = [0, initRightEdgeX]
-    const { convertedX, convertedScale } = convert({ x, editorId, scale })
-    const { max: convertedRightEdgeX } = convertedScale
-    const newTrackItemWidth = convertedRightEdgeX - convertedX
-    subTrackItem.startPosition = convertedX
+    const newLeftEdgeX = snapToTickUnitGrid({
+      editorId,
+      tickX: x,
+      tickScale: scale,
+    })
+
+    const newTrackItemWidth = initRightEdgeX - newLeftEdgeX
+    subTrackItem.startPosition = newLeftEdgeX
     subTrackItem.trackItemWidth = newTrackItemWidth
-    return [convertedX, x]
+    return [newLeftEdgeX, x]
   }
 
+  /**
+   * 传入参数中的长度值和函数返回值均为tick单位
+   */
   function updateSubTrackItemStartPosition({
     editorId,
     audioTrackId,
@@ -170,36 +175,15 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     horizontalScale,
   }) {
     const subTrackItem = getSubTrackItem({ audioTrackId, subTrackItemId })
-    const { convertedX: newStartPosition } = convert({
-      x: startPosition,
+    const newStartPosition = snapToTickUnitGrid({
       editorId,
-      scale: horizontalScale,
+      tickX: startPosition,
+      tickScale: horizontalScale,
     })
 
     const oldStartPosition = subTrackItem.startPosition
     subTrackItem.startPosition = newStartPosition
     return [newStartPosition, oldStartPosition]
-  }
-
-  function passivePatchUpdateAudioTracksWithZoomRatio({
-    newZoomRatio,
-    oldZoomRatio,
-  }) {
-    if (
-      newZoomRatio === oldZoomRatio ||
-      newZoomRatio === undefined ||
-      oldZoomRatio === undefined
-    )
-      return
-
-    for (const audioTrack of mixTracksMap.value.values()) {
-      for (const subTrackItem of audioTrack.subTrackItemsMap.values()) {
-        subTrackItem.trackItemWidth *= newZoomRatio / oldZoomRatio
-        subTrackItem.startPosition =
-          (subTrackItem.startPosition / oldZoomRatio) * newZoomRatio
-        subTrackItem.trackZoomRatio = newZoomRatio
-      }
-    }
   }
 
   function deleteSpecifiedSubTrackItem({ audioTrackId, subTrackItemId }) {
@@ -217,7 +201,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     updateLeftEdge,
     updateRightEdge,
     updateSubTrackItemStartPosition,
-    passivePatchUpdateAudioTracksWithZoomRatio,
     deleteSpecifiedSubTrackItem,
   }
 })
