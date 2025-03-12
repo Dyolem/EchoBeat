@@ -6,21 +6,6 @@ import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
 export const useAudioStore = defineStore("audio", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
   const audioContext = ref(new AudioContext())
-  // 监听用户交互（例如点击页面）
-  document.addEventListener(
-    "click",
-    () => {
-      if (audioContext.value.state === "suspended") {
-        audioContext.value.resume().then(() => {
-          console.log("AudioContext resumed")
-          console.log("Current time:", audioContext.value.currentTime) // 现在 currentTime 会开始递增
-        })
-      }
-    },
-    {
-      once: true,
-    },
-  )
 
   const audioGeneratorStore = useAudioGeneratorStore()
   const instrumentsAudioNodeMap = new Map()
@@ -137,19 +122,20 @@ export const useAudioStore = defineStore("audio", () => {
     return velocityGainNode
   }
 
+  const mixingGainNode = audioContext.value.createGain()
+  const compressor = new DynamicsCompressorNode(audioContext.value, {
+    threshold: -20,
+    ratio: 12,
+  })
+
   function generateAudioNode({
     audioTracksBufferSourceMap,
     timelinePlayTime,
     generableAudioTimeEnd,
     audioContext,
   }) {
-    const mixingGainNode = audioContext.createGain()
-    const compressor = new DynamicsCompressorNode(audioContext, {
-      threshold: -20,
-      ratio: 12,
-    })
+    if (audioContext.state === "suspended") return
     mixingGainNode.connect(compressor).connect(audioContext.destination)
-
     for (const [audioTrackId, audioInfo] of audioTracksBufferSourceMap) {
       const noteBufferSourceMap = getSpecifiedAudioTracksProperty({
         audioTrackId,
@@ -248,7 +234,7 @@ export const useAudioStore = defineStore("audio", () => {
             fadeInDuration,
           })
         }
-        const fadeOutDuration = 0.2
+        const fadeOutDuration = 0.8
         gainNodeFadeOut(fadeGainNode, {
           startTime: audioStartTime,
           duration,
@@ -353,7 +339,11 @@ export const useAudioStore = defineStore("audio", () => {
     })
     noteBufferSourceMap.delete(id)
   }
+
   function stopAllNodes() {
+    const FADE_TIME = 0.05 // 50ms 淡出
+    const VOLUME_EPSILON = 0.0001 // 接近零的最小值
+    const promises = []
     for (const [audioTrackId, audioInfo] of audioTracksBufferSourceMap.value) {
       if (audioInfo.audioType === AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS) {
         const audioBufferSourceNodeMap = getSpecifiedAudioTracksProperty({
@@ -369,17 +359,33 @@ export const useAudioStore = defineStore("audio", () => {
           const fadeGainNode = fadeGainNodeMap.get(id)
           if (!fadeGainNode) return
           const currentTime = audioBufferSourceNode.context.currentTime
-          const fadeOutDuration = 0.1
-          gainNodeFadeOut(fadeGainNode, {
-            startTime: currentTime,
-            duration: 0,
-            fadeOutDuration,
+          // 配置淡出曲线
+          fadeGainNode.gain.cancelScheduledValues(currentTime) // 清除已有调度
+          fadeGainNode.gain.setValueAtTime(fadeGainNode.gain.value, currentTime)
+          fadeGainNode.gain.linearRampToValueAtTime(
+            VOLUME_EPSILON,
+            currentTime + FADE_TIME,
+          )
+
+          // 延迟停止音源（确保淡出完成）
+          const stopTime = currentTime + FADE_TIME + 0.001 // 增益节点是物理执行，也就是说会比stop规定的时刻更靠后，需要留出容差时间避免关闭时的咔哒声（事实上最后还使用了定时器延长了100ms）
+          audioBufferSourceNode.stop(stopTime)
+
+          // 为每个节点创建一个 Promise
+          const endedPromise = new Promise((resolve) => {
+            // 添加一个一次性事件监听器，触发后 resolve
+            const onEnded = () => {
+              resolve() // 关键：通知该节点已停止
+            }
+            audioBufferSourceNode.addEventListener("ended", onEnded, {
+              once: true,
+            })
           })
-          audioBufferSourceNode.stop(currentTime + fadeOutDuration)
+          promises.push(endedPromise)
         }
-        audioBufferSourceNodeMap.clear()
       }
     }
+    return Promise.all(promises)
   }
   return {
     audioContext,

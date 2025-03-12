@@ -5,10 +5,15 @@ import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import { storeToRefs } from "pinia"
+import { getCurrentBPMHelper } from "@/core/audio/parseMidi.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 const trackRulerStore = useTrackRulerStore()
 const audioStore = useAudioStore()
+const beatControllerStore = useBeatControllerStore()
 
-const { isPlaying, timelineCurrentTime } = storeToRefs(trackRulerStore)
+const { changePlayState } = trackRulerStore
+const { isPlaying, timelineCurrentTime, logicTimeOffset } =
+  storeToRefs(trackRulerStore)
 const accurateTime = computed(() => {
   return timelineCurrentTime.value
 })
@@ -21,107 +26,98 @@ const timeDisplay = computed(() => {
   return `${m}:${s}`
 })
 
-let audioContext = null
+let newLogicTime = 0
+let timer = null
 let controller = null
+const maxTime = computed(() => {
+  return trackRulerStore.maxTime
+})
 const dynamicGenerationTimeInterval = 2
-function playAudio() {
-  if (!isPlaying.value) {
-    if (!audioContext) {
-      const { audioContext: newAudioContext, controller: newController } =
-        initPlay({
-          anyStartTime: trackRulerStore.timelineCurrentTime,
-          maxTime: trackRulerStore.maxTime,
-        })
+function generateAudioHandler() {
+  const logicTime = audioStore.audioContext.currentTime + logicTimeOffset.value
+  const currentTick = logicTime / beatControllerStore.absoluteTimePerTick
+  const toBeValidateBpm = getCurrentBPMHelper?.(currentTick)
+  const { bpm } = beatControllerStore.updateChoreAudioParams({
+    bpm: toBeValidateBpm,
+  })
+  const [newBpm, oldBpm] = bpm
+  const newTimeWidthNewBpm = (logicTime / newBpm) * oldBpm
+  trackRulerStore.updateLogicTimeOffset(newTimeWidthNewBpm - logicTime)
+  newLogicTime = logicTimeOffset.value + audioStore.audioContext.currentTime
 
-      audioContext = newAudioContext
-      controller = newController
-    } else {
-      controller = resume(audioContext, trackRulerStore.maxTime)
-    }
-  } else {
-    if (audioContext) {
-      pause(audioContext, controller)
-    }
-  }
+  audioStore.generateAudioNode({
+    audioTracksBufferSourceMap: audioStore.audioTracksBufferSourceMap,
+    timelinePlayTime: newLogicTime,
+    generableAudioTimeEnd: newLogicTime + dynamicGenerationTimeInterval,
+    audioContext: audioStore.audioContext,
+  })
 }
 
-let checkPoint = 0
 function queryCurrentTime({
   audioContext,
   signal,
-  anyStartTime = 0,
   dynamicGenerationTimeInterval = 2,
   maxTime,
 } = {}) {
   if (!audioContext) return
-  // console.log(signal.aborted)
-  let lastCheckPoint = audioContext.currentTime + anyStartTime
+  if (signal.aborted) return
+  if (accurateTime.value > maxTime) {
+    pause(audioContext, controller)
+    return
+  }
   requestAnimationFrame(() => {
-    const time = audioContext.currentTime + anyStartTime
-    const currentCheckPoint = time
-    trackRulerStore.updateCurrentTime(time)
-    if (lastCheckPoint <= checkPoint && currentCheckPoint >= checkPoint) {
-      checkPoint += dynamicGenerationTimeInterval
-      audioStore.generateAudioNode({
-        audioTracksBufferSourceMap: audioStore.audioTracksBufferSourceMap,
-        timelinePlayTime: accurateTime.value,
-        generableAudioTimeEnd:
-          accurateTime.value + dynamicGenerationTimeInterval,
-        audioContext: audioStore.audioContext,
-      })
-    }
-
-    if (signal.aborted) return
-    if (time > maxTime) {
-      audioContext.suspend()
-      isPlaying.value = false
-      return
-    }
-
+    trackRulerStore.updateCurrentTime(
+      logicTimeOffset.value + audioContext.currentTime,
+    )
     queryCurrentTime({
       audioContext,
       signal,
-      anyStartTime,
       dynamicGenerationTimeInterval,
       maxTime,
     })
   })
 }
-function initPlay({ anyStartTime, maxTime }) {
-  isPlaying.value = true
-  const controller = new AbortController()
-  const audioContext = new AudioContext()
-  checkPoint = audioContext.currentTime + anyStartTime
-  queryCurrentTime({
-    audioContext,
-    signal: controller.signal,
-    anyStartTime,
-    maxTime,
-    dynamicGenerationTimeInterval,
-  })
-  return { audioContext, controller }
+
+function playAudio() {
+  if (!isPlaying.value) {
+    resume(audioStore.audioContext, maxTime.value)
+  } else {
+    if (audioStore.audioContext) {
+      pause(audioStore.audioContext, controller)
+    }
+  }
 }
-function pause(audioContext, controller) {
+
+async function pause(audioContext, controller) {
   if (!audioContext) return
-  isPlaying.value = false
+
+  await audioStore.stopAllNodes()
+  await new Promise((resolve) => {
+    const suspendDelayTimer = setTimeout(() => {
+      resolve()
+      clearTimeout(suspendDelayTimer)
+    }, 100)
+  })
   audioContext.suspend()
-  audioStore.stopAllNodes()
   controller.abort()
+  clearInterval(timer)
+  changePlayState(false)
 }
 function resume(audioContext, maxTime) {
   if (!audioContext) return
-  isPlaying.value = true
-  const suspendTime = audioContext.currentTime
-  const anyStartTime = accurateTime.value - suspendTime
-  audioContext.resume()
-  checkPoint = audioContext.currentTime + anyStartTime
-  controller = new AbortController()
-  queryCurrentTime({
-    audioContext,
-    signal: controller.signal,
-    anyStartTime,
-    maxTime,
-    dynamicGenerationTimeInterval,
+  audioContext.resume().then(() => {
+    controller = new AbortController()
+    generateAudioHandler()
+    timer = setInterval(() => {
+      generateAudioHandler()
+    }, 1000)
+    queryCurrentTime({
+      audioContext,
+      signal: controller.signal,
+      maxTime,
+      dynamicGenerationTimeInterval,
+    })
+    changePlayState(true)
   })
   return controller
 }
