@@ -27,9 +27,18 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const mixTrackEditorStore = useMixTrackEditorStore()
   const ppqn = ref(PPQ) //一个四分音符的tick数
   const bpm = ref(INIT_BPM) // 每分钟的四分音符个数
+
+  const pixelsPerQuarter = ref(PIXELS_PER_QUARTER)
+  const pixelsPerTick = computed(() => {
+    return (editorId) => {
+      return (
+        (pixelsPerQuarter.value / ppqn.value) *
+        zoomRatioStore.getSpecifiedEditorZoomRatio(editorId)
+      )
+    }
+  }) //一个tick对应的像素宽度，与PPQN值无关（含缩放倍率）
   const baseGridWidth = BASE_GRID_WIDTH //起始状态的基础网格宽度
   const minGridWidth = ref(MIN_GRID_WIDTH) //网格最小宽度
-  const maxGridWidth = ref(MAX_GRID_WIDTH) //网格最大宽度
   const editableTotalBeats = ref(EDITABlE_TOTAL_BEATS) //可编辑的总拍子数，以拍子为基准是因为bpm会影响一个拍子的时长，以总时长为基准不够灵活
   const beatsPerMeasure = ref(INIT_BEATS_PER_MEASURE) //节拍分式分子
   const noteValueDenominator = ref(INIT_NOTE_VALUE_DENOMINATOR) //音符分式分母
@@ -48,12 +57,6 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     return timePerQuarter.value * (4 / noteValueDenominator.value)
   }) //根据bpm计算每拍多少秒
 
-  const pixelsPerQuarter = ref(PIXELS_PER_QUARTER)
-  const pixelsPerTick = computed(() => {
-    return (editorId) =>
-      (pixelsPerQuarter.value / ppqn.value) *
-      zoomRatioStore.getSpecifiedEditorZoomRatio(editorId)
-  }) //一个tick对应的像素宽度（含缩放倍率）
   const currentNoteDenominatorTicks = computed(() => {
     return (4 / noteValueDenominator.value) * ppqn.value
   })
@@ -83,7 +86,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
 
   const totalLength = computed(() => {
     return (editorId) => {
-      return beats.value * ticksPerBeat.value * pixelsPerTick.value(editorId)
+      return beats.value * ticksPerBeat.value
     }
   })
 
@@ -94,9 +97,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
           timeSigN: beatsPerMeasure.value,
           timeSigM: noteValueDenominator.value,
           gridOption: gridType.value,
-        }) *
-        currentNoteDenominatorTicks.value *
-        pixelsPerTick.value(editorId)
+        }) * currentNoteDenominatorTicks.value
       )
     }
   })
@@ -107,7 +108,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
 
   const widthPerBeat = computed(() => {
     return (editorId) => {
-      return pixelsPerTick.value(editorId) * ticksPerBeat.value
+      return ticksPerBeat.value
     }
   })
 
@@ -120,7 +121,10 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     return (editorId) => {
       return (
         totalMeasures.value /
-        Math.ceil(serialNumberSizeWidth.value / widthPerMeasure.value(editorId))
+        Math.ceil(
+          serialNumberSizeWidth.value(editorId) /
+            widthPerMeasure.value(editorId),
+        )
       )
     }
   })
@@ -130,36 +134,33 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     }
   })
   const serialNumberSizeWidth = computed(() => {
-    return SERIAL_NUMBER_FONT_SIZE * (totalMeasures.value.toString().length + 2)
+    return (editorId) =>
+      (SERIAL_NUMBER_FONT_SIZE * (totalMeasures.value.toString().length + 2)) /
+      pixelsPerTick.value(editorId)
   })
   const isDisplayBeatLine = computed(() => {
     return (editorId) =>
-      widthPerBeat.value(editorId) > serialNumberSizeWidth.value
+      widthPerBeat.value(editorId) > serialNumberSizeWidth.value(editorId)
   })
-  const n = computed(() => {
-    return (editorId) => {
-      const gridWidth = gridWidthWithZoomRatio.value(editorId)
-      if (gridWidth > minGridWidth.value) {
-        return Math.floor(gridWidth / maxGridWidth.value)
-      } else if (gridWidth <= minGridWidth.value) {
-        return -Math.floor(minGridWidth.value / gridWidth)
-      }
-    }
-  })
+
   const splitPow = computed(() => {
-    return (beatWidth) => {
+    return (editorId) => {
       const p = Math.floor(
-        Math.log2(beatWidth / (beatsPerMeasure.value * minGridWidth.value)),
+        Math.log2(
+          widthPerBeat.value(editorId) /
+            (beatsPerMeasure.value *
+              (minGridWidth.value / pixelsPerTick.value(editorId))),
+        ),
       )
       return p
     }
   })
   const gridLayerUnitsCount = computed(() => {
-    return (beatWidth) => beatsPerMeasure.value * 2 ** splitPow.value(beatWidth)
+    return (editorId) => beatsPerMeasure.value * 2 ** splitPow.value(editorId)
   })
   const gridLayerWidth = computed(() => {
-    return (beatWidth) => {
-      return beatWidth / gridLayerUnitsCount.value(beatWidth)
+    return (editorId) => {
+      return widthPerBeat.value(editorId) / gridLayerUnitsCount.value(editorId)
     }
   })
   const factualDisplayedGridWidth = computed(() => {
@@ -185,19 +186,35 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   function updateChoreAudioParams({
     bpm: _bpm,
     ppqn: _ppqn,
-    timeSignature,
+    timeSignature: _timeSignature,
     editableTotalTime: _editableTotalTime,
   }) {
+    const updatedValue = {
+      bpm: [bpm.value, bpm.value],
+      ppqn: [ppqn.value, ppqn.value],
+      timeSignature: [timeSignature.value, timeSignature.value],
+      editableTotalTime: [editableTotalTime.value, editableTotalTime.value],
+    }
     if (_bpm !== undefined) {
-      bpm.value = clamp(_bpm, [MIN_BPM, MAX_BPM])
+      const oldBpm = bpm.value
+      const newBpm = clamp(_bpm, [MIN_BPM, MAX_BPM])
+      bpm.value = newBpm
+      updatedValue.bpm[1] = oldBpm
+      updatedValue.bpm[0] = newBpm
     }
     if (_ppqn !== undefined) {
       ppqn.value = _ppqn
+      updatedValue.ppqn[1] = updatedValue.ppqn[0]
+      updatedValue.ppqn[0] = _ppqn
     }
-    if (timeSignature !== undefined) {
-      const [time_sig_n, time_sig_M] = timeSignature.split("/")
-      beatsPerMeasure.value = Number(time_sig_n)
-      noteValueDenominator.value = Number(time_sig_M)
+    if (_timeSignature !== undefined) {
+      const [time_sig_n, time_sig_m] = _timeSignature.split("/")
+      const new_time_sig_n = Number(time_sig_n)
+      const new_time_sig_m = Number(time_sig_m)
+      beatsPerMeasure.value = new_time_sig_n
+      noteValueDenominator.value = new_time_sig_m
+      updatedValue.timeSignature[1] = updatedValue.timeSignature[0]
+      updatedValue.timeSignature[0] = new_time_sig_n / new_time_sig_m
     }
 
     if (
@@ -206,17 +223,21 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     ) {
       const newEditableBeats = Math.ceil(_editableTotalTime / timePerBeat.value)
       if (newEditableBeats > editableTotalBeats.value) {
-        const newBarCount = Math.ceil(newEditableBeats / beatsPerMeasure.value)
-        editableTotalBeats.value = (newBarCount + 60) * beatsPerMeasure.value
+        const newBarCount =
+          Math.ceil(newEditableBeats / beatsPerMeasure.value) + 60
+        editableTotalBeats.value = newBarCount * beatsPerMeasure.value
+        updatedValue.editableTotalTime[1] = updatedValue.editableTotalTime[0]
+        updatedValue.editableTotalTime[0] =
+          editableTotalBeats * timePerBeat.value
       }
     }
+    return updatedValue
   }
   return {
     bpm,
     editableTotalTime,
     baseGridWidth,
     minGridWidth,
-    maxGridWidth,
     pixelsPerTick,
     absoluteTimePerTick,
     totalMeasures,
