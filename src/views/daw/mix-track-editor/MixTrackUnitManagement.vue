@@ -1,11 +1,20 @@
 <script setup>
 import MixTrackUnit from "@/views/daw/mix-track-editor/MixTrackUnit.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { ref, computed, provide, useTemplateRef, watch } from "vue"
 import { GRID_OPTIONS } from "@/constants/daw/index.js"
+import { storeToRefs } from "pinia"
 
+const beatControllerStore = useBeatControllerStore()
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const mixTrackEditorStore = useMixTrackEditorStore()
+
 const props = defineProps({
+  id: {
+    type: String,
+    required: true,
+  },
   width: {
     type: Number,
     required: true,
@@ -34,15 +43,6 @@ const mainEditorZoomRatio = computed(() => {
   return props.zoomRatio
 })
 provide("mainEditorZoomRatio", mainEditorZoomRatio)
-watch(
-  () => props.zoomRatio,
-  (newZoomRatio, oldZoomRatio) => {
-    mixTrackEditorStore.passivePatchUpdateAudioTracksWithZoomRatio({
-      newZoomRatio,
-      oldZoomRatio,
-    })
-  },
-)
 
 const mixTrackManagementContainer = useTemplateRef(
   "mixTrackManagementContainer",
@@ -91,7 +91,7 @@ const getGeometryInfoInScrollableContainer = computed(() => {
 <style scoped>
 .mix-track-management-container {
   position: relative;
-  width: v-bind(width + "px");
+  width: v-bind(width * pixelsPerTick(id) + "px");
   height: v-bind(height + "px");
 }
 </style>

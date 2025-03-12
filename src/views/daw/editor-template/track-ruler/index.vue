@@ -17,6 +17,7 @@ const {
   barsCount,
   barWidth,
   isDisplayBeatLine,
+  pixelsPerTick,
 } = storeToRefs(beatControllerStore)
 const props = defineProps({
   id: {
@@ -75,7 +76,7 @@ const rulerSpanHeight = ref(36)
           class="measure"
           v-for="item in dynamicBarInfo"
           :key="item.id"
-          :style="{ width: item.width + 'px' }"
+          :style="{ width: item.width * pixelsPerTick(id) + 'px' }"
           >{{ item.serialNumber }}</span
         >
       </div>
@@ -83,7 +84,7 @@ const rulerSpanHeight = ref(36)
 
       <svg
         class="mix-editor-grid"
-        :width="trackRulerWidth"
+        :width="trackRulerWidth * pixelsPerTick(id)"
         :height="trackRulerHeight"
       >
         <defs>
@@ -92,7 +93,7 @@ const rulerSpanHeight = ref(36)
             :id="`${id}-mix-editor-track-ruler-grid-measure-layer-pattern`"
             x="0"
             y="0"
-            :width="barWidth(id)"
+            :width="barWidth(id) * pixelsPerTick(id)"
             :height="trackRulerHeight"
             patternUnits="userSpaceOnUse"
             class="is-ignore-second"
@@ -110,7 +111,7 @@ const rulerSpanHeight = ref(36)
             :id="`${id}-mix-editor-track-ruler-grid-beat-layer-pattern`"
             x="0"
             y="0"
-            :width="widthPerMeasure(id)"
+            :width="widthPerMeasure(id) * pixelsPerTick(id)"
             :height="trackRulerHeight"
             patternUnits="userSpaceOnUse"
             class="is-ignore-second"
@@ -120,7 +121,7 @@ const rulerSpanHeight = ref(36)
               width="0.5"
               :height="trackRulerHeight"
               fill="var(--graduation-fill)"
-              :x="widthPerBeat(id) * (n - 1)"
+              :x="widthPerBeat(id) * (n - 1) * pixelsPerTick(id)"
               :y="rulerSpanHeight"
             ></rect>
           </pattern>
@@ -129,18 +130,18 @@ const rulerSpanHeight = ref(36)
             :id="`${id}-mix-editor-track-ruler-grid-layer-pattern`"
             x="0"
             y="0"
-            :width="widthPerBeat(id)"
+            :width="widthPerBeat(id) * pixelsPerTick(id)"
             :height="trackRulerHeight"
             patternUnits="userSpaceOnUse"
             class="is-ignore-second"
           >
             <rect
-              v-if="splitPow(widthPerBeat(id)) >= 0"
-              v-for="n in gridLayerUnitsCount(widthPerBeat(id))"
+              v-if="splitPow(id) >= 0"
+              v-for="n in gridLayerUnitsCount(id)"
               width="0.5"
               :height="trackRulerHeight"
               fill="var(--graduation-fill)"
-              :x="gridLayerWidth(widthPerBeat(id)) * (n - 1)"
+              :x="gridLayerWidth(id) * (n - 1) * pixelsPerTick(id)"
               :y="rulerSpanHeight"
             ></rect>
           </pattern>
@@ -150,21 +151,21 @@ const rulerSpanHeight = ref(36)
           :fill="`url(#${id}-mix-editor-track-ruler-grid-measure-layer-pattern)`"
           x="0"
           y="0"
-          :width="trackRulerWidth"
+          width="100%"
           :height="trackRulerHeight"
         ></rect>
         <rect
           :fill="`url(#${id}-mix-editor-track-ruler-grid-beat-layer-pattern)`"
           x="0"
           y="0"
-          :width="trackRulerWidth"
+          width="100%"
           :height="trackRulerHeight"
         ></rect>
         <rect
           :fill="`url(#${id}-mix-editor-track-ruler-grid-layer-pattern)`"
           x="0"
           y="0"
-          :width="trackRulerWidth"
+          width="100%"
           :height="trackRulerHeight"
         ></rect>
       </svg>
@@ -176,7 +177,7 @@ const rulerSpanHeight = ref(36)
 .track-ruler {
   --ruler-span-height: v-bind(rulerSpanHeight + "px");
   --track-ruler-height: v-bind(trackRulerHeight + "px");
-  --track-ruler-width: v-bind(trackRulerWidth + "px");
+  --track-ruler-width: v-bind((trackRulerWidth * pixelsPerTick(id)) + "px");
   --serial-number-font-size: v-bind(SERIAL_NUMBER_FONT_SIZE + "px");
   width: var(--track-ruler-width);
   height: var(--track-ruler-height);

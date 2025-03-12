@@ -7,26 +7,24 @@ import {
   provide,
   ref,
   useTemplateRef,
-  watch,
   watchEffect,
 } from "vue"
 import NotePad from "@/views/daw/midi-editor/note-editor/NotePad.vue"
 import EditorWorkspace from "@/views/daw/midi-editor/note-editor/EditorWorkspace.vue"
 
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
-import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 const trackFeatureMapStore = useTrackFeatureMapStore()
 const noteItems = useNoteItemStore()
-const workspaceStore = useWorkspaceStore()
 const audioGenerator = useAudioGeneratorStore()
+const beatControllerStore = useBeatControllerStore()
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
 
-const OCTAVE_KEY_COUNT = 12
-const OCTAVE_WHITE_KEY_COUNT = 7
 const props = defineProps({
   notePadWidth: {
     type: Number,
@@ -53,6 +51,8 @@ const props = defineProps({
     default: "Instruments",
   },
 })
+const editorId = inject("subordinateEditorId")
+
 const pianoKeySizeStore = usePianoKeySizeStore()
 const { octaveItemHeight, chromaticInfo, noteTrackHeight } =
   storeToRefs(pianoKeySizeStore)
@@ -114,11 +114,10 @@ function insertNote({ x: insertX, y: insertY }) {
   if (insertX === undefined || insertY === undefined) return
   const insertedItemInfo = noteItems.insertNoteItem(
     {
+      editorId: editorId.value,
       audioTrackId: selectedAudioTrackId.value,
-      x: insertX,
+      x: insertX / pixelsPerTick.value(editorId.value),
       y: insertY,
-      workspaceBadgeName: props.workspaceBadgeName,
-      zoomRatio: props.zoomRatio,
     },
     true,
   )
@@ -162,21 +161,6 @@ function noteEditorDblClickHandler(event) {
     triggerCustomizedInsertEvent({ x, y })
   }
 }
-watch(
-  () => props.zoomRatio,
-  (newTrackZoomRatio, oldTrackZoomRatio) => {
-    noteItems.passivePatchUpdateNoteItemsWithZoomRatio({
-      audioTrackId: selectedAudioTrackId.value,
-      newTrackZoomRatio,
-      oldTrackZoomRatio,
-    })
-    workspaceStore.passivePatchUpdateWorkspaceWithZoomRatio({
-      audioTrackId: selectedAudioTrackId.value,
-      newZoomRatio: newTrackZoomRatio,
-      oldZoomRatio: oldTrackZoomRatio,
-    })
-  },
-)
 </script>
 
 <template>
@@ -227,13 +211,14 @@ watch(
 
 <style scoped>
 .note-editor-container {
-  width: v-bind(notePadWidth + "px");
+  --note-editor-width: v-bind(notePadWidth * pixelsPerTick(editorId) + "px");
+  width: var(--note-editor-width);
 }
 
 .note-editor-region {
   position: relative;
   display: flex;
-  width: v-bind(notePadWidth + "px");
+  width: var(--note-editor-width);
   height: v-bind(notePadHeight - workspacePlaceHolderHeight + "px");
   background-color: rgba(0, 0, 0, 0.3);
 }

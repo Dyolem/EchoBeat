@@ -1,6 +1,9 @@
 <script setup>
-import { computed } from "vue"
-
+import { computed, inject } from "vue"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { storeToRefs } from "pinia"
+const beatControllerStore = useBeatControllerStore()
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const OCTAVE_KEY_COUNT = 12
 const WHITE_KEY_SVG_RECT_FILL_COLOR = "rgba(162,175,185,0.7)"
 const BLACK_KEY_SVG_RECT_FILL_COLOR = "rgba(0,0,0,0.6)"
@@ -27,6 +30,8 @@ const props = defineProps({
     default: 7,
   },
 })
+const editorId = inject("subordinateEditorId")
+
 const octaveItemHeight = computed(() => {
   return props.noteTrackHeight * OCTAVE_KEY_COUNT
 })
@@ -62,7 +67,11 @@ const rectInfo = computed(() => {
 </script>
 
 <template>
-  <svg :width="notePadWidth" :height="svgHeight" class="midi-grid-svg">
+  <svg
+    :width="notePadWidth * pixelsPerTick(editorId)"
+    :height="svgHeight"
+    class="midi-grid-svg"
+  >
     <defs>
       <pattern
         id="note-grid-pad"

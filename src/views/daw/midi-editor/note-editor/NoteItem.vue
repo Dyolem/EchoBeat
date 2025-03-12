@@ -4,6 +4,10 @@ import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { ZIndex } from "@/constants/daw/index.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { storeToRefs } from "pinia"
+const beatControllerStore = useBeatControllerStore()
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const noteItemMap = useNoteItemStore()
 const audioGenerator = useAudioGeneratorStore()
 
@@ -58,6 +62,7 @@ const props = defineProps({
     default: 0,
   },
 })
+const midiEditorId = inject("subordinateEditorId")
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const editorNoteZIndex = ref(ZIndex.EDITOR_NOTE)
 const { noteMainSelectedId, updateNoteMainSelectedId } =
@@ -76,7 +81,9 @@ let translateYDistance = 0
 function isLegalTranslateDistance(translateXDistance, translateYDistance) {
   return (
     translateXDistance >= 0 &&
-    translateXDistance <= props.notePadWidth - props.noteWidth &&
+    translateXDistance <=
+      (props.notePadWidth - props.noteWidth) *
+        pixelsPerTick.value(midiEditorId.value) &&
     translateYDistance >= 0 &&
     translateYDistance <= props.notePadHeight - props.noteHeight
   )
@@ -132,11 +139,13 @@ function draggableRegionHandler(event) {
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
       const { newNoteId } =
         noteItemMap.updateNoteItemPosition({
+          editorId: midiEditorId.value,
           id,
           audioTrackId: selectedAudioTrackId.value,
           workspaceId: props.workspaceId,
           pitchName: belongedPitchName,
-          absolutePosition: [translateXDistance, translateYDistance],
+          x: translateXDistance / pixelsPerTick.value(midiEditorId.value),
+          y: translateYDistance,
         }) ?? {}
       newId = newNoteId
     }
@@ -173,24 +182,32 @@ function stretchEditorNoteLength(event) {
   function mousemoveHandler(event) {
     const { x: moveX } = getMovementInNoteEditorRegion(event)
     const deltaX = moveX - mousedownStartX
+    const pixelsWorkspaceStartPosition =
+      props.workspaceStartPosition * pixelsPerTick.value(midiEditorId.value)
+    const pixelsInitX = initX * pixelsPerTick.value(midiEditorId.value)
+    const pixelsInitWidth = initWidth * pixelsPerTick.value(midiEditorId.value)
     const mousedownXInNote =
-      mousedownStartX - (initX + props.workspaceStartPosition)
-    if (mousedownXInNote < initWidth / 2) {
+      mousedownStartX - (pixelsInitX + pixelsWorkspaceStartPosition)
+    const tickDeltaX = deltaX / pixelsPerTick.value(midiEditorId.value)
+    if (mousedownXInNote < pixelsInitWidth / 2) {
       noteItemMap.updateNoteLeftEdge({
+        editorId: midiEditorId.value,
         id: props.id,
         audioTrackId: selectedAudioTrackId.value,
         workspaceId: props.workspaceId,
         pitchName: props.belongedPitchName,
-        absoluteX: initX + props.workspaceStartPosition + deltaX,
+        absoluteX: initX + props.workspaceStartPosition + tickDeltaX,
         initRightEdgeX: initX + initWidth + props.workspaceStartPosition,
       })
     } else {
       noteItemMap.updateNoteRightEdge({
+        editorId: midiEditorId.value,
         id: props.id,
         audioTrackId: selectedAudioTrackId.value,
         workspaceId: props.workspaceId,
         pitchName: props.belongedPitchName,
-        absoluteX: initX + props.workspaceStartPosition + initWidth + deltaX,
+        absoluteX:
+          initX + props.workspaceStartPosition + initWidth + tickDeltaX,
         initLeftEdgeX: initX + props.workspaceStartPosition,
       })
     }
@@ -320,13 +337,14 @@ function noteMainMousedownHandler(event) {
 <style scoped>
 .editor-note {
   --note-background-color: v-bind(noteBackGroundColor);
-  --translateX: v-bind(x + "px");
+  --translateX: v-bind(x * pixelsPerTick(midiEditorId) + "px");
   --translateY: v-bind(y + "px");
+  --note-width: v-bind(noteWidth * pixelsPerTick(midiEditorId) + "px");
   box-sizing: border-box;
   position: absolute;
   overflow: hidden;
   display: flex;
-  width: v-bind(noteWidth + "px");
+  width: var(--note-width);
   height: v-bind(noteHeight + "px");
   padding: 0 2px;
   background-color: var(--note-background-color);

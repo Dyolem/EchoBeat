@@ -14,10 +14,13 @@ import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import clearSelection from "@/utils/clearSelection.js"
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { storeToRefs } from "pinia"
 const workspaceStore = useWorkspaceStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 const beatControllerStore = useBeatControllerStore()
 
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
+const editorId = inject("mainEditorId")
 const props = defineProps({
   id: {
     type: String,
@@ -125,7 +128,7 @@ onMounted(() => {
             const { cursorPosition } =
               props.getGeometryInfoInParentElement(event)
             const [x, y] = cursorPosition
-            deltaX = x - startX
+            deltaX = (x - startX) / pixelsPerTick.value(editorId.value)
             deltaY = y - startY
 
             newSubTrackItemStartPosition =
@@ -206,10 +209,15 @@ onMounted(() => {
               props.getGeometryInfoInParentElement(event)
             const [x, y] = cursorPosition
 
-            if (mousedownX < initSubTrackItemWidth / 2) {
+            if (
+              mousedownX <
+              (initSubTrackItemWidth * pixelsPerTick.value(editorId.value)) / 2
+            ) {
               const initRightEdgeX =
                 initSubTrackItemStartPosition + initSubTrackItemWidth
-              const newLeftEdgeX = x - (startX - initSubTrackItemStartPosition)
+              const newLeftEdgeX =
+                (x - startX) / pixelsPerTick.value(editorId.value) +
+                initSubTrackItemStartPosition
               mixTrackEditorStore.updateLeftEdge({
                 x: newLeftEdgeX,
                 initRightEdgeX,
@@ -228,18 +236,18 @@ onMounted(() => {
               const newRightEdgeX =
                 initSubTrackItemStartPosition +
                 initSubTrackItemWidth -
-                startX +
-                x
+                (startX - x) / pixelsPerTick.value(editorId.value)
+              const initLeftEdgeX = initSubTrackItemStartPosition
               mixTrackEditorStore.updateRightEdge({
                 x: newRightEdgeX,
-                initLeftEdgeX: initSubTrackItemStartPosition,
+                initLeftEdgeX,
                 editorId: MAIN_EDITOR_ID,
                 subTrackItemId: trackItemId,
                 audioTrackId: props.id,
               })
               workspaceStore.updateRightEdge({
                 x: newRightEdgeX,
-                initLeftEdgeX: initSubTrackItemStartPosition,
+                initLeftEdgeX,
                 editorId: MAIN_EDITOR_ID,
                 workspaceId,
                 audioTrackId: props.id,
@@ -299,7 +307,7 @@ onUnmounted(() => {
 <style scoped>
 .track-unit-grid {
   position: relative;
-  width: v-bind(trackWidth + "px");
+  width: v-bind(trackWidth * pixelsPerTick(editorId) + "px");
   height: v-bind(trackHeight + "px");
   display: flex;
 }

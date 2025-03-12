@@ -4,10 +4,15 @@ import clearSelection from "@/utils/clearSelection.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { colorMix } from "@/utils/colorMix.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
+import { storeToRefs } from "pinia"
 const workspaceStore = useWorkspaceStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
+const beatControllerStore = useBeatControllerStore()
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
 
+const editorId = inject("subordinateEditorId")
 const props = defineProps({
   id: {
     type: [Number, String],
@@ -67,11 +72,13 @@ function workspaceGrabbingHandler(e) {
         event.clientX -
         props.noteEditorRegionRef.getBoundingClientRect().left -
         mousedownPositionXInWorkSpace
+      const tickStartPosition =
+        workspaceStartPosition / pixelsPerTick.value(editorId.value)
       workspaceStore.updateWorkspacePosition({
         editorId: SUBORDINATE_EDITOR_ID,
         workspaceId: props.id,
         selectedAudioTrackId: selectedAudioTrackId.value,
-        startPosition: workspaceStartPosition,
+        startPosition: tickStartPosition,
         positionScale: scale,
       })
 
@@ -79,7 +86,7 @@ function workspaceGrabbingHandler(e) {
         editorId: SUBORDINATE_EDITOR_ID,
         audioTrackId: selectedAudioTrackId.value,
         subTrackItemId: props.subTrackItemId,
-        startPosition: workspaceStartPosition,
+        startPosition: tickStartPosition,
         horizontalScale: scale,
       })
     },
@@ -121,7 +128,7 @@ const isMovementHandleActive = ref(false)
   align-items: center;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
-  width: v-bind(workspaceContainerWidth + "px");
+  width: v-bind(workspaceContainerWidth * pixelsPerTick(editorId) + "px");
   height: 100%;
   background-color: var(--workspace-handle-background-color);
   pointer-events: initial;

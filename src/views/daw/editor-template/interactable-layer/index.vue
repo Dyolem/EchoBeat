@@ -15,8 +15,13 @@ import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 
 const trackRulerStore = useTrackRulerStore()
 const beatControllerStore = useBeatControllerStore()
-const { totalLength, editableTotalTime, highlightWidth, noteGridWidth } =
-  storeToRefs(beatControllerStore)
+const {
+  totalLength,
+  editableTotalTime,
+  highlightWidth,
+  noteGridWidth,
+  pixelsPerTick,
+} = storeToRefs(beatControllerStore)
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
 
@@ -110,12 +115,16 @@ onMounted(() => {
     interactableContainerRef.value.addEventListener(
       "click",
       (event) => {
+        const oldCurrentTime = trackRulerStore.timelineCurrentTime
         const translateX =
           event.clientX -
           interactableContainerRef.value.getBoundingClientRect().left
+        const tickTranslateX = translateX / pixelsPerTick.value(props.id)
         const newTime =
-          (translateX / totalLength.value(props.id)) * editableTotalTime.value
+          (tickTranslateX / totalLength.value(props.id)) *
+          editableTotalTime.value
         trackRulerStore.updateCurrentTime(newTime)
+        trackRulerStore.updateLogicTimeOffset(newTime - oldCurrentTime)
       },
       {
         signal: controller.signal,
@@ -155,13 +164,17 @@ onUnmounted(() => {
       ref="interactableContainerRef"
       tabindex="-1"
     >
-      <svg class="mix-editor-grid" :width="canvasWidth" :height="svgHeight">
+      <svg
+        class="mix-editor-grid"
+        :width="canvasWidth * pixelsPerTick(id)"
+        :height="svgHeight"
+      >
         <defs>
           <pattern
             :id="`${id}-mix-editor-track-grid-pattern`"
             x="0"
             y="0"
-            :width="noteGridWidth(id)"
+            :width="noteGridWidth(id) * pixelsPerTick(id)"
             :height="svgHeight"
             patternUnits="userSpaceOnUse"
             class="is-ignore-second"
@@ -177,12 +190,12 @@ onUnmounted(() => {
             :id="`${id}-mix-editor-track-highlight-pattern`"
             x="0"
             y="0"
-            :width="highlightWidth(id)"
+            :width="highlightWidth(id) * pixelsPerTick(id)"
             :height="svgHeight"
             patternUnits="userSpaceOnUse"
           >
             <rect
-              :width="highlightWidth(id) / 2"
+              :width="(highlightWidth(id) * pixelsPerTick(id)) / 2"
               :height="svgHeight"
               fill="gray"
               x="0"
@@ -193,14 +206,14 @@ onUnmounted(() => {
           :fill="`url(#${id}-mix-editor-track-highlight-pattern)`"
           x="0"
           y="0"
-          :width="canvasWidth"
+          width="100%"
           :height="svgHeight"
         ></rect>
         <rect
           :fill="`url(#${id}-mix-editor-track-grid-pattern)`"
           x="0"
           y="0"
-          :width="canvasWidth"
+          width="100%"
           :height="svgHeight"
         ></rect>
       </svg>
@@ -214,7 +227,7 @@ onUnmounted(() => {
 <style scoped>
 .interactable-container {
   position: relative;
-  width: v-bind(canvasWidth + "px");
+  width: v-bind(canvasWidth * pixelsPerTick(id) + "px");
   height: v-bind(editorViewHeight + "px");
 }
 #interactable-layer {

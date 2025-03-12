@@ -2,7 +2,7 @@
 import DrawerEditor from "@/views/daw/drawer-editor/index.vue"
 import MidiSidebar from "@/views/daw/midi-editor/midi-sidebar/index.vue"
 import NoteEditor from "@/views/daw/midi-editor/note-editor/index.vue"
-import { computed, inject, provide, ref } from "vue"
+import { computed, inject, provide, ref, toRef } from "vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
 const mixTrackEditorStore = useMixTrackEditorStore()
@@ -16,6 +16,11 @@ const props = defineProps({
     type: Number,
   },
 })
+
+provide(
+  "subordinateEditorId",
+  toRef(() => props.id),
+)
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const mainColor = computed(() => {
   return (
@@ -111,6 +116,7 @@ provide("bgSvgHeight", canvasContentHeight)
       }"
     >
       <NoteEditor
+        :id="id"
         :note-pad-width="interactableLayerWidth"
         :note-pad-height="interactableLayerHeight"
         :editable-view-width="editableViewWidth"

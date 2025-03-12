@@ -3,8 +3,10 @@ import { computed, onMounted, useTemplateRef, watchEffect } from "vue"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import clearSelection from "@/utils/clearSelection.js"
+import { storeToRefs } from "pinia"
 const trackRulerStore = useTrackRulerStore()
 const beatControllerStore = useBeatControllerStore()
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const timelineRef = useTemplateRef("timelineRef")
 const props = defineProps({
   id: {
@@ -41,7 +43,10 @@ const timeLineTranslateDistance = computed(() => {
 })
 
 const pageIndex = computed(() => {
-  return Math.floor(timeLineTranslateDistance.value / props.trackRulerViewWidth)
+  return Math.floor(
+    (timeLineTranslateDistance.value * pixelsPerTick.value(props.id)) /
+      props.trackRulerViewWidth,
+  )
 })
 
 let hasChangedScrollLeft = false
@@ -56,7 +61,7 @@ watchEffect(() => {
     //用户未手动拖动时间线，由播放控件控制移动时，所有编辑器的横向滚动距离遵循以下逻辑:
     //当时间线处于当前编辑器视口内时，时间线如果即将进入编辑器的更新触发条件范围（相差值的绝对值小于3px），滚动距离将增加一个编辑器视口宽度
     const absoluteDelta = Math.abs(
-      timeLineTranslateDistance.value -
+      timeLineTranslateDistance.value * pixelsPerTick.value(props.id) -
         (props.parentContainer.scrollLeft + props.trackRulerViewWidth),
     )
     if (absoluteDelta <= triggerBufferEdge) {
@@ -73,9 +78,11 @@ watchEffect(() => {
 
 onMounted(() => {
   if (!timelineRef.value) return
-  let translateXDistance = 0
+  let tickTranslateXDistance = 0
   timelineRef.value.addEventListener("mousedown", () => {
     if (trackRulerStore.isPlaying) return
+    const initTimeline = trackRulerStore.timelineCurrentTime
+    let newTime = initTimeline
     trackRulerStore.updateTimelineDraggingState(true)
     const selectionController = clearSelection()
 
@@ -83,13 +90,15 @@ onMounted(() => {
     function mousemoveHandler(event) {
       const left =
         event.clientX - props.parentContainer.getBoundingClientRect().left
-      translateXDistance = props.parentContainer.scrollLeft + left
+      tickTranslateXDistance =
+        (props.parentContainer.scrollLeft + left) /
+        beatControllerStore.pixelsPerTick(props.id)
       if (
-        translateXDistance >= 0 &&
-        translateXDistance <= props.trackRulerWidth
+        tickTranslateXDistance >= 0 &&
+        tickTranslateXDistance <= props.trackRulerWidth
       ) {
-        const newTime =
-          (translateXDistance / beatControllerStore.totalLength(props.id)) *
+        newTime =
+          (tickTranslateXDistance / beatControllerStore.totalLength(props.id)) *
           beatControllerStore.editableTotalTime
         trackRulerStore.updateCurrentTime(newTime)
       }
@@ -100,6 +109,8 @@ onMounted(() => {
     document.addEventListener(
       "mouseup",
       () => {
+        const offsetTimeIncrement = newTime - initTimeline
+        trackRulerStore.updateLogicTimeOffset(offsetTimeIncrement)
         trackRulerStore.updateTimelineDraggingState(false)
         controller.abort()
         selectionController.abort()
@@ -119,6 +130,9 @@ onMounted(() => {
 <style scoped>
 .timeline {
   --enlarge-hover-size: 3px;
+  --timeline-translate-x: v-bind(
+    timeLineTranslateDistance * pixelsPerTick(id) + "px"
+  );
   box-sizing: content-box;
   position: absolute;
   left: calc(-0px - var(--enlarge-hover-size));
@@ -128,7 +142,7 @@ onMounted(() => {
   background-clip: content-box;
   border-left: var(--enlarge-hover-size) solid transparent;
   border-right: var(--enlarge-hover-size) solid transparent;
-  transform: v-bind("`translateX(${timeLineTranslateDistance}px)`");
+  transform: translateX(var(--timeline-translate-x));
 }
 .timeline:hover {
   cursor: col-resize;

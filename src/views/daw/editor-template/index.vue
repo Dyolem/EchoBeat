@@ -21,6 +21,7 @@ import {
 } from "@/constants/daw/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { storeToRefs } from "pinia"
 
 const beatControllerStore = useBeatControllerStore()
 const zoomRatioStore = useZoomRatioStore()
@@ -37,13 +38,14 @@ const INIT_DRAWER_EDITOR_HEIGHT = 400
 const INIT_DRAWER_EDITOR_WIDTH = 1600
 
 const trackZoomRatio = ref(TRACK_ZOOM_RATIO)
+const { totalLength, pixelsPerTick } = storeToRefs(beatControllerStore)
 const { canvasContentHeight = 0, updateCanvasContentHeight = null } = inject(
   "canvasContentHeight",
   {},
 )
 
 const canvasContentWidth = computed(() => {
-  return beatControllerStore.totalLength(props.id)
+  return totalLength.value(props.id)
 })
 
 const editorContentContainerRef = useTemplateRef("editorContentContainerRef")
@@ -321,11 +323,6 @@ function scrollHandler(event) {
 
 function updateSpecifiedEditorZoomRatio(newZoomRatio) {
   zoomRatioStore.updateSpecifiedEditorZoomRatio(props.id, newZoomRatio)
-  if (newZoomRatio >= 3) {
-    beatControllerStore.maxGridWidth = 240
-  } else {
-    beatControllerStore.maxGridWidth = 30
-  }
 }
 
 onUnmounted(() => {
@@ -407,7 +404,7 @@ onUnmounted(() => {
 }
 .editor-content {
   position: relative;
-  width: v-bind(canvasContentWidth + "px");
+  width: v-bind(canvasContentWidth * pixelsPerTick(id) + "px");
   height: v-bind(canvasContentHeight + "px");
   flex-grow: 1;
   z-index: v-bind(editorContentZIndex);

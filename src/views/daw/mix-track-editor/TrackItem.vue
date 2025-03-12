@@ -6,7 +6,12 @@ import {
   FALLBACK_THEME_COLOR,
 } from "@/constants/daw/index.js"
 import { colorMix } from "@/utils/colorMix.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { storeToRefs } from "pinia"
 
+const beatControllerStore = useBeatControllerStore()
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
+const editorId = inject("mainEditorId")
 const props = defineProps({
   id: {
     type: String,
@@ -38,10 +43,10 @@ const props = defineProps({
   },
 })
 const width = computed(() => {
-  return Number(props.width.toFixed(1))
+  return props.width * pixelsPerTick.value(editorId.value)
 })
 const startPosition = computed(() => {
-  return Number(props.startPosition.toFixed(1))
+  return props.startPosition * pixelsPerTick.value(editorId.value)
 })
 const { selectedTrackItemId, updateSelectedTrackItemId } = inject(
   "selectedTrackItemId",

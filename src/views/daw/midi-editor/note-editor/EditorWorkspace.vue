@@ -7,6 +7,7 @@ import WorkspaceHandle from "@/views/daw/midi-editor/note-editor/WorkspaceHandle
 import clearSelection from "@/utils/clearSelection.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
@@ -15,7 +16,9 @@ const noteItemStore = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
+const beatControllerStore = useBeatControllerStore()
 
+const editorId = inject("subordinateEditorId")
 const props = defineProps({
   id: {
     type: [Number, String],
@@ -69,6 +72,8 @@ const props = defineProps({
     required: true,
   },
 })
+const { pixelsPerTick } = storeToRefs(beatControllerStore)
+
 const pianoKeySizeStore = usePianoKeySizeStore()
 const { noteTrackHeight: noteHeight } = storeToRefs(pianoKeySizeStore)
 
@@ -95,16 +100,6 @@ const noteEditorWorkspaceContainerRef = useTemplateRef(
 const { scrollMovement, updateScrollMovement } = inject("scrollMovement")
 const noteEditorWorkspaceRef = useTemplateRef("noteEditorWorkspaceRef")
 onMounted(() => {
-  workspaceStore.passivePatchUpdateWorkspaceWithZoomRatio({
-    audioTrackId: selectedAudioTrackId.value,
-    newZoomRatio: props.currentWorkspaceZoomRatio,
-    oldZoomRatio: props.zoomRatio,
-  })
-  noteItemStore.passivePatchUpdateNoteItemsWithZoomRatio({
-    audioTrackId: selectedAudioTrackId.value,
-    newTrackZoomRatio: props.currentWorkspaceZoomRatio,
-    oldTrackZoomRatio: props.zoomRatio,
-  })
   watch(
     scrollMovement,
     (newScrollMovement) => {
@@ -150,7 +145,8 @@ function stretchableJudgement(event) {
     noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
   if (
     mousemoveXInWorkspace > edgeWidth &&
-    mousemoveXInWorkspace < workspace.width - edgeWidth
+    mousemoveXInWorkspace <
+      workspace.width * pixelsPerTick.value(editorId.value) - edgeWidth
   ) {
     isStretchable.value = false
     workspaceScrollZoneRef.value.style.cursor = "auto"
@@ -178,42 +174,47 @@ function stretchWorkspaceWidth(event) {
     "mousemove",
     (event) => {
       const { x: stretchEnd } = props.getCursorPositionInNoteEditorRegion(event)
-      const newLeftEdgeX =
-        stretchEnd - (stretchStart - initWorkspaceStartPosition)
-      if (mousedownXInNoteEditorWorkspaceContainer < initWorkspaceWidth / 2) {
+
+      if (
+        mousedownXInNoteEditorWorkspaceContainer <
+        (initWorkspaceWidth * pixelsPerTick.value(editorId.value)) / 2
+      ) {
+        const newLeftEdgeX =
+          (stretchEnd - stretchStart) / pixelsPerTick.value(editorId.value) +
+          initWorkspaceStartPosition
         workspaceStore.updateLeftEdge({
-          editorId: SUBORDINATE_EDITOR_ID,
+          editorId: editorId.value,
           audioTrackId: selectedAudioTrackId.value,
           workspaceId: props.id,
           x: newLeftEdgeX,
-          initRightEdgeX: initRightEdgeX,
+          initRightEdgeX,
         })
         mixTrackEditorStore.updateLeftEdge({
-          editorId: SUBORDINATE_EDITOR_ID,
+          editorId: editorId.value,
           audioTrackId: selectedAudioTrackId.value,
           subTrackItemId: props.subTrackItemId,
           x: newLeftEdgeX,
-          initRightEdgeX: initRightEdgeX,
+          initRightEdgeX,
         })
       } else {
         const newRightEdgeX =
-          stretchEnd +
+          (stretchEnd - stretchStart) / pixelsPerTick.value(editorId.value) +
           initWorkspaceWidth +
-          initWorkspaceStartPosition -
-          stretchStart
+          initWorkspaceStartPosition
+        const initLeftEdgeX = initWorkspaceStartPosition
         workspaceStore.updateRightEdge({
           editorId: SUBORDINATE_EDITOR_ID,
           audioTrackId: selectedAudioTrackId.value,
           workspaceId: props.id,
           x: newRightEdgeX,
-          initLeftEdgeX: initWorkspaceStartPosition,
+          initLeftEdgeX,
         })
         mixTrackEditorStore.updateRightEdge({
           editorId: SUBORDINATE_EDITOR_ID,
           audioTrackId: selectedAudioTrackId.value,
           subTrackItemId: props.subTrackItemId,
           x: newRightEdgeX,
-          initLeftEdgeX: initWorkspaceStartPosition,
+          initLeftEdgeX,
         })
       }
     },
@@ -295,15 +296,21 @@ function stretchWorkspaceWidth(event) {
 
 <style scoped>
 .note-editor-workspace-container {
+  --workspace-container-width: v-bind(
+    workspaceContainerWidth * pixelsPerTick(editorId) + "px"
+  );
+  --workspace-start-position: v-bind(
+    startPosition * pixelsPerTick(editorId) + "px"
+  );
   position: absolute;
-  width: v-bind(workspaceContainerWidth + "px");
+  width: var(--workspace-container-width);
   height: v-bind(editableViewHeight + "px");
   pointer-events: none;
-  transform: v-bind("`translateX(${startPosition}px)`");
+  transform: translateX(var(--workspace-start-position));
   scrollbar-width: none;
 }
 .workspace-handle {
-  width: v-bind(workspaceContainerWidth + "px");
+  width: var(--workspace-container-width);
   height: v-bind(workspaceHandleHeight + "px");
   background-color: #000000;
 }
