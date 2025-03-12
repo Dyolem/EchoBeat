@@ -48,12 +48,7 @@ import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import {
-  MAIN_EDITOR_ID,
-  midiToNoteName,
-  SUBORDINATE_EDITOR_ID,
-} from "@/constants/daw/index.js"
-import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { midiToNoteName } from "@/constants/daw/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 
 /**
@@ -73,21 +68,12 @@ export function generateAudioTrack(midiData) {
   const noteItemStore = useNoteItemStore()
   const audioStore = useAudioStore()
   const beatControllerStore = useBeatControllerStore()
-  const zoomRatioStore = useZoomRatioStore()
-  const dataConvert = (value) => {
-    return zoomRatioStore.convertDataBetweenEditors({
-      fromValue: value,
-      fromZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
-        SUBORDINATE_EDITOR_ID,
-      ),
-      toZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
-    })
-  }
+
   const parsedAudioTrackIdArr = []
   const { bpm, ppqn, timeSignature } = meta
   beatControllerStore.updateChoreAudioParams({ bpm, ppqn, timeSignature })
   for (const { events, timeRange, notes, name, color } of tracks) {
-    if (events.length === 0 && notes.length === 0) continue
+    if (notes.length === 0) continue
     else {
       const { startTick = 0, endTick = 0 } = timeRange
       const editableTotalTime =
@@ -101,11 +87,8 @@ export function generateAudioTrack(midiData) {
         midiWorkspaceZoomRatio,
       })
       parsedAudioTrackIdArr.push(audioTrackId)
-      const newWorkspaceWidth =
-        beatControllerStore.pixelsPerTick(SUBORDINATE_EDITOR_ID) *
-        (endTick - startTick)
-      const newWorkspaceStartPosition =
-        beatControllerStore.pixelsPerTick(SUBORDINATE_EDITOR_ID) * startTick
+      const newWorkspaceWidth = endTick - startTick
+      const newWorkspaceStartPosition = startTick
       const newWorkspaceId = workspaceStore.addNewWorkspace({
         audioTrackId,
         badgeName: name,
@@ -116,8 +99,8 @@ export function generateAudioTrack(midiData) {
       const subTrackItemId = mixTrackEditorStore.createSubTrackItem({
         audioTrackId,
         workspaceId: newWorkspaceId,
-        trackItemWidth: dataConvert(newWorkspaceWidth),
-        startPosition: dataConvert(newWorkspaceStartPosition),
+        trackItemWidth: newWorkspaceWidth,
+        startPosition: newWorkspaceStartPosition,
         trackName: name,
       })
 
@@ -136,13 +119,9 @@ export function generateAudioTrack(midiData) {
       } of notes) {
         const specifiedPitchName = midiToNoteName(midi)
         const template = noteItemStore.getNoteItemTemplate({
-          x:
-            startTicks *
-            beatControllerStore.pixelsPerTick(SUBORDINATE_EDITOR_ID),
+          x: startTicks,
           y: noteItemStore.noteHeight * (119 - midi),
-          noteItemWidth:
-            durationTicks *
-            beatControllerStore.pixelsPerTick(SUBORDINATE_EDITOR_ID),
+          noteItemWidth: durationTicks,
           insertToSpecifiedPitchName: specifiedPitchName,
           workspaceId: newWorkspaceId,
           audioTrackId,
