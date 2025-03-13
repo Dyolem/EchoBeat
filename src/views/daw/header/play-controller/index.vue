@@ -57,11 +57,10 @@ function queryCurrentTime({
   audioContext,
   signal,
   dynamicGenerationTimeInterval = 2,
-  maxTime,
 } = {}) {
   if (!audioContext) return
   if (signal.aborted) return
-  if (accurateTime.value > maxTime) {
+  if (accurateTime.value > maxTime.value) {
     pause(audioContext, controller)
     return
   }
@@ -73,7 +72,6 @@ function queryCurrentTime({
       audioContext,
       signal,
       dynamicGenerationTimeInterval,
-      maxTime,
     })
   })
 }
@@ -98,7 +96,7 @@ async function pause(audioContext, controller) {
       clearTimeout(suspendDelayTimer)
     }, 100)
   })
-  audioContext.suspend()
+  await audioContext.suspend()
   controller.abort()
   clearInterval(timer)
   changePlayState(false)
