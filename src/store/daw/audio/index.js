@@ -202,7 +202,6 @@ export const useAudioStore = defineStore("audio", () => {
         audioBufferSourceNode.addEventListener(
           "ended",
           () => {
-            console.log("ended")
             audioControllerMap.get(id).abort()
             audioControllerMap.delete(id)
             audioBufferSourceNode.disconnect()
@@ -225,7 +224,6 @@ export const useAudioStore = defineStore("audio", () => {
         const audioStartTime = audioContext.currentTime + startTime
 
         if (isPlayedInMiddle) {
-          console.log("middle")
           const fadeInStartTime = audioStartTime // 淡入开始时间
           const fadeInDuration = 0.01 // 淡入效果持续时间（秒）
           gainNodeFadeIn(fadeGainNode, {
