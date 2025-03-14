@@ -9,10 +9,18 @@ import {
   NOTE_VALUE_DENOMINATOR_ENUM,
 } from "@/constants/daw/index.js"
 import SelectValue from "@/views/daw/components/SelectValue.vue"
+import { pause } from "@/core/audio/player.js"
 const beatControllerStore = useBeatControllerStore()
 function validateBpm(event) {
-  const newBpm = event.target.value
-  beatControllerStore.updateBpm(newBpm)
+  const tobeValidatedBpm = event.target.value
+  const { bpm } = beatControllerStore.updateChoreAudioParams({
+    bpm: tobeValidatedBpm,
+  })
+  const [newBpm] = bpm
+  event.target.value = newBpm
+}
+function focusHandler() {
+  pause()
 }
 </script>
 
@@ -36,6 +44,7 @@ function validateBpm(event) {
           :min="MIN_BPM"
           :max="MAX_BPM"
           @blur="validateBpm"
+          @focus="focusHandler"
         />
         <span class="unit">bpm</span>
       </div>

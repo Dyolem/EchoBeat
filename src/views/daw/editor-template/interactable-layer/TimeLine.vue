@@ -109,8 +109,6 @@ onMounted(() => {
     document.addEventListener(
       "mouseup",
       () => {
-        const offsetTimeIncrement = newTime - initTimeline
-        trackRulerStore.updateLogicTimeOffset(offsetTimeIncrement)
         trackRulerStore.updateTimelineDraggingState(false)
         controller.abort()
         selectionController.abort()
