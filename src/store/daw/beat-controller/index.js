@@ -21,10 +21,12 @@ import {
 } from "@/constants/daw/index.js"
 import { clamp } from "@/utils/clamp.js"
 import { calculateAlignedGridBeats } from "@/core/grid-size/calculateAlignedGridBeats.js"
+import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 
 export const useBeatControllerStore = defineStore("beatController", () => {
   const zoomRatioStore = useZoomRatioStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
+  const trackRulerStore = useTrackRulerStore()
   const ppqn = ref(PPQ) //一个四分音符的tick数
   const bpm = ref(INIT_BPM) // 每分钟的四分音符个数
 
@@ -201,6 +203,9 @@ export const useBeatControllerStore = defineStore("beatController", () => {
       bpm.value = newBpm
       updatedValue.bpm[1] = oldBpm
       updatedValue.bpm[0] = newBpm
+      const newTimelineTime =
+        (trackRulerStore.timelineCurrentTime / newBpm) * oldBpm
+      trackRulerStore.updateCurrentTime(newTimelineTime)
     }
     if (_ppqn !== undefined) {
       ppqn.value = _ppqn
