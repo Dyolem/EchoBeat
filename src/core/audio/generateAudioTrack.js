@@ -32,7 +32,8 @@
  * @typedef {Object} MidiMeta
  * @property {number} formatType
  * @property {number} ppqn
- * @property {number} bpm
+ * @property {number} initialBpm
+ * @property {TempoEvent[]} tempoEvents
  * @property {string} timeSignature
  * @property {number} durationTicks
  */
@@ -70,8 +71,11 @@ export function generateAudioTrack(midiData) {
   const beatControllerStore = useBeatControllerStore()
 
   const parsedAudioTrackIdArr = []
-  const { bpm, ppqn, timeSignature } = meta
-  beatControllerStore.updateChoreAudioParams({ bpm, ppqn, timeSignature })
+  const { ppqn, timeSignature } = meta
+  beatControllerStore.updateChoreAudioParams({
+    ppqn,
+    timeSignature,
+  })
   for (const { events, timeRange, notes, name, color } of tracks) {
     if (notes.length === 0) continue
     else {
