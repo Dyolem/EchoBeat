@@ -115,7 +115,6 @@ onMounted(() => {
     interactableContainerRef.value.addEventListener(
       "click",
       (event) => {
-        const oldCurrentTime = trackRulerStore.timelineCurrentTime
         const translateX =
           event.clientX -
           interactableContainerRef.value.getBoundingClientRect().left
@@ -124,7 +123,6 @@ onMounted(() => {
           (tickTranslateX / totalLength.value(props.id)) *
           editableTotalTime.value
         trackRulerStore.updateCurrentTime(newTime)
-        trackRulerStore.updateLogicTimeOffset(newTime - oldCurrentTime)
       },
       {
         signal: controller.signal,

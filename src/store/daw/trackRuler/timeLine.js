@@ -1,17 +1,17 @@
 import { defineStore } from "pinia"
 import { computed, ref } from "vue"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { clamp } from "@/utils/clamp.js"
 
 export const useTrackRulerStore = defineStore("dawTrackRulerTimeLine", () => {
   const isPlaying = ref(false)
   const timelineCurrentTime = ref(0)
-  const logicTimeOffset = ref(0)
   const beatControllerStore = useBeatControllerStore()
   const maxTime = computed(() => {
     return beatControllerStore.editableTotalTime
   })
   function updateCurrentTime(newTime) {
-    timelineCurrentTime.value = newTime
+    timelineCurrentTime.value = clamp(newTime, [0, maxTime.value])
   }
   const isDraggingTimelineByUser = ref(false)
   function updateTimelineDraggingState(newState) {
@@ -21,19 +21,13 @@ export const useTrackRulerStore = defineStore("dawTrackRulerTimeLine", () => {
     if (typeof state !== "boolean") return
     isPlaying.value = state
   }
-  function updateLogicTimeOffset(offsetIncrementVal) {
-    if (typeof offsetIncrementVal !== "number") return
-    logicTimeOffset.value += offsetIncrementVal
-  }
   return {
     isPlaying,
-    logicTimeOffset,
     isDraggingTimelineByUser,
     timelineCurrentTime,
     maxTime,
     updateCurrentTime,
     updateTimelineDraggingState,
     changePlayState,
-    updateLogicTimeOffset,
   }
 })
