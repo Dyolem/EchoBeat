@@ -11,6 +11,7 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
+import { velocityToAlphaHex } from "@/core/audio/velocityToAlphaHex.js"
 
 const noteItemStore = useNoteItemStore()
 const workspaceStore = useWorkspaceStore()
@@ -79,6 +80,11 @@ const { noteTrackHeight: noteHeight } = storeToRefs(pianoKeySizeStore)
 
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const mainColor = inject("mainColor")
+const noteBgColor = computed(() => {
+  return (velocity) => {
+    return `${mainColor.value}${velocityToAlphaHex(velocity)}`
+  }
+})
 const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", ref(20))
 
 const workspaceMap = computed(() => {
@@ -287,7 +293,7 @@ function stretchWorkspaceWidth(event) {
             :y="noteItem.y"
             :workspace-start-position="startPosition"
             :noteEditorRegionRef="noteEditorRegionRef"
-            :note-back-ground-color="mainColor"
+            :note-back-ground-color="noteBgColor(noteItem.velocity)"
           ></note-item>
         </template>
       </div>

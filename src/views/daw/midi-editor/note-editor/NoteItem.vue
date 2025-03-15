@@ -366,7 +366,6 @@ function noteMainMousedownHandler(event) {
   display: flex;
   width: var(--note-width);
   height: v-bind(noteHeight + "px");
-  padding: 0 2px;
   background-color: var(--note-background-color);
   border-radius: 2px;
   z-index: v-bind(editorNoteZIndex);
