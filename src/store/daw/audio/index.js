@@ -2,6 +2,7 @@ import { defineStore } from "pinia"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { ref } from "vue"
 import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
+import { AudioScheduler } from "@/core/audio/AudioScheduler.js"
 
 export const useAudioStore = defineStore("audio", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
@@ -14,6 +15,8 @@ export const useAudioStore = defineStore("audio", () => {
   ])
   audioGeneratorStore.preCreateBuffer(audioContext.value)
 
+  const scheduler = new AudioScheduler(audioContext.value)
+  scheduler.initialize()
   /**
    * 以下Map结构的键均为note元素的id
    */
@@ -128,6 +131,92 @@ export const useAudioStore = defineStore("audio", () => {
     ratio: 12,
   })
 
+  let controller = null
+  async function generateSingleAudioNode({
+    noteId,
+    audioTrackId,
+    audioContext,
+  }) {
+    if (controller) return Promise.reject()
+    const noteBufferSourceMap = getSpecifiedAudioTracksProperty({
+      audioTrackId,
+      property: virtualInstrumentTypeDataProperty.NOTE_BUFFER_SOURCE_MAP,
+    })
+    const audioBufferSourceNodeMap = getSpecifiedAudioTracksProperty({
+      audioTrackId,
+      property: virtualInstrumentTypeDataProperty.AUDIO_BUFFER_SOURCE_NODE_MAP,
+    })
+    const fadeGainNodeMap = getSpecifiedAudioTracksProperty({
+      audioTrackId,
+      property: virtualInstrumentTypeDataProperty.FADE_GAIN_NODE_MAP,
+    })
+    const velocityGainNodesMap = getSpecifiedAudioTracksProperty({
+      audioTrackId,
+      property: virtualInstrumentTypeDataProperty.VELOCITY_GAIN_NODES_MAP,
+    })
+    const noteBufferSourceInstance = noteBufferSourceMap.get(noteId)
+    const {
+      pitchName,
+      duration: _duration,
+      velocity,
+    } = noteBufferSourceInstance
+    if (audioContext.state === "suspended") {
+      await audioContext.resume()
+    }
+    const audioBufferSourceNode = createBufferSourceNode({
+      audioTrackId,
+      id: noteId,
+      pitchName,
+      audioContext,
+    })
+    const velocityGainNode = createVelocityGainNode({
+      audioTrackId,
+      id: noteId,
+      audioContext,
+      velocity,
+    })
+    const fadeGainNode = createFadeGainNode({
+      audioTrackId,
+      id: noteId,
+      pitchName,
+      audioContext,
+    })
+    const currentTime = audioContext.currentTime
+    const fadeOutDuration = 0.8
+    fadeGainNode.gain.setValueAtTime(
+      fadeGainNode.gain.value,
+      currentTime + _duration,
+    ) // 保持音量为 1
+    fadeGainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      currentTime + _duration + fadeOutDuration,
+    ) // 淡出至 0
+    controller = new AbortController()
+    audioBufferSourceNode.addEventListener(
+      "ended",
+      () => {
+        controller.abort()
+        controller = null
+        audioBufferSourceNode.disconnect()
+        audioBufferSourceNodeMap.delete(noteId)
+        fadeGainNode.disconnect()
+        fadeGainNodeMap.delete(noteId)
+        velocityGainNode.disconnect()
+        velocityGainNodesMap.delete(noteId)
+        audioContext.suspend()
+      },
+      {
+        once: true,
+      },
+    )
+    audioBufferSourceNode
+      .connect(fadeGainNode)
+      .connect(velocityGainNode)
+      .connect(audioContext.destination)
+    audioBufferSourceNode.start(currentTime, 0, _duration + fadeOutDuration)
+    return controller
+  }
+
   function generateAudioNode({
     audioTracksBufferSourceMap,
     timelinePlayTime,
@@ -206,6 +295,7 @@ export const useAudioStore = defineStore("audio", () => {
             audioControllerMap.delete(id)
             audioBufferSourceNode.disconnect()
             audioBufferSourceNodeMap.delete(id)
+            scheduler.cleanup()
             fadeGainNodeMap.get(id)?.disconnect()
             fadeGainNodeMap.delete(id)
             velocityGainNodesMap.get(id)?.disconnect()
@@ -239,7 +329,8 @@ export const useAudioStore = defineStore("audio", () => {
           fadeOutDuration,
         })
         // velocityGainNode 和fadeGainNode的连接顺序是有讲究的
-        audioBufferSourceNode
+        scheduler
+          .schedule(audioBufferSourceNode, id, () => console.log(`test`))
           .connect(fadeGainNode)
           .connect(velocityGainNode)
           .connect(mixingGainNode)
@@ -388,6 +479,7 @@ export const useAudioStore = defineStore("audio", () => {
   return {
     audioContext,
     audioTracksBufferSourceMap,
+    generateSingleAudioNode,
     generateAudioNode,
     stopAllNodes,
     removeNodeFromNoteId,
