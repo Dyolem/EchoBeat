@@ -3,11 +3,13 @@ import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { ref } from "vue"
 import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
 import { AudioScheduler } from "@/core/audio/AudioScheduler.js"
+import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 
 export const useAudioStore = defineStore("audio", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
   const audioContext = ref(new AudioContext())
 
+  const noteItemStore = useNoteItemStore()
   const audioGeneratorStore = useAudioGeneratorStore()
   const instrumentsAudioNodeMap = new Map()
   const audioTrackMap = new Map([
@@ -330,7 +332,12 @@ export const useAudioStore = defineStore("audio", () => {
         })
         // velocityGainNode 和fadeGainNode的连接顺序是有讲究的
         scheduler
-          .schedule(audioBufferSourceNode, id, () => console.log(`test`))
+          .schedule(audioBufferSourceNode, id, () =>
+            noteItemStore.simulatePlaySpecifiedNote(
+              pitchName,
+              audioController.signal,
+            ),
+          )
           .connect(fadeGainNode)
           .connect(velocityGainNode)
           .connect(mixingGainNode)
