@@ -546,13 +546,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     nextInsertedNoteWidth.value = newNoteWidth
   }
 
-  function simulatePlaySpecifiedNote(pitchName) {
+  function simulatePlaySpecifiedNote(pitchName, audioSignal) {
     if (!pitchName) return
-    console.log(pitchName)
     octaveContainerInstance.value?.dispatchEvent(
       new CustomEvent("play-sample", {
         detail: {
           pitchName,
+          audioSignal,
         },
       }),
     )

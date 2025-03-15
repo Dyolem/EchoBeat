@@ -277,6 +277,7 @@ function stretchWorkspaceWidth(event) {
             :key="noteItem.id"
             :id="noteItem.id"
             :workspace-id="id"
+            :audio-track-id="noteItem.audioTrackId"
             :belonged-pitch-name="noteItem.pitchName"
             :note-width="noteItem.width"
             :note-height="noteHeight"

@@ -52,6 +52,7 @@ function scrollHandler(event) {
 onMounted(() => {
   octaveContainerRef.value.addEventListener("play-sample", (event) => {
     const pitchName = event.detail.pitchName
+    const stopPlaySignal = event.detail.audioSignal
     try {
       const escapedPitchName = pitchName.includes("#")
         ? pitchName.replace("#", "\\#")
@@ -61,9 +62,19 @@ onMounted(() => {
       )
       if (!target) return
       target.style.backgroundColor = mainColor.value
-      setTimeout(() => {
-        resetState(target)
-      }, 100)
+      if (!stopPlaySignal) {
+        setTimeout(() => {
+          resetState(target)
+        }, 100)
+      } else {
+        stopPlaySignal.addEventListener(
+          "abort",
+          () => {
+            resetState(target)
+          },
+          { once: true },
+        )
+      }
     } catch (error) {
       console.log(error)
     }

@@ -1,11 +1,14 @@
 <script setup>
-import { inject, ref, useTemplateRef, watch } from "vue"
+import { inject, ref, useTemplateRef } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { ZIndex } from "@/constants/daw/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
+import { useAudioStore } from "@/store/daw/audio/index.js"
+
+const audioStore = useAudioStore()
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const noteItemMap = useNoteItemStore()
@@ -18,6 +21,10 @@ const props = defineProps({
     required: true,
   },
   workspaceId: {
+    type: String,
+    required: true,
+  },
+  audioTrackId: {
     type: String,
     required: true,
   },
@@ -68,14 +75,6 @@ const editorNoteZIndex = ref(ZIndex.EDITOR_NOTE)
 const { noteMainSelectedId, updateNoteMainSelectedId } =
   inject("noteMainSelectedId")
 
-watch(
-  () => props.belongedPitchName,
-  (newVal) => {
-    noteItemMap.simulatePlaySpecifiedNote(newVal)
-    playNoteAudio(newVal)
-  },
-)
-
 let translateXDistance = 0
 let translateYDistance = 0
 function isLegalTranslateDistance(translateXDistance, translateYDistance) {
@@ -96,7 +95,7 @@ function getMovementInNoteEditorRegion(event) {
   }
 }
 
-function playNoteAudio(pitchName) {
+function playNoteAudioSample(pitchName) {
   audioGenerator
     .generateAudio(pitchName)
     .then((audioController) => {
@@ -119,6 +118,7 @@ function draggableRegionHandler(event) {
     event.clientX - editorNoteRef.value.getBoundingClientRect().left
   const mousedownY =
     event.clientY - editorNoteRef.value.getBoundingClientRect().top
+  let lastPitchName = props.belongedPitchName
   /*
    * Reserve in the future need to achieve vertical smooth movement effect
    * const mousedownY = event.clientY - editorNoteRef.value.getBoundingClientRect().top
@@ -137,7 +137,7 @@ function draggableRegionHandler(event) {
       mousedownY
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      const { newNoteId } =
+      const { newNoteId, newPitchName } =
         noteItemMap.updateNoteItemPosition({
           editorId: midiEditorId.value,
           id,
@@ -148,6 +148,12 @@ function draggableRegionHandler(event) {
           y: translateYDistance,
         }) ?? {}
       newId = newNoteId
+
+      if (newPitchName !== lastPitchName) {
+        playNoteAudioSample(newPitchName)
+        noteItemMap.simulatePlaySpecifiedNote(newPitchName)
+        lastPitchName = newPitchName
+      }
     }
   }
   document.addEventListener("mousemove", mouseMoveHandler)
@@ -255,8 +261,22 @@ function noteMainMousedownHandler(event) {
       /*
        * In selected mode, a single click will play the corresponding sound name
        * */
-      noteItemMap.simulatePlaySpecifiedNote(props.belongedPitchName)
-      playNoteAudio(props.belongedPitchName)
+
+      audioStore
+        .generateSingleAudioNode({
+          noteId: props.id,
+          audioTrackId: props.audioTrackId,
+          audioContext: audioStore.audioContext,
+        })
+        .then(
+          (controller) => {
+            noteItemMap.simulatePlaySpecifiedNote(
+              props.belongedPitchName,
+              controller.signal,
+            )
+          },
+          () => {},
+        )
     }
   }
   //The second click(double click) should execute the logic
