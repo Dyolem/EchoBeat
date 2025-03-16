@@ -37,6 +37,10 @@ export const ALIGN_TYPE_ENUM = {
 }
 export const SNAPPED_THRESHOLD = 5
 
+//钢琴卷帘的显示缓冲区尺寸参数，均为px单位
+export const HORIZONTAL_BUFFER_ZONE_PIXELS_WIDTH = 100
+export const VERTICAL_BUFFER_ZONE_PIXELS_HEIGHT = 100
+
 export const DEFAULT_INIT_VELOCITY = 100
 export const EDITOR_MODE_ENUM = {
   SELECT: "select",

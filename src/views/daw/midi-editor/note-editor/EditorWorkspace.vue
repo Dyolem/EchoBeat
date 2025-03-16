@@ -8,7 +8,11 @@ import clearSelection from "@/utils/clearSelection.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import { SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
+import {
+  HORIZONTAL_BUFFER_ZONE_PIXELS_WIDTH,
+  SUBORDINATE_EDITOR_ID,
+  VERTICAL_BUFFER_ZONE_PIXELS_HEIGHT,
+} from "@/constants/daw/index.js"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
 import { velocityToAlphaHex } from "@/core/audio/velocityToAlphaHex.js"
@@ -36,6 +40,9 @@ const props = defineProps({
     type: Number,
   },
   editableViewHeight: {
+    type: Number,
+  },
+  editableViewWidth: {
     type: Number,
   },
   workspaceHandleHeight: {
@@ -113,6 +120,39 @@ onMounted(() => {
     },
     { deep: true, immediate: true },
   )
+})
+
+const horizontalBufferZoneWidth = computed(
+  () =>
+    (props.editableViewWidth + HORIZONTAL_BUFFER_ZONE_PIXELS_WIDTH) /
+    pixelsPerTick.value(editorId.value),
+)
+const safeZoneWidth = computed(() => {
+  const scrollLeft = scrollMovement.value.scrollLeft
+  return [
+    scrollLeft / pixelsPerTick.value(editorId.value) -
+      horizontalBufferZoneWidth.value,
+    (scrollLeft + props.editableViewWidth) /
+      pixelsPerTick.value(editorId.value) +
+      horizontalBufferZoneWidth.value,
+  ]
+})
+const safeZoneHeight = computed(() => {
+  const scrollTop = scrollMovement.value.scrollTop
+  return [
+    scrollTop - VERTICAL_BUFFER_ZONE_PIXELS_HEIGHT,
+    scrollTop + props.editableViewHeight + VERTICAL_BUFFER_ZONE_PIXELS_HEIGHT,
+  ]
+})
+const isDisplay = computed(() => {
+  const [minTick, maxTick] = safeZoneWidth.value
+  const [minPixels, maxPixels] = safeZoneHeight.value
+  return (noteStartTick, noteVerticalPixels) => {
+    return (
+      !(noteStartTick < minTick || noteStartTick > maxTick) &&
+      !(noteVerticalPixels < minPixels || noteVerticalPixels > maxPixels)
+    )
+  }
 })
 
 function scrollHandler(event) {
@@ -278,23 +318,24 @@ function stretchWorkspaceWidth(event) {
           :style="{ transform: `translateY(${noteTrack.positionY}px)` }"
           :id="pitchName"
         >
-          <note-item
-            v-for="noteItem in noteTrack.noteItems"
-            :key="noteItem.id"
-            :id="noteItem.id"
-            :workspace-id="id"
-            :audio-track-id="noteItem.audioTrackId"
-            :belonged-pitch-name="noteItem.pitchName"
-            :note-width="noteItem.width"
-            :note-height="noteHeight"
-            :note-pad-width="editorCanvasWidth"
-            :note-pad-height="editorCanvasHeight"
-            :x="noteItem.relativeX"
-            :y="noteItem.y"
-            :workspace-start-position="startPosition"
-            :noteEditorRegionRef="noteEditorRegionRef"
-            :note-back-ground-color="noteBgColor(noteItem.velocity)"
-          ></note-item>
+          <template v-for="noteItem in noteTrack.noteItems" :key="noteItem.id">
+            <note-item
+              v-if="isDisplay(noteItem.relativeX + startPosition, noteItem.y)"
+              :id="noteItem.id"
+              :workspace-id="id"
+              :audio-track-id="noteItem.audioTrackId"
+              :belonged-pitch-name="noteItem.pitchName"
+              :note-width="noteItem.width"
+              :note-height="noteHeight"
+              :note-pad-width="editorCanvasWidth"
+              :note-pad-height="editorCanvasHeight"
+              :x="noteItem.relativeX"
+              :y="noteItem.y"
+              :workspace-start-position="startPosition"
+              :noteEditorRegionRef="noteEditorRegionRef"
+              :note-back-ground-color="noteBgColor(noteItem.velocity)"
+            ></note-item>
+          </template>
         </template>
       </div>
     </div>

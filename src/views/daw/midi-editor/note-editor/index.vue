@@ -172,6 +172,7 @@ function noteEditorDblClickHandler(event) {
         :id="workspaceId"
         :sub-track-item-id="workspace.subTrackItemId"
         :editable-view-height="editableViewHeight"
+        :editable-view-width="editableViewWidth"
         :editor-canvas-height="notePadHeight"
         :editor-canvas-width="notePadWidth"
         :workspace-handle-height="workspacePlaceHolderHeight"
