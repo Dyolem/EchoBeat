@@ -4,11 +4,13 @@ import { ref } from "vue"
 import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
 import { AudioScheduler } from "@/core/audio/AudioScheduler.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
+import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 
 export const useAudioStore = defineStore("audio", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
   const audioContext = ref(new AudioContext())
 
+  const trackRulerStore = useTrackRulerStore()
   const noteItemStore = useNoteItemStore()
   const audioGeneratorStore = useAudioGeneratorStore()
   const instrumentsAudioNodeMap = new Map()
@@ -205,7 +207,9 @@ export const useAudioStore = defineStore("audio", () => {
         fadeGainNodeMap.delete(noteId)
         velocityGainNode.disconnect()
         velocityGainNodesMap.delete(noteId)
-        audioContext.suspend()
+        if (!trackRulerStore.isPlaying) {
+          audioContext.suspend()
+        }
       },
       {
         once: true,
