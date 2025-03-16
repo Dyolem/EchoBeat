@@ -1,23 +1,23 @@
-export function throttle(func, delay) {
-    let lastExecTime = 0;
-    let timeoutId;
-  
-    return function () {
-      const context = this;
-      const args = arguments;
-      const currentTime = Date.now();
-  
-      if (currentTime - lastExecTime < delay) {
-        clearTimeout(timeoutId);
-  
-        timeoutId = setTimeout(function () {
-          lastExecTime = currentTime;
-          func.apply(context, args);
-        }, delay);
-      } else {
-        lastExecTime = currentTime;
-        func.apply(context, args);
-      }
-    };
+export function throttle(func, delay, executeLast = false) {
+  let hasExecuted = false
+  let timeoutId
+  let lastExecute = false
+  return function () {
+    const context = this
+    const args = arguments
+    if (!hasExecuted) {
+      func.apply(context, args)
+      hasExecuted = true
+      timeoutId = setTimeout(function () {
+        hasExecuted = false
+        if (executeLast && lastExecute && !hasExecuted) {
+          func.apply(context, args)
+          lastExecute = false
+        }
+        clearTimeout(timeoutId)
+      }, delay)
+    } else {
+      lastExecute = true
+    }
   }
-  
+}

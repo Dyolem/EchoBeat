@@ -22,6 +22,7 @@ import {
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
+import { throttle } from "@/utils/throttle.js"
 
 const beatControllerStore = useBeatControllerStore()
 const zoomRatioStore = useZoomRatioStore()
@@ -312,6 +313,7 @@ onMounted(() => {
   )
 })
 
+const debouncedScrollHandler = throttle(scrollHandler, 50, true)
 function scrollHandler(event) {
   const editorScrollTop = event.target.scrollTop
   const editorScrollLeft = event.target.scrollLeft
@@ -335,7 +337,7 @@ onUnmounted(() => {
     <div
       class="editor-content-container beatified-scrollbar"
       ref="editorContentContainerRef"
-      @scroll="scrollHandler"
+      @scroll="debouncedScrollHandler"
     >
       <div class="track-ruler-container">
         <TrackRuler
