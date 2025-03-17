@@ -23,6 +23,7 @@ import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
 import { throttle } from "@/utils/throttle.js"
+import HeadTools from "@/views/daw/editor-template/HeadTools.vue"
 
 const beatControllerStore = useBeatControllerStore()
 const zoomRatioStore = useZoomRatioStore()
@@ -339,6 +340,7 @@ onUnmounted(() => {
       ref="editorContentContainerRef"
       @scroll="debouncedScrollHandler"
     >
+      <HeadTools :editor-id="id"></HeadTools>
       <div class="track-ruler-container">
         <TrackRuler
           :id="id"
