@@ -1,6 +1,5 @@
 <script setup>
 import { computed, inject, onMounted, ref, useTemplateRef, watch } from "vue"
-import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import NoteItem from "@/views/daw/midi-editor/note-editor/NoteItem.vue"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import WorkspaceHandle from "@/views/daw/midi-editor/note-editor/WorkspaceHandle.vue"
@@ -16,12 +15,14 @@ import {
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
 import { velocityToAlphaHex } from "@/core/audio/velocityToAlphaHex.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
-const noteItemStore = useNoteItemStore()
+const zoomRatioStore = useZoomRatioStore()
 const workspaceStore = useWorkspaceStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 const beatControllerStore = useBeatControllerStore()
+const { isSelectMode, isInsertMode } = storeToRefs(zoomRatioStore)
 
 const editorId = inject("subordinateEditorId")
 const props = defineProps({
@@ -162,8 +163,8 @@ function scrollHandler(event) {
 function triggerCustomizedInsertEvent(event) {
   const eventType = event.type
   if (
-    (noteItemStore.isSelectMode && eventType === "dblclick") ||
-    (noteItemStore.isInsertMode && eventType === "mousedown")
+    (isSelectMode.value && eventType === "dblclick") ||
+    (isInsertMode.value && eventType === "mousedown")
   ) {
     const { x, y } = props.getCursorPositionInNoteEditorRegion(event)
     noteEditorWorkspaceRef.value.dispatchEvent(

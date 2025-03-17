@@ -18,13 +18,15 @@ import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
+const zoomRatioStore = useZoomRatioStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
 const noteItems = useNoteItemStore()
 const audioGenerator = useAudioGeneratorStore()
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
-
+const { isSelectMode, isInsertMode } = storeToRefs(zoomRatioStore)
 const props = defineProps({
   notePadWidth: {
     type: Number,
@@ -146,17 +148,17 @@ function triggerCustomizedInsertEvent({ x, y }) {
 }
 function noteEditorMousedownHandler(event) {
   console.log(event)
-  if (noteItems.isSelectMode) {
+  if (isSelectMode.value) {
     if (noteMainSelectedId.value !== "") {
       noteMainSelectedId.value = ""
     }
-  } else if (noteItems.isInsertMode) {
+  } else if (isInsertMode.value) {
     const { x, y } = getCursorPositionInNoteEditorRegion(event)
     triggerCustomizedInsertEvent({ x, y })
   }
 }
 function noteEditorDblClickHandler(event) {
-  if (noteItems.isSelectMode) {
+  if (isSelectMode.value) {
     const { x, y } = getCursorPositionInNoteEditorRegion(event)
     triggerCustomizedInsertEvent({ x, y })
   }
@@ -194,7 +196,7 @@ function noteEditorDblClickHandler(event) {
       @mousedown="noteEditorMousedownHandler"
       ref="noteEditorRegionRef"
       :class="{
-        'is-inserted': noteItems.isInsertMode,
+        'is-inserted': isInsertMode,
       }"
     >
       <div class="note-pad-container" ref="notePadContainerRef">

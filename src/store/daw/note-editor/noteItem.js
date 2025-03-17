@@ -1,7 +1,6 @@
 import { defineStore } from "pinia"
 import { computed, ref } from "vue"
 import {
-  EDITOR_MODE_ENUM,
   ALIGN_TYPE_ENUM,
   SUBORDINATE_EDITOR_ID,
   CHROMATIC_SCALE_SERIAL_NUMBER,
@@ -19,8 +18,10 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { clamp } from "@/utils/clamp.js"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { snapToTickUnitGrid } from "@/core/grid-size/snapToTickUnitGrid.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
+  const zoomRatioStore = useZoomRatioStore()
   const audioStore = useAudioStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
@@ -47,20 +48,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       noteHeight.value * OCTAVE_KEY_COUNT * CHROMATIC_SCALE_SERIAL_NUMBER.length
     )
   })
-
-  const isSnappedToHorizontalGrid = ref(true)
   const octaveContainerInstance = ref(null)
-  const editorMode = ref(EDITOR_MODE_ENUM.SELECT)
 
-  const isInsertMode = computed(
-    () => editorMode.value === EDITOR_MODE_ENUM.INSERT,
-  )
-  const isSelectMode = computed(
-    () => editorMode.value === EDITOR_MODE_ENUM.SELECT,
-  )
-  const isVelocityMode = computed(
-    () => editorMode.value === EDITOR_MODE_ENUM.VELOCITY,
-  )
   const pitchNameMappedToArea = computed(() => {
     const _toFixed = (val, num = 2) => {
       return Number(val.toFixed(num))
@@ -337,7 +326,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   function alignToOtherPitchNameTrack({
     absolutePosition = [],
     scale,
-    snappedToHorizontalGrid = isSnappedToHorizontalGrid.value,
+    snappedToHorizontalGrid = zoomRatioStore.isSnappedToHorizontalGrid,
   }) {
     const [x, y] = absolutePosition
     const [scaleX, scaleY] = scale
@@ -559,11 +548,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }
   return {
     octaveContainerInstance,
-    editorMode,
-    isInsertMode,
-    isSelectMode,
-    isVelocityMode,
-    isSnappedToHorizontalGrid,
     noteWidth,
     noteHeight,
     createNoteItemsMap,

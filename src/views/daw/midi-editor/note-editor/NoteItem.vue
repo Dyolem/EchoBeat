@@ -7,13 +7,15 @@ import { ZIndex } from "@/constants/daw/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
 import { useAudioStore } from "@/store/daw/audio/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
 const audioStore = useAudioStore()
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
+const zoomRatioStore = useZoomRatioStore()
 const noteItemMap = useNoteItemStore()
 const audioGenerator = useAudioGeneratorStore()
-
+const { isSelectMode, isInsertMode } = storeToRefs(zoomRatioStore)
 const editorNoteRef = useTemplateRef("editorNoteRef")
 const props = defineProps({
   id: {
@@ -108,7 +110,7 @@ function playNoteAudioSample(pitchName) {
 
 function draggableRegionHandler(event) {
   // 'insert' editor mode prohibit to drag note element
-  if (noteItemMap.isInsertMode) return
+  if (isInsertMode.value) return
   if (noteMainSelectedId.value !== props.id) updateNoteMainSelectedId(props.id)
 
   const selectionController = clearSelection()
@@ -249,7 +251,7 @@ function noteMainMousedownHandler(event) {
 
   //A single click should execute the logic
   if (timeInterval === 0) {
-    if (noteItemMap.isInsertMode) {
+    if (isInsertMode.value) {
       noteItemMap.deleteNoteItem({
         id: props.id,
         workspaceId: props.workspaceId,
@@ -327,7 +329,7 @@ function noteMainMousedownHandler(event) {
     class="editor-note"
     :class="{
       'is-edited': noteMainSelectedId === id,
-      'is-selected': noteMainSelectedId === id && noteItemMap.isSelectMode,
+      'is-selected': noteMainSelectedId === id && isSelectMode,
     }"
     ref="editorNoteRef"
     @click.stop="() => {}"
