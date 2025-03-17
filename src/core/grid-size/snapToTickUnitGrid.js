@@ -2,6 +2,8 @@ import { snapToGrid } from "@/utils/alignToGrid.js"
 import { clamp } from "@/utils/clamp.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { SNAPPED_THRESHOLD } from "@/constants/daw/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { storeToRefs } from "pinia"
 
 /**
  * @param {Object} snapInfo
@@ -17,6 +19,8 @@ export function snapToTickUnitGrid({
   tickScale,
   autoThreshold = false,
 }) {
+  const zoomRatioStore = useZoomRatioStore()
+  const { isSnappedToHorizontalGrid } = storeToRefs(zoomRatioStore)
   const beatControllerStore = useBeatControllerStore()
   const pixelsThreshold = SNAPPED_THRESHOLD
   const pixelsPerTick = beatControllerStore.pixelsPerTick(editorId)
@@ -28,17 +32,23 @@ export function snapToTickUnitGrid({
     const pixelsGridSize = factualDisplayedGridWidth * pixelsPerTick
     const pixelsX = tickX * pixelsPerTick
     const pixelsScale = tickScale.map((val) => val * pixelsPerTick)
+    const clampedPixels = clamp(pixelsX, pixelsScale)
     newTickX =
-      snapToGrid(clamp(pixelsX, pixelsScale), {
-        gridSize: pixelsGridSize,
-        threshold: pixelsThreshold,
-      }) / pixelsPerTick
+      (isSnappedToHorizontalGrid.value
+        ? snapToGrid(clampedPixels, {
+            gridSize: pixelsGridSize,
+            threshold: pixelsThreshold,
+          })
+        : clampedPixels) / pixelsPerTick
   } else {
     const tickThreshold = pixelsThreshold / pixelsPerTick
-    newTickX = snapToGrid(clamp(tickX, tickScale), {
-      gridSize: factualDisplayedGridWidth,
-      threshold: tickThreshold,
-    })
+    const clampedTickX = clamp(tickX, tickScale)
+    newTickX = isSnappedToHorizontalGrid.value
+      ? snapToGrid(clampedTickX, {
+          gridSize: factualDisplayedGridWidth,
+          threshold: tickThreshold,
+        })
+      : clampedTickX
   }
   return newTickX
 }
