@@ -15,6 +15,7 @@ import {
   MAX_GRID_WIDTH,
   MIN_BPM,
   MIN_GRID_WIDTH,
+  NOTE_VALUE_DENOMINATOR_ENUM,
   PIXELS_PER_QUARTER,
   PPQ,
   SERIAL_NUMBER_FONT_SIZE,
@@ -189,13 +190,13 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     bpm: _bpm,
     ppqn: _ppqn,
     timeSignature: _timeSignature,
-    editableTotalTime: _editableTotalTime,
+    editableTotalTick: _editableTotalTick,
   }) {
     const updatedValue = {
       bpm: [bpm.value, bpm.value],
       ppqn: [ppqn.value, ppqn.value],
       timeSignature: [timeSignature.value, timeSignature.value],
-      editableTotalTime: [editableTotalTime.value, editableTotalTime.value],
+      editableTotalTick: [totalTicks.value, totalTicks.value],
     }
     if (_bpm !== undefined) {
       const oldBpm = bpm.value
@@ -222,18 +223,19 @@ export const useBeatControllerStore = defineStore("beatController", () => {
       updatedValue.timeSignature[0] = new_time_sig_n / new_time_sig_m
     }
 
-    if (
-      _editableTotalTime !== undefined &&
-      _editableTotalTime > editableTotalTime.value
-    ) {
-      const newEditableBeats = Math.ceil(_editableTotalTime / timePerBeat.value)
+    if (_editableTotalTick !== undefined) {
+      const maxNoteValueDenominator = NOTE_VALUE_DENOMINATOR_ENUM.slice().sort(
+        (a, b) => b - a,
+      )[0]
+      const minTicksPerBeat = ppqn.value * (4 / maxNoteValueDenominator)
+      const newEditableBeats = Math.ceil(_editableTotalTick / minTicksPerBeat)
       if (newEditableBeats > editableTotalBeats.value) {
         const newBarCount =
           Math.ceil(newEditableBeats / beatsPerMeasure.value) + 60
         editableTotalBeats.value = newBarCount * beatsPerMeasure.value
-        updatedValue.editableTotalTime[1] = updatedValue.editableTotalTime[0]
-        updatedValue.editableTotalTime[0] =
-          editableTotalBeats * timePerBeat.value
+        updatedValue.editableTotalTick[1] = updatedValue.editableTotalTick[0]
+        updatedValue.editableTotalTick[0] =
+          editableTotalBeats.value * minTicksPerBeat
       }
     }
     return updatedValue

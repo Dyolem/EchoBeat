@@ -80,10 +80,8 @@ export function generateAudioTrack(midiData) {
     if (notes.length === 0) continue
     else {
       const { startTick = 0, endTick = 0 } = timeRange
-      const editableTotalTime =
-        endTick * beatControllerStore.absoluteTimePerTick
       beatControllerStore.updateChoreAudioParams({
-        editableTotalTime,
+        editableTotalTick: endTick,
       })
       const audioTrackId = mixTrackEditorStore.addAudioTrack({
         audioTrackName: name,
