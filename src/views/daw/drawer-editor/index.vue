@@ -18,7 +18,7 @@ const INIT_DRAWER_EDITOR_HEIGHT = 400
 const INIT_DRAWER_EDITOR_WIDTH = 1600
 
 const DRAWER_EDITOR_SIDE_BAR_WIDTH = 200
-const INIT_DRAWER_EDITOR_SIDE_BAR_WIDTH = 300
+const INIT_DRAWER_EDITOR_SIDE_BAR_WIDTH = 380
 const drawerEditorSideBarWidth = ref(DRAWER_EDITOR_SIDE_BAR_WIDTH)
 const initDrawerEditorSideBarWidth = ref(INIT_DRAWER_EDITOR_SIDE_BAR_WIDTH)
 
@@ -117,7 +117,7 @@ onUnmounted(() => {
       v-model:editor-view-width="drawerEditorViewWidth"
       @update:editor-view-width="updateEditorViewWidthHandler"
       :resizable="true"
-      :resize-direction="['n', 's', 'w', 'e', 'nw']"
+      :resize-direction="['n', 's']"
       :resizable-editor-height-range="heightRange"
       :resizable-editor-width-range="widthRange"
       :modify-timeline-by-click="false"
