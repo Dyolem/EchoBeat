@@ -2,11 +2,13 @@
 import { computed, onMounted, onUnmounted, provide, ref } from "vue"
 import Editor from "@/views/daw/editor-template/index.vue"
 import { debounce } from "@/utils/debounce.js"
+import {
+  INIT_FOOTER_HEIGHT,
+  INIT_HEADER_HEIGHT,
+} from "@/constants/daw/index.js"
 
-const HEADER_HEIGHT = 100
-const FOOTER_HEIGHT = 50
-const headerHeight = ref(HEADER_HEIGHT)
-const footerHeight = ref(FOOTER_HEIGHT)
+const headerHeight = ref(INIT_HEADER_HEIGHT)
+const footerHeight = ref(INIT_FOOTER_HEIGHT)
 
 const MIN_DRAWER_EDITOR_HEIGHT = 300
 const MAX_DRAWER_EDITOR_HEIGHT = 700
@@ -94,7 +96,6 @@ onMounted(() => {
 })
 function updateEditorViewWidthHandler(newViewWidthVal) {
   drawerEditorSideBarWidth.value = window.innerWidth - newViewWidthVal
-  console.log(drawerEditorSideBarWidth.value)
 }
 
 onUnmounted(() => {
