@@ -75,6 +75,7 @@ const buttonFontSize = computed(() => {
   --button-padding: v-bind(buttonPadding + "px");
   --button-border-radius: v-bind(buttonBorderRadius + "px");
   --button-font-size: v-bind(buttonFontSize + "px");
+  width: fit-content;
   display: flex;
   align-items: center;
   height: var(--button-box-height);
