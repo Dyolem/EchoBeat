@@ -38,6 +38,11 @@ const lastSavedDate = ref("Oct 19, 2024")
   align-items: flex-end;
   font-size: 12px;
 }
+.saved-date span {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
 .saved-date span:first-child {
   color: #7c899b;
 }

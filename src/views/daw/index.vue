@@ -94,5 +94,6 @@ provide("selectedTrackItemId", {
   --default-footer-height: v-bind(INIT_FOOTER_HEIGHT + "px");
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 </style>
