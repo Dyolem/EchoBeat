@@ -27,8 +27,6 @@ const handleSelect = (index) => {
 <template>
   <div class="custom-menu-container">
     <el-menu
-      text-color="#fff"
-      background-color="#191b1e"
       :mode="mode"
       @select="handleSelect"
       collapse
@@ -46,20 +44,8 @@ const handleSelect = (index) => {
 .custom-menu-container :deep(.el-menu-vertical-demo) {
   border-right: none;
   width: fit-content;
-}
-:global(.el-menu--popup) {
-  min-width: 0;
-}
-:global(.el-popper.is-light) {
-  border: none;
-  background: none;
-}
-:global(.el-menu-item:hover) {
-  background: #3f4143;
-}
-:global(.el-menu) {
-  overflow: hidden;
-  padding: 0;
-  border-radius: 6px;
+  --el-menu-bg-color: #0f1214;
+  --el-menu-text-color: #ffffff;
+  --el-menu-hover-bg-color: #282c32;
 }
 </style>

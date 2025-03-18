@@ -44,3 +44,19 @@ input,select,textarea {
 :root {
   --graduation-fill: #ffffff;
 }
+.el-popper {
+  border: 1px solid #25292f !important;
+  --el-bg-color-overlay:#0f1214;
+  overflow: hidden;
+}
+.el-menu-item {
+  --el-menu-hover-bg-color:#282c32;
+  --el-menu-text-color:#ffffff
+}
+.el-menu {
+  padding: 0 !important;
+  --el-menu-bg-color:#0f1214;
+  --el-menu-hover-bg-color: #282c32;
+  --el-menu-item-height:40px;
+  --el-menu-sub-item-height:calc(var(--el-menu-item-height) - 6px);
+}
