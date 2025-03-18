@@ -103,6 +103,19 @@ export const GRID_OPTIONS = {
   "1/16T": "1 / 16T",
   "1/32T": "1 / 32T",
 }
+export const NOTE_VALUE_OPTIONS = {
+  "1/1": "1 / 1",
+  "1/2": "1 / 2",
+  "1/4": "1 / 4",
+  "1/8": "1 / 8",
+  "1/16": "1 / 16",
+  "1/32": "1 / 32",
+  "1/2T": "1 / 2T",
+  "1/4T": "1 / 4T",
+  "1/8T": "1 / 8T",
+  "1/16T": "1 / 16T",
+  "1/32T": "1 / 32T",
+}
 export const BEATS_PER_MEASURE_ENUM = [1, 2, 3, 4, 5, 6]
 export const NOTE_VALUE_DENOMINATOR_ENUM = [1, 2, 4, 8]
 export const BASE_GRID_HEIGHT = 90
@@ -156,7 +169,16 @@ export const CHROMATIC_SCALE_ENUM = [
   "C7",
   "C8",
 ]
+
+export const MUSICAL_SCALES = [
+  "Chromatic",
+  "Major Scale",
+  "Minor Scale",
+  "Major pentatonic",
+  "Minor pentatonic",
+]
 // 音名的顺序表
+
 export const NOTES_TABLE = [
   "C",
   "C#",

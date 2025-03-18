@@ -1,5 +1,14 @@
 <script setup>
+import { computed, ref } from "vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
+import { NOTE_VALUE_OPTIONS } from "@/constants/daw/index.js"
+const noteValueSet = ref(NOTE_VALUE_OPTIONS)
+const noteValueOptions = computed(() => {
+  return Object.keys(noteValueSet.value).map((noteValueLabel) => {
+    return { label: noteValueLabel, value: NOTE_VALUE_OPTIONS[noteValueLabel] }
+  })
+})
+const selectedNoteValue = ref("")
 </script>
 
 <template>
@@ -10,21 +19,24 @@ import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
     <MixEditorButton circle size="small" class="Humanize-button"
       >Humanize</MixEditorButton
     >
-    <MixEditorButton circle size="small" class="note-value-button"
-      ><el-select
-        v-model="value"
-        placeholder="Select"
-        size="small"
-        style="width: 240px"
-        effect="dark"
-      >
-        <el-option
-          v-for="item in options"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
-        /> </el-select
-    ></MixEditorButton>
+    <MixEditorButton circle size="small" class="note-value-button">
+      <div class="note-value-selector">
+        <el-select
+          v-model="selectedNoteValue"
+          placeholder="Select"
+          size="small"
+          style="width: 100px"
+          effect="dark"
+        >
+          <el-option
+            v-for="item in noteValueOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </div>
+    </MixEditorButton>
     <MixEditorButton circle size="small" class="quantize-button"
       >Quantize</MixEditorButton
     >
