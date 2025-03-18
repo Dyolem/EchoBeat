@@ -5,6 +5,7 @@ import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { storeToRefs } from "pinia"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
+import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 
 const audioGenerator = useAudioGeneratorStore()
 const noteItemStore = useNoteItemStore()
@@ -166,7 +167,9 @@ function resetState(target) {
 
 <template>
   <div class="chromatic-scale-container scrollbar-settings">
-    <div class="fold-button">Fold</div>
+    <div class="fold-button">
+      <MixEditorButton circle size="small">Fold</MixEditorButton>
+    </div>
     <span class="workspace-placeHolder"></span>
     <div
       class="octave-container beatified-scrollbar"
@@ -189,10 +192,9 @@ function resetState(target) {
 @import "src/styles/scrollbar.css";
 .chromatic-scale-container {
   box-sizing: border-box;
-  width: 100px;
+  width: 80px;
   height: 100%;
   padding-bottom: var(--scrollbar-width);
-  background-color: antiquewhite;
   display: flex;
   flex-direction: column;
 }
@@ -205,9 +207,9 @@ function resetState(target) {
   width: 100%;
   height: 50px;
   flex-shrink: 0;
-  text-align: center;
-  align-content: center;
-  background-color: palevioletred;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .octave-container {
   flex-grow: 1;

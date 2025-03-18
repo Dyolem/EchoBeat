@@ -1,5 +1,5 @@
 import { generateUniqueId } from "@/utils/generateUniqueId.js"
-export const INIT_HEADER_HEIGHT = 100
+export const INIT_HEADER_HEIGHT = 110
 export const INIT_FOOTER_HEIGHT = 50
 
 export const EDITOR_TYPE_ENUM = {
