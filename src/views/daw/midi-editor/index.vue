@@ -95,7 +95,6 @@ provide("bgSvgHeight", canvasContentHeight)
         class="midi-editor-sidebar"
         :style="{ height: editorSidebarHeight + 'px' }"
       >
-        <button @click="enlargeKeySize">enlargeKeySize</button>
         <midi-sidebar
           :chromatic-scale-scroll-top="chromaticScaleScrollTop"
           @update:chromatic-scale-scroll-top="
