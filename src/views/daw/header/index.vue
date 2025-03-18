@@ -7,6 +7,8 @@ import GlobalMenu from "@/views/daw/header/GlobalMenu.vue"
 import Logo from "@/views/daw/header/Logo.vue"
 import ProjectTitle from "@/views/daw/header/ProjectTitle.vue"
 import SaveProject from "@/views/daw/header/SaveProject.vue"
+import GlobalGain from "@/views/daw/header/GlobalGain.vue"
+import NewFeature from "@/views/daw/header/NewFeature.vue"
 </script>
 
 <template>
@@ -33,7 +35,10 @@ import SaveProject from "@/views/daw/header/SaveProject.vue"
         <div class="mix-editor-toolbar-center">
           <PlayController></PlayController>
         </div>
-        <div class="mix-editor-toolbar-right"></div>
+        <div class="mix-editor-toolbar-right">
+          <GlobalGain></GlobalGain>
+          <NewFeature></NewFeature>
+        </div>
       </nav>
     </div>
   </header>
@@ -71,7 +76,14 @@ import SaveProject from "@/views/daw/header/SaveProject.vue"
   align-items: center;
 }
 .mix-editor-toolbar-left {
+  padding-left: 10px;
   gap: 30px;
+}
+
+.mix-editor-toolbar-right {
+  padding-right: 10px;
+  justify-content: flex-end;
+  gap: 12px;
 }
 .mix-editor-header-left,
 .mix-editor-header-center,

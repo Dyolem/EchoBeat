@@ -60,3 +60,6 @@ input,select,textarea {
   --el-menu-item-height:40px;
   --el-menu-sub-item-height:calc(var(--el-menu-item-height) - 6px);
 }
+.el-slider__runway {
+  --el-slider-runway-bg-color:#282c32;
+}
