@@ -72,7 +72,7 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100vw;
   min-height: var(--default-footer-height);
-  background-color: lightpink;
+  background-color: #0f1214;
 }
 .footer-tool-bar {
   min-height: var(--default-footer-height);

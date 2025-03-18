@@ -149,11 +149,11 @@ onUnmounted(() => {
 
 <style scoped>
 .drawer-editor-container {
+  --drawer-editor-border-color: #25292f;
   display: flex;
   height: fit-content;
 }
 .drawer-editor-side-bar {
   width: v-bind(drawerEditorSideBarWidth + "px");
-  background-color: gray;
 }
 </style>

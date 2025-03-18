@@ -52,7 +52,6 @@ function scrollHandler() {
 .track-controllers-container {
   width: 100%;
   flex-grow: 1;
-  background-color: antiquewhite;
 }
 .track-controllers-container::after {
   content: "";

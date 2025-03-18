@@ -35,7 +35,6 @@ import HistoryController from "@/views/daw/header/history-edit-record/index.vue"
 .mix-editor-header-content {
   flex: 0.5;
   width: 100%;
-  background-color: pink;
 }
 .mix-editor-toolbar {
   flex: 0.5;

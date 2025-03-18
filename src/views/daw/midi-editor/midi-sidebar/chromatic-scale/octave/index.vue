@@ -132,7 +132,6 @@ function resetState(target) {
   align-items: center;
   width: 100%;
   height: fit-content;
-  background-color: antiquewhite;
   user-select: none;
 }
 

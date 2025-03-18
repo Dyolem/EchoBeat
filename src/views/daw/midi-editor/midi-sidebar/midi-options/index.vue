@@ -72,7 +72,6 @@ contain notes</pre>`
 
 <style scoped>
 .midi-option-container {
-  --border-color: #25292f;
   --icon-main-color: v-bind(mainColor);
   flex: 1;
   display: flex;
@@ -88,7 +87,7 @@ contain notes</pre>`
   display: flex;
   width: 100%;
   height: 50px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--drawer-editor-border-color);
 }
 .close-button {
   display: flex;
@@ -97,7 +96,7 @@ contain notes</pre>`
   height: 100%;
   justify-content: center;
   text-align: center;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--drawer-editor-border-color);
 }
 .audio-track-type {
   font-size: 14px;

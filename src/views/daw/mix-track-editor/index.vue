@@ -96,6 +96,7 @@ function updateMainEditorSidebarScrollTop(newMainEditorSidebarScrollTop) {
   position: relative;
   width: 100vw;
   display: flex;
+  background-color: #0f1214;
 }
 .editor-side-bar {
   flex-grow: 1;
