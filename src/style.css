@@ -63,3 +63,14 @@ input,select,textarea {
 .el-slider__runway {
   --el-slider-runway-bg-color:#282c32;
 }
+.el-scrollbar {
+  --el-fill-color-light:#25292f;
+  --el-text-color-regular:#ffffff;
+}
+.el-select__wrapper {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+.el-select__placeholder {
+  color: #ffffff !important;
+}
