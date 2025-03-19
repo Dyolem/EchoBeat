@@ -5,6 +5,7 @@ import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
 import { AudioScheduler } from "@/core/audio/AudioScheduler.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
+import { clamp } from "@/utils/clamp.js"
 
 export const useAudioStore = defineStore("audio", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
@@ -17,10 +18,21 @@ export const useAudioStore = defineStore("audio", () => {
   const audioTrackMap = new Map([
     [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, instrumentsAudioNodeMap],
   ])
+
+  //存储每个音轨的左右立体声值，音轨id为键，StereoPannerNode实例为值
+  const audioTrackStereoMap = new Map()
   audioGeneratorStore.preCreateBuffer(audioContext.value)
 
   const scheduler = new AudioScheduler(audioContext.value)
   scheduler.initialize()
+
+  const mixingGainNode = audioContext.value.createGain()
+  const compressor = new DynamicsCompressorNode(audioContext.value, {
+    threshold: -20,
+    ratio: 12,
+  })
+  mixingGainNode.connect(compressor).connect(audioContext.value.destination)
+
   /**
    * 以下Map结构的键均为note元素的id
    */
@@ -54,6 +66,7 @@ export const useAudioStore = defineStore("audio", () => {
           [virtualInstrumentTypeDataProperty.AUDIO_CONTROLLER_MAP]:
             audioControllerMap,
         },
+        stereoValue: 0,
       }
       audioTracksBufferSourceMap.value.set(audioTrackId, midiAudioInfo)
       return midiAudioInfo
@@ -128,12 +141,6 @@ export const useAudioStore = defineStore("audio", () => {
     velocityGainNode.gain.setValueAtTime(gainValue, now)
     return velocityGainNode
   }
-
-  const mixingGainNode = audioContext.value.createGain()
-  const compressor = new DynamicsCompressorNode(audioContext.value, {
-    threshold: -20,
-    ratio: 12,
-  })
 
   let controller = null
   async function generateSingleAudioNode({
@@ -230,7 +237,7 @@ export const useAudioStore = defineStore("audio", () => {
     audioContext,
   }) {
     if (audioContext.state === "suspended") return
-    mixingGainNode.connect(compressor).connect(audioContext.destination)
+
     for (const [audioTrackId, audioInfo] of audioTracksBufferSourceMap) {
       const noteBufferSourceMap = getSpecifiedAudioTracksProperty({
         audioTrackId,
@@ -253,6 +260,7 @@ export const useAudioStore = defineStore("audio", () => {
         audioTrackId,
         property: virtualInstrumentTypeDataProperty.VELOCITY_GAIN_NODES_MAP,
       })
+      const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
       for (const [id, noteBufferSourceInstance] of noteBufferSourceMap) {
         let startTime = 0
         let duration = 0
@@ -344,6 +352,7 @@ export const useAudioStore = defineStore("audio", () => {
           )
           .connect(fadeGainNode)
           .connect(velocityGainNode)
+          .connect(stereoPannerNode)
           .connect(mixingGainNode)
         audioBufferSourceNode.start(
           audioStartTime,
@@ -487,6 +496,27 @@ export const useAudioStore = defineStore("audio", () => {
     }
     return Promise.all(promises)
   }
+
+  function createStereoPannerNode({ audioTrackId, stereoValue = 0 }) {
+    const stereoPannerNode = new StereoPannerNode(audioContext.value, {
+      pan: clamp(stereoValue, [-1, 1]),
+    })
+    stereoPannerNode.connect(mixingGainNode)
+    audioTrackStereoMap.set(audioTrackId, stereoPannerNode)
+    return stereoPannerNode
+  }
+  function updateAudioTrackStereo({ audioTrackId, stereoValue }) {
+    if (!audioTrackStereoMap.has(audioTrackId)) return
+    const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
+    stereoPannerNode.pan.value = clamp(stereoValue, [-1, 1])
+  }
+  function deleteStereoPannerNode(audioTrackId) {
+    const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
+    if (!stereoPannerNode) return
+    stereoPannerNode.disconnect()
+    audioTrackStereoMap.delete(audioTrackId)
+  }
+
   return {
     audioContext,
     audioTracksBufferSourceMap,
@@ -497,5 +527,8 @@ export const useAudioStore = defineStore("audio", () => {
     insertSourceNodeAndGainNode,
     updateSpecifiedNoteBufferSourceMap,
     initAudioTrackBufferSourceMap,
+    createStereoPannerNode,
+    updateAudioTrackStereo,
+    deleteStereoPannerNode,
   }
 })

@@ -91,6 +91,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       audioTrackId: newTrackId,
       type: AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
     })
+    audioStore.createStereoPannerNode({ audioTrackId: newTrackId })
     return newTrackId
   }
 
