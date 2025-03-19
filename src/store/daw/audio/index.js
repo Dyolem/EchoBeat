@@ -202,6 +202,8 @@ export const useAudioStore = defineStore("audio", () => {
       0.01,
       currentTime + _duration + fadeOutDuration,
     ) // 淡出至 0
+
+    const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
     controller = new AbortController()
     audioBufferSourceNode.addEventListener(
       "ended",
@@ -225,7 +227,7 @@ export const useAudioStore = defineStore("audio", () => {
     audioBufferSourceNode
       .connect(fadeGainNode)
       .connect(velocityGainNode)
-      .connect(audioContext.destination)
+      .connect(stereoPannerNode)
     audioBufferSourceNode.start(currentTime, 0, _duration + fadeOutDuration)
     return controller
   }
