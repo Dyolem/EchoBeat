@@ -411,35 +411,6 @@ export const useAudioStore = defineStore("audio", () => {
     noteBufferSourceMap.set(newId, noteBufferSourceMap.get(oldId))
     noteBufferSourceMap.delete(oldId)
   }
-  function adjustNodeStartAndLastTime({
-    id,
-    newId,
-    startTime,
-    duration,
-    pitchName,
-  } = {}) {
-    const noteBufferSourceInstance = noteBufferSourceMap.get(id)
-    if (!noteBufferSourceInstance) return
-    if (newId !== undefined) {
-      const newNoteBufferSourceInstance = {
-        pitchName,
-        startTime: startTime,
-        duration: duration,
-      }
-      noteBufferSourceMap.delete(id)
-      noteBufferSourceMap.set(newId, newNoteBufferSourceInstance)
-      insertSourceNodeAndGainNode({
-        id: newId,
-        ...newNoteBufferSourceInstance,
-      })
-    } else {
-      noteBufferSourceMap.set(id, {
-        startTime: startTime,
-        duration: duration,
-        pitchName,
-      })
-    }
-  }
 
   function removeNodeFromNoteId({ audioTrackId, id }) {
     const noteBufferSourceMap = getSpecifiedAudioTracksProperty({
