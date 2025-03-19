@@ -1,6 +1,8 @@
 <script setup>
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 import { computed, inject } from "vue"
+import StereoPannerButton from "@/views/daw/add-track-sidebar/StereoPannerButton.vue"
+import AudioTrackVolume from "@/views/daw/add-track-sidebar/AudioTrackVolume.vue"
 
 const props = defineProps({
   id: {
@@ -66,6 +68,10 @@ const serialNumbering = computed(() => {
             </i>
           </div>
         </div>
+        <div class="gain-controller">
+          <AudioTrackVolume :main-color="mainColor"></AudioTrackVolume>
+          <StereoPannerButton></StereoPannerButton>
+        </div>
       </div>
     </template>
   </ContextMenu>
@@ -73,6 +79,9 @@ const serialNumbering = computed(() => {
 
 <style scoped>
 .track-controller-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   padding: 0 4px;
   position: relative;
   width: 100%;
@@ -163,5 +172,9 @@ const serialNumbering = computed(() => {
 .gain-button:hover {
   background-color: hsl(0, 0%, 35%);
   cursor: pointer;
+}
+.gain-controller {
+  display: flex;
+  align-items: center;
 }
 </style>
