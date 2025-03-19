@@ -13,7 +13,7 @@ import NotePad from "@/views/daw/midi-editor/note-editor/NotePad.vue"
 import EditorWorkspace from "@/views/daw/midi-editor/note-editor/EditorWorkspace.vue"
 
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
-import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
+import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
@@ -23,7 +23,7 @@ import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 const zoomRatioStore = useZoomRatioStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
 const noteItems = useNoteItemStore()
-const audioGenerator = useAudioGeneratorStore()
+const audioStore = useAudioStore()
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const { isSelectMode, isInsertMode } = storeToRefs(zoomRatioStore)
@@ -125,13 +125,21 @@ function insertNote({ x: insertX, y: insertY }) {
   )
   if (!insertedItemInfo) return
   noteMainSelectedId.value = insertedItemInfo.id
-
-  audioGenerator
-    .generateAudio(insertedItemInfo.pitchName)
-    .then((controller) => {
-      controller?.abort()
+  audioStore
+    .generateSingleAudioNode({
+      noteId: insertedItemInfo.id,
+      audioTrackId: selectedAudioTrackId.value,
+      audioContext: audioStore.audioContext,
     })
-  noteItems.simulatePlaySpecifiedNote(insertedItemInfo.pitchName)
+    .then(
+      (controller) => {
+        noteItems.simulatePlaySpecifiedNote(
+          insertedItemInfo.pitchName,
+          controller.signal,
+        )
+      },
+      () => {},
+    )
 }
 function triggerCustomizedInsertEvent({ x, y }) {
   noteEditorRegionRef.value.dispatchEvent(
