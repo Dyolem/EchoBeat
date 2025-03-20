@@ -69,7 +69,10 @@ const serialNumbering = computed(() => {
           </div>
         </div>
         <div class="gain-controller">
-          <AudioTrackVolume :main-color="mainColor"></AudioTrackVolume>
+          <AudioTrackVolume
+            :main-color="mainColor"
+            :audio-track-id="id"
+          ></AudioTrackVolume>
           <StereoPannerButton :audio-track-id="id"></StereoPannerButton>
         </div>
       </div>

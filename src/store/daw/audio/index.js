@@ -21,6 +21,10 @@ export const useAudioStore = defineStore("audio", () => {
 
   //存储每个音轨的左右立体声值，音轨id为键，StereoPannerNode实例为值
   const audioTrackStereoMap = new Map()
+
+  //存储每个音轨的总分贝值，音轨id为键，代表Volume的GainNode实例为值
+  const audioTrackVolumeGainNodeMap = new Map()
+
   audioGeneratorStore.preCreateBuffer(audioContext.value)
 
   const scheduler = new AudioScheduler(audioContext.value)
@@ -117,10 +121,9 @@ export const useAudioStore = defineStore("audio", () => {
     })
     const velocityGainNode =
       velocityGainNodesMap.get(id) ?? audioContext.createGain()
-    velocityGainNode.connect(audioContext.destination)
     velocityGainNodesMap.set(id, velocityGainNode)
 
-    // 动态范围配置（此处使用-48dB到0dB作为示例）
+    // 动态范围配置
     const MIN_DB = -48 // 最低分贝值（可调节声音响度范围）
     const MAX_VELOCITY = 127
 
@@ -355,7 +358,6 @@ export const useAudioStore = defineStore("audio", () => {
           .connect(fadeGainNode)
           .connect(velocityGainNode)
           .connect(stereoPannerNode)
-          .connect(mixingGainNode)
         audioBufferSourceNode.start(
           audioStartTime,
           offsetTime,
@@ -474,7 +476,6 @@ export const useAudioStore = defineStore("audio", () => {
     const stereoPannerNode = new StereoPannerNode(audioContext.value, {
       pan: clamp(stereoValue, [-1, 1]),
     })
-    stereoPannerNode.connect(mixingGainNode)
     audioTrackStereoMap.set(audioTrackId, stereoPannerNode)
     return stereoPannerNode
   }
@@ -490,6 +491,28 @@ export const useAudioStore = defineStore("audio", () => {
     audioTrackStereoMap.delete(audioTrackId)
   }
 
+  function createAudioTrackVolumeGainNode({ audioTrackId, gainValue = 1 }) {
+    const volumeGainNode = audioContext.value.createGain()
+    audioTrackVolumeGainNodeMap.set(audioTrackId, volumeGainNode)
+    volumeGainNode.gain.value = gainValue
+    return volumeGainNode
+  }
+  function updateAudioTrackVolumeGainNodeValue({ audioTrackId, gainValue }) {
+    const volumeGainNode = audioTrackVolumeGainNodeMap.get(audioTrackId)
+    if (!volumeGainNode) return
+    console.log(gainValue)
+
+    volumeGainNode.gain.value = gainValue
+  }
+  function deleteVolumeGainNode(audioTrackId) {
+    const volumeGainNode = audioTrackVolumeGainNodeMap.get(audioTrackId)
+    if (!volumeGainNode) return
+    volumeGainNode.disconnect()
+    audioTrackVolumeGainNodeMap.delete(audioTrackId)
+  }
+  function connectMixGainNode(audioNode) {
+    audioNode.connect(mixingGainNode)
+  }
   return {
     audioContext,
     audioTracksBufferSourceMap,
@@ -503,5 +526,9 @@ export const useAudioStore = defineStore("audio", () => {
     createStereoPannerNode,
     updateAudioTrackStereo,
     deleteStereoPannerNode,
+    createAudioTrackVolumeGainNode,
+    updateAudioTrackVolumeGainNodeValue,
+    deleteVolumeGainNode,
+    connectMixGainNode,
   }
 })
