@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
-import { ref } from "vue"
+import { ref, isRef } from "vue"
 import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
 import { AudioScheduler } from "@/core/audio/AudioScheduler.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
@@ -18,6 +18,10 @@ export const useAudioStore = defineStore("audio", () => {
   const audioTrackMap = new Map([
     [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, instrumentsAudioNodeMap],
   ])
+  audioGeneratorStore.preCreateBuffer(audioContext.value)
+
+  const scheduler = new AudioScheduler(audioContext.value)
+  scheduler.initialize()
 
   //存储每个音轨的左右立体声值，音轨id为键，StereoPannerNode实例为值
   const audioTrackStereoMap = new Map()
@@ -25,17 +29,25 @@ export const useAudioStore = defineStore("audio", () => {
   //存储每个音轨的总分贝值，音轨id为键，代表Volume的GainNode实例为值
   const audioTrackVolumeGainNodeMap = new Map()
 
-  audioGeneratorStore.preCreateBuffer(audioContext.value)
-
-  const scheduler = new AudioScheduler(audioContext.value)
-  scheduler.initialize()
+  //全局音量总控制
+  const globalGainNode = audioContext.value.createGain()
 
   const mixingGainNode = audioContext.value.createGain()
   const compressor = new DynamicsCompressorNode(audioContext.value, {
     threshold: -20,
     ratio: 12,
   })
-  mixingGainNode.connect(compressor).connect(audioContext.value.destination)
+
+  // 创建全局 AnalyserNode
+  const analyserNode = audioContext.value.createAnalyser()
+  analyserNode.fftSize = 2048 // 影响数据精度与性能
+  analyserNode.smoothingTimeConstant = 0.8 // 平滑系数（0~1，越大越平滑）
+
+  mixingGainNode
+    .connect(compressor)
+    .connect(globalGainNode)
+    .connect(analyserNode)
+    .connect(audioContext.value.destination)
 
   /**
    * 以下Map结构的键均为note元素的id
@@ -500,7 +512,6 @@ export const useAudioStore = defineStore("audio", () => {
   function updateAudioTrackVolumeGainNodeValue({ audioTrackId, gainValue }) {
     const volumeGainNode = audioTrackVolumeGainNodeMap.get(audioTrackId)
     if (!volumeGainNode) return
-    console.log(gainValue)
 
     volumeGainNode.gain.value = gainValue
   }
@@ -513,6 +524,88 @@ export const useAudioStore = defineStore("audio", () => {
   function connectMixGainNode(audioNode) {
     audioNode.connect(mixingGainNode)
   }
+
+  function updateGlobalGainNodeValue(gainValue) {
+    globalGainNode.gain.value = gainValue
+  }
+
+  function calculateRMS(dataArray) {
+    let sum = 0
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i] ** 2
+    }
+    return Math.sqrt(sum / dataArray.length)
+  }
+
+  // 计算峰值
+  function calculatePeak(dataArray) {
+    let peak = 0
+    for (let i = 0; i < dataArray.length; i++) {
+      const absValue = Math.abs(dataArray[i])
+      if (absValue > peak) {
+        peak = absValue
+      }
+    }
+    return peak
+  }
+
+  // 计算当前音量的函数
+  function calculateVolume() {
+    // 用于存储分析数据的数组
+    const dataArray = new Float32Array(analyserNode.fftSize)
+    analyserNode.getFloatTimeDomainData(dataArray)
+
+    // 计算RMS和峰值
+    const rms = Math.max(calculateRMS(dataArray), 1e-6)
+    const peak = Math.max(calculatePeak(dataArray), 1e-6)
+
+    // 转换为分贝 (dB)
+    const rmsDb = 20 * Math.log10(rms)
+    const peakDb = 20 * Math.log10(peak)
+
+    // 假设最小分贝值为-60dB
+    const minDB = -60
+    const maxDB = 0
+
+    // 限制输入分贝值在期望范围内
+    const clampedRmsDB = Math.max(minDB, Math.min(maxDB, rmsDb))
+    const clampedPeakDB = Math.max(minDB, Math.min(maxDB, peakDb))
+
+    // 线性归一化到0-1区间
+    const rmsNormalized = (clampedRmsDB - minDB) / (maxDB - minDB)
+    const peakNormalized = (clampedPeakDB - minDB) / (maxDB - minDB)
+
+    // 选择较大的值来表示当前音量
+    const displayNormalized = Math.max(rmsNormalized, peakNormalized)
+
+    return {
+      rms: rms,
+      peak: peak,
+      rmsDb: rmsDb,
+      peakDb: peakDb,
+      rmsNormalized: rmsNormalized,
+      peakNormalized: peakNormalized,
+      displayNormalized: displayNormalized, // 显示用的归一化值（RMS和峰值中的较大者）
+    }
+  }
+
+  let animationFrameId = null
+  function updateMeter(signal, normalizedRef) {
+    if (!analyserNode || signal.aborted) {
+      cancelAnimationFrame(animationFrameId)
+      return
+    }
+    const volume = calculateVolume()
+    // 更新UI
+    if (isRef(normalizedRef)) {
+      normalizedRef.value = volume
+    }
+
+    animationFrameId = requestAnimationFrame(() =>
+      updateMeter(signal, normalizedRef),
+    )
+  }
+
   return {
     audioContext,
     audioTracksBufferSourceMap,
@@ -530,5 +623,7 @@ export const useAudioStore = defineStore("audio", () => {
     updateAudioTrackVolumeGainNodeValue,
     deleteVolumeGainNode,
     connectMixGainNode,
+    updateGlobalGainNodeValue,
+    updateMeter,
   }
 })
