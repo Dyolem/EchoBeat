@@ -33,7 +33,7 @@ contain notes</pre>`
         <span class="badge-name">{{ badgeName }}</span>
       </div>
     </div>
-    <div class="option-main">
+    <div class="option-main beatified-scrollbar">
       <EditMode class="feature-size"></EditMode>
       <div class="title">
         <div class="title-text">
@@ -114,6 +114,7 @@ contain notes</pre>`
   vertical-align: baseline;
 }
 .option-main {
+  overflow: auto;
   width: 100%;
   flex: 1;
   display: flex;

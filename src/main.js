@@ -8,6 +8,7 @@ import loadDirective from "./directives/load"
 import elementSizeObserverDirective from "./directives/elementSizeObserver.js"
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate"
 import "./style.css"
+import "@/styles/scrollbar.css"
 
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
