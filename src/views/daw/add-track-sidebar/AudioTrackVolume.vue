@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from "vue"
 import { useAudioStore } from "@/store/daw/audio/index.js"
+import { createDbMapper } from "@/core/audio/createDbMapper.js"
 const audioStore = useAudioStore()
 const props = defineProps({
   mainColor: {
@@ -11,31 +12,39 @@ const props = defineProps({
     required: true,
   },
 })
-
+const sliderMin = 0
+const sliderMax = 1
 // 响应式存储实际 dB 值（初始值设为 0dB）
-const maxDB = 6
-const sliderMax = Math.pow(10, maxDB / 20)
+const minDb = -40
+const maxDb = 6
+const mapper = createDbMapper({ minDb, maxDb })
 const dbValue = ref(0)
 
 // 计算属性处理双向转换
 const sliderLinearValue = computed({
-  get: () => {
-    // 将 dB 转换为线性值
-    return Math.pow(10, dbValue.value / 20)
-  },
-  set: (linear) => {
+  // 将 dB 转换为线性值
+  get: () => mapper.dbToSlider(dbValue.value),
+  set: (val) => {
     // 将线性值转换回 dB
-    dbValue.value = 20 * Math.log10(linear)
+    dbValue.value = mapper.sliderToDb(val)
   },
 })
 // 自定义 Tooltip 显示 dB 值
 const formatTooltip = (linearValue) => {
-  return `${(20 * Math.log10(linearValue)).toFixed(1)} dB`
+  const preciseDbValue = mapper.sliderToDb(linearValue)
+  let val = ""
+  val =
+    preciseDbValue > 0
+      ? `+${preciseDbValue.toFixed(1)}`
+      : preciseDbValue.toFixed(1)
+  return `${val} dB`
 }
 function updateAudioTrackVolume(linearVal) {
+  const preciseDbValue = mapper.sliderToDb(linearVal)
+  const gainValue = 10 ** (preciseDbValue / 20)
   audioStore.updateAudioTrackVolumeGainNodeValue({
     audioTrackId: props.audioTrackId,
-    gainValue: linearVal,
+    gainValue: gainValue,
   })
 }
 </script>
@@ -46,7 +55,7 @@ function updateAudioTrackVolume(linearVal) {
       v-model="sliderLinearValue"
       @input="updateAudioTrackVolume"
       size="small"
-      :min="0"
+      :min="sliderMin"
       :max="sliderMax"
       :step="0.01"
       :format-tooltip="formatTooltip"
