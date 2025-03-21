@@ -81,6 +81,7 @@ onMounted(() => {
       const trackItemId = trackItemContainer?.dataset["trackItemId"]
       if (!trackItemId) return
 
+      event.stopPropagation() //避免选区事件被注册，选区事件会在创建选区后禁用一切冒泡至document的mouseup事件
       const subTrackItemsMap = mixTrackEditorStore.getSubTrackItemsMap({
         audioTrackId: props.id,
       })

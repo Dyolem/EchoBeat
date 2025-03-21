@@ -58,6 +58,7 @@ const workspaceBadgeNameBgColor = computed(() => {
 
 const grabbingWorkspaceHandleRef = useTemplateRef("grabbingWorkspaceHandleRef")
 function workspaceGrabbingHandler(e) {
+  e.stopPropagation() //避免选区事件被注册，选区事件会在创建选区后禁用一切冒泡至document的mouseup事件
   isMovementHandleActive.value = true
   const mousedownPositionXInWorkSpace =
     e.clientX - grabbingWorkspaceHandleRef.value.getBoundingClientRect().left

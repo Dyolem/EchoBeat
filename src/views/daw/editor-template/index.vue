@@ -362,6 +362,7 @@ onUnmounted(() => {
         <InteractableLayer
           :id="id"
           :canvas-width="canvasContentWidth"
+          :canvas-height="canvasContentHeight"
           :editor-view-height="editableViewHeight"
           :modify-timeline-by-click="modifyTimelineByClick"
           v-model:track-zoom-ratio="trackZoomRatio"

@@ -34,6 +34,9 @@ const props = defineProps({
     type: Number,
     default: 2000,
   },
+  canvasHeight: {
+    type: Number,
+  },
   editorViewHeight: {
     type: Number,
     default: 5000,
@@ -73,6 +76,21 @@ function CreateZoomCanvas(
 }
 const zoomCanvas = CreateZoomCanvas(ZOOM_THRESHOLD, [MIN_ZOOM, MAX_ZOOM], emit)
 
+const showSelectionBox = ref(false)
+const selectionBoxWidth = ref(0)
+const selectionBoxHeight = ref(0)
+const selectionBoxX = ref(0)
+const selectionBoxY = ref(0)
+const selectionBoxZIndex = ref(editorBgSvg.value)
+
+function resetSelectionBoxState() {
+  selectionBoxWidth.value = 0
+  selectionBoxHeight.value = 0
+  selectionBoxX.value = 0
+  selectionBoxY.value = 0
+  selectionBoxZIndex.value = editorBgSvg.value
+}
+const selectionBoxController = new AbortController()
 onMounted(() => {
   const drawDebounce = debounce((event) => {
     if (event.ctrlKey) {
@@ -113,22 +131,95 @@ onMounted(() => {
 
   if (props.modifyTimelineByClick) {
     interactableContainerRef.value.addEventListener(
-      "click",
-      (event) => {
-        const translateX =
-          event.clientX -
-          interactableContainerRef.value.getBoundingClientRect().left
-        const tickTranslateX = translateX / pixelsPerTick.value(props.id)
-        const newTime =
-          (tickTranslateX / totalLength.value(props.id)) *
-          editableTotalTime.value
-        trackRulerStore.updateCurrentTime(newTime)
+      "mousedown",
+      () => {
+        document.addEventListener(
+          "mouseup",
+          (event) => {
+            const translateX =
+              event.clientX -
+              interactableContainerRef.value.getBoundingClientRect().left
+            const tickTranslateX = translateX / pixelsPerTick.value(props.id)
+            const newTime =
+              (tickTranslateX / totalLength.value(props.id)) *
+              editableTotalTime.value
+            trackRulerStore.updateCurrentTime(newTime)
+          },
+          { once: true },
+        )
       },
       {
         signal: controller.signal,
       },
     )
   }
+
+  interactableContainerRef.value.addEventListener(
+    "mousedown",
+    (event) => {
+      const top = interactableContainerRef.value.getBoundingClientRect().top
+      const left = interactableContainerRef.value.getBoundingClientRect().left
+
+      const maxSelectionWidth =
+        props.canvasWidth * pixelsPerTick.value(props.id)
+      const maxSelectionHeight = props.canvasHeight
+      if (maxSelectionHeight <= 0) return
+
+      const initX = event.clientX - left
+      const initY = event.clientY - top
+      const moveController = new AbortController()
+      showSelectionBox.value = true
+      let isCreatedSelection = false
+      selectionBoxX.value = initX
+      selectionBoxY.value = initY
+      document.addEventListener(
+        "mousemove",
+        (e) => {
+          selectionBoxZIndex.value = interactableLayerZIndex.value + 1
+          isCreatedSelection = true
+          const top = interactableContainerRef.value.getBoundingClientRect().top
+          const left =
+            interactableContainerRef.value.getBoundingClientRect().left
+          const newX = e.clientX - left
+          const newY = e.clientY - top
+          const deltaX = newX - initX
+          const deltaY = newY - initY
+          let maxWidth = maxSelectionWidth
+          let maxHeight = maxSelectionHeight
+          if (deltaX < 0) {
+            selectionBoxX.value = Math.max(newX, 0) //避免矩形的x小于0
+            maxWidth = initX
+          } else {
+            maxWidth = maxSelectionWidth - initX
+          }
+          if (deltaY < 0) {
+            selectionBoxY.value = Math.max(newY, 0) //避免矩形的y小于0
+            maxHeight = initY
+          } else {
+            maxHeight = maxSelectionHeight - initY
+          }
+          const newWidth = Math.abs(newX - initX)
+          const newHeight = Math.abs(newY - initY)
+          selectionBoxWidth.value = Math.min(newWidth, maxWidth)
+          selectionBoxHeight.value = Math.min(newHeight, maxHeight)
+        },
+        { signal: moveController.signal },
+      )
+      document.addEventListener(
+        "mouseup",
+        (e) => {
+          if (isCreatedSelection) {
+            e.stopPropagation()
+          }
+          moveController.abort()
+          showSelectionBox.value = false
+          resetSelectionBoxState()
+        },
+        { once: true, capture: true },
+      )
+    },
+    { signal: selectionBoxController.signal },
+  )
 })
 
 window.addEventListener(
@@ -152,6 +243,7 @@ window.addEventListener(
 
 onUnmounted(() => {
   controller.abort()
+  selectionBoxController.abort()
 })
 </script>
 
@@ -215,6 +307,21 @@ onUnmounted(() => {
           :height="svgHeight"
         ></rect>
       </svg>
+      <svg
+        class="selection-svg"
+        :width="canvasWidth * pixelsPerTick(id)"
+        :height="svgHeight"
+      >
+        <rect
+          class="selection-box"
+          :width="selectionBoxWidth"
+          :height="selectionBoxHeight"
+          :x="selectionBoxX"
+          :y="selectionBoxY"
+          v-if="showSelectionBox"
+        ></rect>
+      </svg>
+
       <div id="interactable-layer">
         <slot name="interactable-layer"> </slot>
       </div>
@@ -235,5 +342,16 @@ onUnmounted(() => {
 .mix-editor-grid {
   position: absolute;
   z-index: v-bind(editorBgSvg);
+}
+.selection-svg {
+  position: absolute;
+  z-index: v-bind(selectionBoxZIndex);
+}
+.selection-box {
+  position: absolute;
+  fill: #ffffff44;
+  stroke: #ffffff;
+  stroke-dasharray: 2 4;
+  stroke-linecap: round;
 }
 </style>
