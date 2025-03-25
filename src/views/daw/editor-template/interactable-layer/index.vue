@@ -9,12 +9,16 @@ import {
   MAX_ZOOM,
   DEFAULT_ZOOM_RATIO,
   ZIndex,
+  SELECTION_RECT_PROPERTIES,
 } from "@/constants/daw/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
+import { useSelectionStore } from "@/store/daw/selection.js"
 
 const trackRulerStore = useTrackRulerStore()
 const beatControllerStore = useBeatControllerStore()
+const selectionStore = useSelectionStore()
+const { updateSelectionRect, initSelectionMap } = selectionStore
 const {
   totalLength,
   editableTotalTime,
@@ -50,6 +54,7 @@ const props = defineProps({
     default: true,
   },
 })
+initSelectionMap(props.id)
 const interactableLayerZIndex = ref(ZIndex.INTERACTABLE_LAYER)
 const editorBgSvg = ref(ZIndex.EDITOR_BG_SVG)
 
@@ -157,6 +162,7 @@ onMounted(() => {
   interactableContainerRef.value.addEventListener(
     "mousedown",
     (event) => {
+      const editorId = props.id
       const top = interactableContainerRef.value.getBoundingClientRect().top
       const left = interactableContainerRef.value.getBoundingClientRect().left
 
@@ -202,6 +208,13 @@ onMounted(() => {
           const newHeight = Math.abs(newY - initY)
           selectionBoxWidth.value = Math.min(newWidth, maxWidth)
           selectionBoxHeight.value = Math.min(newHeight, maxHeight)
+          updateSelectionRect(editorId, {
+            [SELECTION_RECT_PROPERTIES.WRITABLE.START_X]: selectionBoxX.value,
+            [SELECTION_RECT_PROPERTIES.WRITABLE.START_Y]: selectionBoxY.value,
+            [SELECTION_RECT_PROPERTIES.WRITABLE.WIDTH]: selectionBoxWidth.value,
+            [SELECTION_RECT_PROPERTIES.WRITABLE.HEIGHT]:
+              selectionBoxHeight.value,
+          })
         },
         { signal: moveController.signal },
       )

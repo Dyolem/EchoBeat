@@ -84,6 +84,7 @@ export const BEATS_COUNT = 95
 export const BEAT_GRID_RATIO = 4
 
 //核心常量
+export const VELOCITY_SCALE = [0, 127]
 export const PPQ = 480 // 480 ticks/quarter note
 export const SERIAL_NUMBER_FONT_SIZE = 12
 export const PIXELS_PER_QUARTER = 40 //一个四分音符的在缩放倍率为1时的初始宽度像素
@@ -245,3 +246,17 @@ export const NOTE_FREQUENCY_MAP = generateNoteFrequencyMap()
 export const SCROLLBAR_WIDTH = 10
 export const FALLBACK_THEME_COLOR = "#A4CFF8"
 export const DARKEN_COLOR = "#404040"
+
+// 编辑器选区矩形参数枚举值
+export const SELECTION_RECT_PROPERTIES = Object.freeze({
+  WRITABLE: {
+    START_X: "startX",
+    START_Y: "startY",
+    WIDTH: "width",
+    HEIGHT: "height",
+  },
+  CALCULATED: {
+    END_X: "endX",
+    END_Y: "endY",
+  },
+})
