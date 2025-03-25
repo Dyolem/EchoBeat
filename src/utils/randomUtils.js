@@ -1,5 +1,31 @@
 /**
  * 随机值工具集
+ *
+ * 使用示例：
+ *
+ * 获取随机整数
+ *
+ * console.log(randomUtils.getRandomInt(1, 100)) // 随机整数，范围1到100
+ *
+ * 获取随机浮动数
+ *
+ * console.log(randomUtils.getRandomFloat(1.5, 3.5)) // 随机浮动数，范围1.5到3.5
+ *
+ * 从数组中随机选择一个元素
+ *
+ * console.log(randomUtils.getRandomElement([10, 20, 30, 40])) // 随机选择数组中的一个元素
+ *
+ * 生成随机字符串
+ *
+ * console.log(randomUtils.getRandomString(10)) // 生成一个长度为10的随机字符串
+ *
+ * 获取随机布尔值
+ *
+ * console.log(randomUtils.getRandomBoolean()) // 返回 true 或 false
+ *
+ * 获取随机权重值
+ *
+ * console.log(randomUtils.getRandomWeighted([10, 20, 30])) // 按照权重随机选择索引
  */
 export const randomUtils = {
   /**
@@ -120,23 +146,3 @@ export const randomUtils = {
     }
   },
 }
-
-// 使用示例：
-
-// 获取随机整数
-console.log(randomUtils.getRandomInt(1, 100)) // 随机整数，范围1到100
-
-// 获取随机浮动数
-console.log(randomUtils.getRandomFloat(1.5, 3.5)) // 随机浮动数，范围1.5到3.5
-
-// 从数组中随机选择一个元素
-console.log(randomUtils.getRandomElement([10, 20, 30, 40])) // 随机选择数组中的一个元素
-
-// 生成随机字符串
-console.log(randomUtils.getRandomString(10)) // 生成一个长度为10的随机字符串
-
-// 获取随机布尔值
-console.log(randomUtils.getRandomBoolean()) // 返回 true 或 false
-
-// 获取随机权重值
-console.log(randomUtils.getRandomWeighted([10, 20, 30])) // 按照权重随机选择索引
