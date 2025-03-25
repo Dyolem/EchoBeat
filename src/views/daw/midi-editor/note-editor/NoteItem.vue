@@ -1,5 +1,5 @@
 <script setup>
-import { inject, ref, useTemplateRef } from "vue"
+import { inject, ref, useTemplateRef, watch } from "vue"
 import clearSelection from "@/utils/clearSelection.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
@@ -8,6 +8,7 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { useSelectionStore } from "@/store/daw/selection.js"
 
 const audioStore = useAudioStore()
 const beatControllerStore = useBeatControllerStore()
@@ -16,6 +17,14 @@ const zoomRatioStore = useZoomRatioStore()
 const noteItemMap = useNoteItemStore()
 const audioGenerator = useAudioGeneratorStore()
 const { isSelectMode, isInsertMode } = storeToRefs(zoomRatioStore)
+const selectionStore = useSelectionStore()
+const { selectionRectMap, whetherInSelectionBox, selectedNotesIdSet } =
+  storeToRefs(selectionStore)
+const {
+  updateSelectedNotesIdSet,
+  deleteSelectedNoteId,
+  deleteAllSelectedNoteId,
+} = selectionStore
 const editorNoteRef = useTemplateRef("editorNoteRef")
 const props = defineProps({
   id: {
@@ -77,6 +86,28 @@ const editorNoteZIndex = ref(ZIndex.EDITOR_NOTE)
 const { noteMainSelectedId, updateNoteMainSelectedId } =
   inject("noteMainSelectedId")
 
+watch(
+  selectionRectMap,
+  () => {
+    let isOverlap = false
+    const noteItemId = props.id
+    const _pixelsPerTick = pixelsPerTick.value(midiEditorId.value)
+    const noteItemRect = {
+      startX: (props.x + props.workspaceStartPosition) * _pixelsPerTick,
+      startY: props.y + 20,
+      width: props.noteWidth * _pixelsPerTick,
+      height: props.noteHeight,
+    }
+    isOverlap = whetherInSelectionBox.value(midiEditorId.value, noteItemRect)
+    if (isOverlap) {
+      updateSelectedNotesIdSet(noteItemId)
+    } else {
+      deleteSelectedNoteId(noteItemId)
+    }
+  },
+  { deep: true },
+)
+
 let translateXDistance = 0
 let translateYDistance = 0
 function isLegalTranslateDistance(translateXDistance, translateYDistance) {
@@ -109,9 +140,12 @@ function playNoteAudioSample(pitchName) {
 }
 
 function draggableRegionHandler(event) {
-  // 'insert' editor mode prohibit to drag note element
   if (isInsertMode.value) return
   if (noteMainSelectedId.value !== props.id) updateNoteMainSelectedId(props.id)
+  if (!selectedNotesIdSet.value.has(props.id)) {
+    deleteAllSelectedNoteId()
+    updateSelectedNotesIdSet(props.id)
+  }
 
   const selectionController = clearSelection()
   const id = props.id
@@ -161,10 +195,13 @@ function draggableRegionHandler(event) {
   document.addEventListener("mousemove", mouseMoveHandler)
   document.addEventListener(
     "mouseup",
-    () => {
+    (e) => {
+      e.stopPropagation()
       document.removeEventListener("mousemove", mouseMoveHandler)
       selectionController.abort()
       if (!newId) return
+      deleteSelectedNoteId(id)
+      updateSelectedNotesIdSet(newId)
       noteItemMap.updateNoteItemsMap({
         oldId: id,
         newId,
@@ -177,12 +214,18 @@ function draggableRegionHandler(event) {
     },
     {
       once: true,
+      capture: true,
     },
   )
 }
 
 function stretchEditorNoteLength(event) {
   if (noteMainSelectedId.value !== props.id) updateNoteMainSelectedId(props.id)
+  if (!selectedNotesIdSet.value.has(props.id)) {
+    deleteAllSelectedNoteId()
+    updateSelectedNotesIdSet(props.id)
+  }
+
   const selectionController = clearSelection()
   const { x: mousedownStartX } = getMovementInNoteEditorRegion(event)
   const initWidth = props.noteWidth
@@ -223,12 +266,14 @@ function stretchEditorNoteLength(event) {
   document.addEventListener("mousemove", mousemoveHandler)
   document.addEventListener(
     "mouseup",
-    () => {
+    (e) => {
+      e.stopPropagation()
       document.removeEventListener("mousemove", mousemoveHandler)
       selectionController.abort()
     },
     {
       once: true,
+      capture: true,
     },
   )
 }
@@ -304,7 +349,8 @@ function noteMainMousedownHandler(event) {
     )
     document.addEventListener(
       "mouseup",
-      () => {
+      (e) => {
+        e.stopPropagation()
         if (!isMoved) {
           noteItemMap.deleteNoteItem({
             id: props.id,
@@ -318,6 +364,7 @@ function noteMainMousedownHandler(event) {
       },
       {
         once: true,
+        capture: true,
       },
     )
   }
@@ -328,8 +375,8 @@ function noteMainMousedownHandler(event) {
   <div
     class="editor-note"
     :class="{
-      'is-edited': noteMainSelectedId === id,
-      'is-selected': noteMainSelectedId === id && isSelectMode,
+      'is-edited': selectedNotesIdSet.has(id),
+      'is-selected': selectedNotesIdSet.has(id) && isSelectMode,
     }"
     ref="editorNoteRef"
     @click.stop="() => {}"
@@ -338,11 +385,7 @@ function noteMainMousedownHandler(event) {
   >
     <div
       class="editor-note-left draggable-region"
-      @mousedown.stop="
-        (event) => {
-          stretchEditorNoteLength(event)
-        }
-      "
+      @mousedown.stop="stretchEditorNoteLength"
     ></div>
     <div class="editor-note-main" @mousedown="noteMainMousedownHandler"></div>
     <div
