@@ -206,6 +206,7 @@ function stretchableJudgement(event) {
 function stretchWorkspaceWidth(event) {
   if (!isStretchable.value) return
 
+  event.stopPropagation() //避免选区事件被注册，选区事件会在创建选区后禁用一切冒泡至document的mouseup事件
   const controller = new AbortController()
   const selectionController = clearSelection()
   const workspace = workspaceMap.value.get(props.id)
@@ -272,12 +273,14 @@ function stretchWorkspaceWidth(event) {
 
   document.addEventListener(
     "mouseup",
-    () => {
+    (e) => {
+      e.stopPropagation()
       controller.abort()
       selectionController.abort()
     },
     {
       once: true,
+      capture: true,
     },
   )
 }

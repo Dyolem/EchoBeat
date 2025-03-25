@@ -97,13 +97,15 @@ function workspaceGrabbingHandler(e) {
   )
   document.addEventListener(
     "mouseup",
-    () => {
+    (e) => {
+      e.stopPropagation()
       isMovementHandleActive.value = false
       clearSelectionController.abort()
       controller.abort()
     },
     {
       once: true,
+      capture: true,
     },
   )
 }
