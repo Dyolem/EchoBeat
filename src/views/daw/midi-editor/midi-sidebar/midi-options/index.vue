@@ -1,10 +1,15 @@
 <script setup>
-import { inject } from "vue"
+import { inject, computed } from "vue"
 import EditMode from "@/views/daw/midi-editor/midi-sidebar/midi-options/EditMode.vue"
 import Velocity from "@/views/daw/midi-editor/midi-sidebar/midi-options/Velocity.vue"
 import Params from "@/views/daw/midi-editor/midi-sidebar/midi-options/Params.vue"
 import Transpose from "@/views/daw/midi-editor/midi-sidebar/midi-options/Transpose.vue"
 import SmartView from "@/views/daw/midi-editor/midi-sidebar/midi-options/SmartView.vue"
+import { useSelectionStore } from "@/store/daw/selection.js"
+import { storeToRefs } from "pinia"
+
+const selectionStore = useSelectionStore()
+const { selectedNotesIdSet } = storeToRefs(selectionStore)
 
 const props = defineProps({
   badgeName: {
@@ -16,6 +21,10 @@ const mainColor = inject("mainColor")
 const smartViewHintContent = `<pre style="font-family: reset">Smart View only shows rows that
 belong to the selected scale, or that
 contain notes</pre>`
+
+const midiNotesWorkableDisabledState = computed(() => {
+  return selectedNotesIdSet.value.size === 0
+})
 </script>
 
 <template>
@@ -43,7 +52,10 @@ contain notes</pre>`
           <span>MIDI Notes</span>
         </div>
       </div>
-      <Velocity class="feature-size"></Velocity>
+      <Velocity
+        class="feature-size"
+        :disabled="midiNotesWorkableDisabledState"
+      ></Velocity>
       <Params class="feature-size"></Params>
       <Transpose class="feature-size"></Transpose>
       <div class="title">
