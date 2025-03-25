@@ -22,6 +22,22 @@ provide(
   toRef(() => props.id),
 )
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
+
+const noteMainSelectedId = ref("")
+function updateNoteMainSelectedId(newVal) {
+  noteMainSelectedId.value = newVal
+}
+provide("noteMainSelectedId", { noteMainSelectedId, updateNoteMainSelectedId })
+
+const workspaceSelectedId = ref("")
+function updateWorkspaceSelectedId(newVal) {
+  workspaceSelectedId.value = newVal
+}
+provide("workspaceSelectedId", {
+  workspaceSelectedId,
+  updateWorkspaceSelectedId,
+})
+
 const mainColor = computed(() => {
   return (
     mixTrackEditorStore.mixTracksMap.get(selectedAudioTrackId.value)

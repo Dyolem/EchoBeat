@@ -4,7 +4,6 @@ import {
   inject,
   onMounted,
   onUnmounted,
-  provide,
   ref,
   useTemplateRef,
   watchEffect,
@@ -19,6 +18,7 @@ import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { useSelectionStore } from "@/store/daw/selection.js"
 
 const zoomRatioStore = useZoomRatioStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
@@ -27,6 +27,8 @@ const audioStore = useAudioStore()
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const { isSelectMode, isInsertMode } = storeToRefs(zoomRatioStore)
+const selectionStore = useSelectionStore()
+const { deleteAllSelectedNoteId, updateSelectedNotesIdSet } = selectionStore
 const props = defineProps({
   notePadWidth: {
     type: Number,
@@ -81,7 +83,8 @@ watchEffect(() => {
   updateCanvasContentHeight(svgHeight.value + workspacePlaceHolderHeight.value)
 })
 
-const controller = new AbortController()
+const insertNoteController = new AbortController()
+const clearSelectedNotesController = new AbortController()
 onMounted(() => {
   if (!noteEditorContainerRef.value) return
   noteEditorContainerRef.value.addEventListener(
@@ -91,19 +94,24 @@ onMounted(() => {
       insertNote({ x: insertX, y: insertY })
     },
     {
-      signal: controller.signal,
+      signal: insertNoteController.signal,
     },
+  )
+  noteEditorContainerRef.value.addEventListener(
+    "mouseup",
+    () => {
+      deleteAllSelectedNoteId()
+    },
+    { signal: clearSelectedNotesController.signal },
   )
 })
 onUnmounted(() => {
-  controller.abort()
+  clearSelectedNotesController.abort()
+  insertNoteController.abort()
 })
 
-const noteMainSelectedId = ref("")
-function updateNoteMainSelectedId(newVal) {
-  noteMainSelectedId.value = newVal
-}
-provide("noteMainSelectedId", { noteMainSelectedId, updateNoteMainSelectedId })
+const { noteMainSelectedId } = inject("noteMainSelectedId")
+
 const getCursorPositionInNoteEditorRegion = (event) => {
   if (!event) return
   const x =
@@ -125,6 +133,7 @@ function insertNote({ x: insertX, y: insertY }) {
   )
   if (!insertedItemInfo) return
   noteMainSelectedId.value = insertedItemInfo.id
+  updateSelectedNotesIdSet(insertedItemInfo.id)
   audioStore
     .generateSingleAudioNode({
       noteId: insertedItemInfo.id,
@@ -155,7 +164,6 @@ function triggerCustomizedInsertEvent({ x, y }) {
   )
 }
 function noteEditorMousedownHandler(event) {
-  console.log(event)
   if (isSelectMode.value) {
     if (noteMainSelectedId.value !== "") {
       noteMainSelectedId.value = ""
