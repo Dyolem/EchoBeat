@@ -132,6 +132,7 @@ export function generateAudioTrack(midiData) {
         })
         const noteItems = noteItemsMap.get(specifiedPitchName)?.noteItems
         noteItems?.push(template)
+        noteItemStore.addFlatNoteItem(template.id, template)
         audioStore.insertSourceNodeAndGainNode(template)
       }
     }
