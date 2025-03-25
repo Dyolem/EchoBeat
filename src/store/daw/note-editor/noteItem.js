@@ -8,6 +8,7 @@ import {
   NATURAL_SEMITONE,
   OCTAVE_KEY_COUNT,
   DEFAULT_INIT_VELOCITY,
+  VELOCITY_SCALE,
 } from "@/constants/daw/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
@@ -80,6 +81,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
     return pitchNameMappedToAreaArr
   })
+
+  const flatNoteItemsMap = ref(new Map())
 
   /**
    * @typedef {[number, number]} ScaleYTuple - 垂直缩放比例范围元组 [最小值, 最大值]
@@ -290,6 +293,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const noteItems = noteItemsMap.get(specifiedPitchName)?.noteItems
     noteItems?.push(template)
     console.log(template)
+    addFlatNoteItem(template.id, template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
   }
@@ -320,6 +324,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const deleteIndex = deleteTargetArr.findIndex((item) => item.id === id)
     if (deleteIndex === -1) return
     deleteTargetArr.splice(deleteIndex, 1)
+    deleteFlatNoteItem(id)
     audioStore.removeNodeFromNoteId({ audioTrackId, id })
   }
 
@@ -456,9 +461,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const oldTargetIndex = oldTargetArr.findIndex((item) => {
       return item.id === oldId
     })
-    oldTargetArr[oldTargetIndex].id = newId
-    newTargetArr.push(oldTargetArr[oldTargetIndex])
+    const oldNoteItem = oldTargetArr[oldTargetIndex]
+    oldNoteItem.id = newId
+    newTargetArr.push(oldNoteItem)
     oldTargetArr.splice(oldTargetIndex, 1)
+    deleteFlatNoteItem(oldId)
+    addFlatNoteItem(newId, oldNoteItem)
     audioStore.updateSpecifiedNoteBufferSourceMap({
       audioTrackId,
       newId,
@@ -546,10 +554,85 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       }),
     )
   }
+
+  function addFlatNoteItem(id, noteItem) {
+    flatNoteItemsMap.value.set(id, noteItem)
+  }
+  function deleteFlatNoteItem(id) {
+    flatNoteItemsMap.value.delete(id)
+  }
+
+  function getFlatNoteItem(id) {
+    return flatNoteItemsMap.value.get(id)
+  }
+
+  function getSpecifiedNoteItemsMap({ audioTrackId, workspaceId }) {
+    const workspace = workspaceStore.getWorkspace({ audioTrackId, workspaceId })
+    return workspace.noteItemsMap
+  }
+
+  function getSpecifiedNoteItem({
+    audioTrackId,
+    workspaceId,
+    noteId,
+    pitchName,
+  }) {
+    const noteItemsMap = getSpecifiedNoteItemsMap({ audioTrackId, workspaceId })
+    if (!pitchName) {
+      for (const { noteItems } of noteItemsMap.values()) {
+        const targetIndex = noteItems.findIndex(
+          (noteItem) => noteItem.id === noteId,
+        )
+        if (targetIndex === -1) continue
+        return noteItems[targetIndex]
+      }
+    } else {
+      const noteItems = noteItemsMap.get(pitchName)
+      const targetIndex = noteItems.findIndex(
+        (noteItem) => noteItem.id === noteId,
+      )
+      if (targetIndex !== -1) return noteItems[targetIndex]
+    }
+    return null
+  }
+
+  function getSelectedNoteAverageVelocity(noteIdSet) {
+    const size = noteIdSet.size
+    if (size === 0) return 0
+    let velocityCount = 0
+    for (const noteId of noteIdSet) {
+      const noteItem = getFlatNoteItem(noteId)
+      if (!noteItem) continue
+      velocityCount += noteItem.velocity
+    }
+    return velocityCount / size
+  }
+  function updateNoteItemVelocity({
+    velocity,
+    noteIdSet,
+    absoluteAdjustMode = true,
+  }) {
+    const averageVelocity = getSelectedNoteAverageVelocity(noteIdSet)
+    for (const noteId of noteIdSet) {
+      const noteItem = getFlatNoteItem(noteId)
+      if (absoluteAdjustMode) {
+        noteItem.velocity = clamp(velocity, VELOCITY_SCALE)
+      } else {
+        noteItem.velocity = clamp(
+          noteItem.velocity + velocity - averageVelocity,
+          VELOCITY_SCALE,
+        )
+      }
+    }
+  }
+
   return {
+    flatNoteItemsMap,
     octaveContainerInstance,
     noteWidth,
     noteHeight,
+    getSpecifiedNoteItemsMap,
+    getSpecifiedNoteItem,
     createNoteItemsMap,
     getNoteItemTemplate,
     insertNoteItem,
@@ -559,6 +642,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteLeftEdge,
     updateNoteRightEdge,
     simulatePlaySpecifiedNote,
+    getSelectedNoteAverageVelocity,
+    addFlatNoteItem,
+    deleteFlatNoteItem,
+    getFlatNoteItem,
+    updateNoteItemVelocity,
   }
 })
 
