@@ -137,7 +137,10 @@ onMounted(() => {
   if (props.modifyTimelineByClick) {
     interactableContainerRef.value.addEventListener(
       "mousedown",
-      () => {
+      (event) => {
+        // 避免contextmenu事件的mousedown被触发，从而使时间线元素位置改变，导致弹起时的元素不再是原来触发contextmenu事件的元素，这会停止触发contextmenu事件
+        // 因此只允许主键（鼠标左键）触发的mousedown继续执行
+        if (event.button !== 0) return
         document.addEventListener(
           "mouseup",
           (event) => {
