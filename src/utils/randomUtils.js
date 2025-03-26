@@ -145,4 +145,19 @@ export const randomUtils = {
       }
     }
   },
+
+  /**
+   * 生成正态分布随机数（Box-Muller 算法）
+   * @param {number} [mean] - 正态分布的均值
+   * @param {number} [stdDev] - 正态分布的标准差
+   * @returns {number}
+   */
+  generateNormalRandom(mean = 0, stdDev = 1) {
+    let u = 0
+    let v = 0
+    while (u === 0) u = Math.random()
+    while (v === 0) v = Math.random()
+    const z0 = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v)
+    return z0 * stdDev + mean
+  },
 }
