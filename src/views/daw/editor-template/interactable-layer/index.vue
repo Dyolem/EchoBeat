@@ -165,6 +165,7 @@ onMounted(() => {
   interactableContainerRef.value.addEventListener(
     "mousedown",
     (event) => {
+      if (event.button !== 0) return
       const editorId = props.id
       const top = interactableContainerRef.value.getBoundingClientRect().top
       const left = interactableContainerRef.value.getBoundingClientRect().left
