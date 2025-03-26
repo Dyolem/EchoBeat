@@ -21,6 +21,11 @@ export const useZoomRatioStore = defineStore("zoomRatio", () => {
     () => editorMode.value === EDITOR_MODE_ENUM.VELOCITY,
   )
 
+  function updateEditMode(mode) {
+    if (!Object.values(EDITOR_MODE_ENUM).includes(mode)) return
+    editorMode.value = mode
+  }
+
   const zoomRatioMap = ref(new Map())
   function initZoomRatioMap(editorTypeIdMap = EDITOR_TYPE_ID_MAP) {
     zoomRatioMap.value.clear()
@@ -52,6 +57,7 @@ export const useZoomRatioStore = defineStore("zoomRatio", () => {
     isVelocityMode,
     isSnappedToHorizontalGrid,
     currentEditorZoomRatio,
+    updateEditMode,
     initZoomRatioMap,
     getSpecifiedEditorZoomRatio,
     updateSpecifiedEditorZoomRatio,

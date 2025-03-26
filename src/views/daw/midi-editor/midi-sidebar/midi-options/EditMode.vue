@@ -1,21 +1,32 @@
 <script setup>
-import { ref, inject } from "vue"
+import { ref, inject, computed } from "vue"
+import { EDITOR_MODE_ENUM } from "@/constants/daw/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { storeToRefs } from "pinia"
+const zoomRatioStore = useZoomRatioStore()
+const { updateEditMode } = zoomRatioStore
+const { editorMode } = storeToRefs(zoomRatioStore)
 
-const editorMode = ref("select")
+const computedEditMode = computed({
+  get: () => {
+    return editorMode.value
+  },
+  set: updateEditMode,
+})
 const mainColor = inject("mainColor")
 const isPreviewNote = ref(false)
 </script>
 
 <template>
   <div class="editor-mode">
-    <el-radio-group v-model="editorMode" :fill="mainColor">
-      <el-radio-button value="select">
+    <el-radio-group v-model="computedEditMode" :fill="mainColor">
+      <el-radio-button :value="EDITOR_MODE_ENUM.SELECT">
         <echo-material-symbols:arrow-selector-tool-outline-rounded></echo-material-symbols:arrow-selector-tool-outline-rounded
       ></el-radio-button>
-      <el-radio-button value="insert"
+      <el-radio-button :value="EDITOR_MODE_ENUM.INSERT"
         ><echo-akar-icons:pencil></echo-akar-icons:pencil
       ></el-radio-button>
-      <el-radio-button value="velocity">
+      <el-radio-button :value="EDITOR_MODE_ENUM.VELOCITY">
         <echo-icon-park-outline:positive-dynamics></echo-icon-park-outline:positive-dynamics
       ></el-radio-button>
     </el-radio-group>
