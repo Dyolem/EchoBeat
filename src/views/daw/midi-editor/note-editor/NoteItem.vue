@@ -381,6 +381,7 @@ function noteMainMousedownHandler(event) {
     ref="editorNoteRef"
     @click.stop="() => {}"
     @dblclick.stop="() => {}"
+    @mouseup.stop="() => {}"
     @mousedown.stop="draggableRegionHandler"
   >
     <div

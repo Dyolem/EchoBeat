@@ -196,7 +196,7 @@ function stretchableJudgement(event) {
       workspace.width * pixelsPerTick.value(editorId.value) - edgeWidth
   ) {
     isStretchable.value = false
-    workspaceScrollZoneRef.value.style.cursor = "auto"
+    workspaceScrollZoneRef.value.style.cursor = "inherit"
   } else {
     isStretchable.value = true
     workspaceScrollZoneRef.value.style.cursor = "col-resize"

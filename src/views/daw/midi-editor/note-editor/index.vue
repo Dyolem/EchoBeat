@@ -133,6 +133,7 @@ function insertNote({ x: insertX, y: insertY }) {
   )
   if (!insertedItemInfo) return
   noteMainSelectedId.value = insertedItemInfo.id
+  deleteAllSelectedNoteId()
   updateSelectedNotesIdSet(insertedItemInfo.id)
   audioStore
     .generateSingleAudioNode({
@@ -164,11 +165,7 @@ function triggerCustomizedInsertEvent({ x, y }) {
   )
 }
 function noteEditorMousedownHandler(event) {
-  if (isSelectMode.value) {
-    if (noteMainSelectedId.value !== "") {
-      noteMainSelectedId.value = ""
-    }
-  } else if (isInsertMode.value) {
+  if (isInsertMode.value) {
     const { x, y } = getCursorPositionInNoteEditorRegion(event)
     triggerCustomizedInsertEvent({ x, y })
   }
@@ -182,7 +179,13 @@ function noteEditorDblClickHandler(event) {
 </script>
 
 <template>
-  <div class="note-editor-container" ref="noteEditorContainerRef">
+  <div
+    class="note-editor-container"
+    ref="noteEditorContainerRef"
+    :class="{
+      'is-inserted': isInsertMode,
+    }"
+  >
     <div class="workplace-track-placeholder">
       <EditorWorkspace
         v-for="[workspaceId, workspace] in workspaceMap"
@@ -211,9 +214,6 @@ function noteEditorDblClickHandler(event) {
       @dblclick="noteEditorDblClickHandler"
       @mousedown="noteEditorMousedownHandler"
       ref="noteEditorRegionRef"
-      :class="{
-        'is-inserted': isInsertMode,
-      }"
     >
       <div class="note-pad-container" ref="notePadContainerRef">
         <note-pad
