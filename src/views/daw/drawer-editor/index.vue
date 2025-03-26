@@ -1,11 +1,14 @@
 <script setup>
-import { computed, onMounted, onUnmounted, provide, ref } from "vue"
+import { computed, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
+import { storeToRefs } from "pinia"
 import Editor from "@/views/daw/editor-template/index.vue"
 import { debounce } from "@/utils/debounce.js"
 import {
+  EDITOR_MODE_ENUM,
   INIT_FOOTER_HEIGHT,
   INIT_HEADER_HEIGHT,
 } from "@/constants/daw/index.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
 const headerHeight = ref(INIT_HEADER_HEIGHT)
 const footerHeight = ref(INIT_FOOTER_HEIGHT)
@@ -33,6 +36,10 @@ const maxDrawerEditorWidth = ref(MAX_DRAWER_EDITOR_WIDTH)
 const initDrawerEditorWidth = ref(INIT_DRAWER_EDITOR_WIDTH)
 const initDrawerEditorHeight = ref(INIT_DRAWER_EDITOR_HEIGHT)
 
+const drawerEditorContainerRef = useTemplateRef("drawerEditorContainerRef")
+const zoomRatioStore = useZoomRatioStore()
+const { updateEditMode } = zoomRatioStore
+const { editorMode } = storeToRefs(zoomRatioStore)
 const props = defineProps({
   id: {
     type: String,
@@ -91,7 +98,34 @@ const debouncedResizeHandler = debounce(resizeHandler, 200)
 window.addEventListener("resize", debouncedResizeHandler, {
   signal: controller.signal,
 })
+
+const keyBoardController = new AbortController()
 onMounted(() => {
+  drawerEditorContainerRef.value.addEventListener(
+    "keydown",
+    (e) => {
+      const initEditMode = editorMode.value
+      if (e.key === "Control") {
+        if (initEditMode === EDITOR_MODE_ENUM.SELECT)
+          updateEditMode(EDITOR_MODE_ENUM.INSERT)
+      }
+      const keyupController = new AbortController()
+      drawerEditorContainerRef.value.addEventListener(
+        "keyup",
+        (e) => {
+          if (e.key === "Control") {
+            if (initEditMode === EDITOR_MODE_ENUM.SELECT) {
+              updateEditMode(initEditMode)
+            }
+            keyupController.abort()
+          }
+        },
+        { signal: keyupController.signal },
+      )
+    },
+    { signal: keyBoardController.signal },
+  )
+
   resizeHandler()
 })
 function updateEditorViewWidthHandler(newViewWidthVal) {
@@ -100,11 +134,16 @@ function updateEditorViewWidthHandler(newViewWidthVal) {
 
 onUnmounted(() => {
   controller.abort()
+  keyBoardController.abort()
 })
 </script>
 
 <template>
-  <div class="drawer-editor-container" ref="drawerEditorContainerRef">
+  <div
+    class="drawer-editor-container"
+    ref="drawerEditorContainerRef"
+    tabindex="-1"
+  >
     <div class="drawer-editor-side-bar">
       <slot
         name="editor-sidebar"
