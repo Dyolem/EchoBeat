@@ -14,6 +14,7 @@ import {
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 import { useSelectionStore } from "@/store/daw/selection.js"
+import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
 const trackRulerStore = useTrackRulerStore()
 const beatControllerStore = useBeatControllerStore()
@@ -26,6 +27,8 @@ const {
   noteGridWidth,
   pixelsPerTick,
 } = storeToRefs(beatControllerStore)
+const zoomRatioStore = useZoomRatioStore()
+const { isSelectMode } = storeToRefs(zoomRatioStore)
 const interactableContainerRef = useTemplateRef("interactableContainerRef")
 const controller = new AbortController()
 
@@ -165,6 +168,7 @@ onMounted(() => {
   interactableContainerRef.value.addEventListener(
     "mousedown",
     (event) => {
+      if (!isSelectMode.value) return
       if (event.button !== 0) return
       const editorId = props.id
       const top = interactableContainerRef.value.getBoundingClientRect().top
@@ -206,7 +210,7 @@ onMounted(() => {
             selectionBoxY.value = Math.max(newY, 0) //避免矩形的y小于0
             maxHeight = initY
           } else {
-            maxHeight = maxSelectionHeight - initY
+            maxHeight = Math.max(maxSelectionHeight - initY, 0)
           }
           const newWidth = Math.abs(newX - initX)
           const newHeight = Math.abs(newY - initY)
