@@ -73,70 +73,46 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return pitchNameMappedToAreaArr
   })
 
-  const flatNoteItemsMap = ref(new Map())
+  const flatNoteItemsMap = ref(createNoteItemsMap())
 
   /**
-   * @typedef {[number, number]} ScaleYTuple - 垂直缩放比例范围元组 [最小值, 最大值]
+   * @typedef {string} NoteId - note 元素的唯一标识符
    */
-
-  /**
-   * @typedef {string} PitchNameId - 以音名作为Map的键，同时具有id的作用
-   */
-
-  /**
-   * @typedef {Object} PitchAreaElement
-   * @property {PitchNameId} pitchName - 音高名称（如 "c4"）
-   * @property {ScaleYTuple} scale - 垂直高度范围
-   */
-
   /**
    * @typedef {Object} NoteItem
-   * @property {PitchNameId} pitchName - 音高名称（与Map键严格一致）
-   * @property {string} id - note元素自身id
-   * @property {string} width - note元素的宽度
-   * @property {string} height - note元素的高度
-   * @property {string} x - note元素相对于midi编辑器左上角原点的绝对横坐标
-   * @property {string} y - note元素相对于midi编辑器左上角原点的绝对纵坐标
-   * @property {number} startTime - 以0时刻为起点的时间参考系，note元素的起始播放时刻
-   * @property {number} duration - 以0时刻为起点的时间参考系，note元素的播放持续时间
+   * @property {NoteId} id - note 元素的唯一标识符
+   * @property {string} workspaceId - 所属工作区的 ID
+   * @property {string} audioTrackId - 关联的音频轨道 ID
+   * @property {number} width - note 元素的宽度（基于绝对时间参考系，单位：tick）
+   * @property {number} height - note 元素的高度（单位：像素值）
+   * @property {number} x - note 元素相对于 MIDI 编辑器左上角原点的绝对横坐标（基于绝对时间参考系，单位：tick）
+   *    @readonly
+   *    @type {number}
+   *    @example this.relativeX + this.workspaceStartPosition
+   * @property {number} relativeX - note 元素相对于工作区左上角原点的相对横坐标（基于绝对时间参考系，单位：tick）
+   * @property {number} y - note 元素相对于 MIDI 编辑器左上角原点的绝对纵坐标
+   * @property {PitchNameId} pitchName - 音高名称
+   * @property {number} startTime - 起始播放时刻（基于绝对时间参考系，单位：tick）
+   *    @readonly
+   *    @type {number}
+   *    @example this.x * absoluteTimePerTick.value
+   * @property {number} duration - 播放持续时间（基于绝对时间参考系，单位：tick）
+   *    @readonly
+   *    @type {number}
+   *    @example this.width * absoluteTimePerTick.value
+   * @property {number} velocity - 音符力度（0-127）
+   * @property {number} workspaceStartPosition - 工作区起始位置（基于绝对时间参考系，单位：tick）
+   *    @readonly
+   *    @type {number}
+   *    @example workspaceStore.getWorkspace(...).startPosition
    */
+
   /**
-   * @typedef {Object} NoteTrack
-   * @property {PitchNameId} pitchName - 音高名称（与Map键严格一致）
-   * @property {ScaleYTuple} scaleY - 垂直高度范围
-   * @property {NoteItem[]} noteItems - 音符项集合（初始化为空数组）
+   * @returns {Map<NoteId, NoteItem>}
    */
-
-  /**
-   * 创建音符轨道映射表
-   * @returns {Map<PitchNameId, NoteTrack>}
-   * @param {import('vue').computed<PitchAreaElement[]>} _pitchNameMappedToArea - 响应式音域配置源
-   */
-  function createNoteItemsMap(
-    _pitchNameMappedToArea = pitchNameMappedToArea.value,
-  ) {
-    /** @type {Map<PitchNameId, NoteTrack>} */
-    const noteItemsMap = new Map()
-
-    noteItemsMap.clear()
-
-    // 类型安全的遍历处理
-    for (const pitchNameMappedToAreaElement of _pitchNameMappedToArea) {
-      /** @type {PitchAreaElement} */
-      const { pitchName, scale } = pitchNameMappedToAreaElement
-
-      /** @type {NoteTrack} */
-      const template = {
-        pitchName,
-        scaleY: scale, // 自动匹配ScaleYTuple类型
-        noteItems: [], // 初始化空数组
-      }
-
-      // 这里会检查键类型与pitchName类型的一致性
-      noteItemsMap.set(pitchName, template)
-    }
-
-    return noteItemsMap
+  function createNoteItemsMap() {
+    /** @type {Map<NoteId, NoteItem>} */
+    return new Map()
   }
 
   function getInsertToSpecifiedPitchName({ y, pitchNameMappedToArea } = {}) {
@@ -152,13 +128,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return insertToSpecifiedPitchName
   }
 
-  function getId(insertToSpecifiedPitchName, noteItemsMap) {
-    if (insertToSpecifiedPitchName === undefined || noteItemsMap === undefined)
-      return
-    const count = noteItemsMap.get(insertToSpecifiedPitchName).noteItems.length
+  function getId(noteItemsMap) {
+    if (noteItemsMap === undefined) return
+    const count = noteItemsMap.size
     const date = new Date()
     const fetchTime = date.getTime()
-    return `${insertToSpecifiedPitchName}-${count}-${fetchTime}`
+    const prefix = "note"
+    return `${prefix}-${count}-${fetchTime}`
   }
 
   function getNoteItemTemplate({
@@ -178,7 +154,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       workspaceId,
       audioTrackId,
     })
-    const id = getId(insertToSpecifiedPitchName, newWorkspace.noteItemsMap)
+    const id = getId(newWorkspace.noteItemsMap)
     const scaleX = [
       newWorkspace.startPosition,
       newWorkspace.startPosition + newWorkspace.width,
@@ -281,9 +257,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       audioTrackId,
     })
     if (!template) return
-    const noteItems = noteItemsMap.get(specifiedPitchName)?.noteItems
-    noteItems?.push(template)
-    console.log(template)
+    noteItemsMap.set(template.id, template)
     addFlatNoteItem(template.id, template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
@@ -302,19 +276,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       deleteFromSpecifiedPitchName === undefined
     )
       return
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
-    const noteItemsMap = workspaceMap.get(workspaceId).noteItemsMap
-    const deleteTargetArr = noteItemsMap.get(
-      deleteFromSpecifiedPitchName,
-    ).noteItems
-    if (!deleteTargetArr) return
-
-    const deleteIndex = deleteTargetArr.findIndex((item) => item.id === id)
-    if (deleteIndex === -1) return
-    deleteTargetArr.splice(deleteIndex, 1)
+    const workspace = workspaceStore.getWorkspace({ audioTrackId, workspaceId })
+    const noteItemsMap = workspace.noteItemsMap
+    noteItemsMap.delete(id)
     deleteFlatNoteItem(id)
     audioStore.removeNodeFromNoteId({ audioTrackId, id })
   }
@@ -406,9 +370,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     })
     const workspace = workspaceMap.get(workspaceId)
     const noteItemsMap = workspace.noteItemsMap
-    const updateNoteTarget = noteItemsMap
-      .get(pitchName)
-      .noteItems.find((item) => item.id === id)
+    const updateNoteTarget = noteItemsMap.get(id)
     if (updateNoteTarget === undefined) return
 
     const scaleX = [
@@ -427,42 +389,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteTarget.y = alignedAbsoluteY
 
     updateNoteTarget.pitchName = alignedPitchName
-    const newNoteId = getId(alignedPitchName, noteItemsMap)
     return {
-      newNoteId,
       newPitchName: alignedPitchName,
     }
-  }
-
-  function updateNoteItemsMap({
-    oldId,
-    newId,
-    audioTrackId,
-    workspaceId,
-    oldPitchName,
-    newPitchName,
-  }) {
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
-    const noteItemsMap = workspaceMap.get(workspaceId).noteItemsMap
-    const oldTargetArr = noteItemsMap.get(oldPitchName).noteItems
-    const newTargetArr = noteItemsMap.get(newPitchName).noteItems
-    const oldTargetIndex = oldTargetArr.findIndex((item) => {
-      return item.id === oldId
-    })
-    const oldNoteItem = oldTargetArr[oldTargetIndex]
-    oldNoteItem.id = newId
-    newTargetArr.push(oldNoteItem)
-    oldTargetArr.splice(oldTargetIndex, 1)
-    deleteFlatNoteItem(oldId)
-    addFlatNoteItem(newId, oldNoteItem)
-    audioStore.updateSpecifiedNoteBufferSourceMap({
-      audioTrackId,
-      newId,
-      oldId,
-    })
   }
 
   /**
@@ -473,7 +402,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     id,
     audioTrackId,
     workspaceId,
-    pitchName,
     absoluteX,
     initLeftEdgeX,
   }) {
@@ -483,9 +411,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     })
     const workspace = workspaceMap.get(workspaceId)
     const noteItemsMap = workspace.noteItemsMap
-    const updateNoteTarget = noteItemsMap
-      .get(pitchName)
-      .noteItems.find((item) => item.id === id)
+    const updateNoteTarget = noteItemsMap.get(id)
 
     const scale = [initLeftEdgeX, workspace.width + workspace.startPosition]
     const newRightEdgeX = snapToTickUnitGrid({
@@ -506,7 +432,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     id,
     audioTrackId,
     workspaceId,
-    pitchName,
     absoluteX,
     initRightEdgeX,
   }) {
@@ -517,9 +442,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const workspace = workspaceMap.get(workspaceId)
     const workspaceStartPosition = workspace.startPosition
     const noteItemsMap = workspace.noteItemsMap
-    const updateNoteTarget = noteItemsMap
-      .get(pitchName)
-      .noteItems.find((item) => item.id === id)
+    const updateNoteTarget = noteItemsMap.get(id)
+
     const scale = [workspaceStartPosition, initRightEdgeX]
     const newLeftEdgeX = snapToTickUnitGrid({
       editorId,
@@ -558,33 +482,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }
 
   function getSpecifiedNoteItemsMap({ audioTrackId, workspaceId }) {
-    const workspace = workspaceStore.getWorkspace({ audioTrackId, workspaceId })
-    return workspace.noteItemsMap
+    return workspaceStore.getWorkspace({ audioTrackId, workspaceId })
+      ?.noteItemsMap
   }
 
-  function getSpecifiedNoteItem({
-    audioTrackId,
-    workspaceId,
-    noteId,
-    pitchName,
-  }) {
+  function getSpecifiedNoteItem({ audioTrackId, workspaceId, noteId }) {
     const noteItemsMap = getSpecifiedNoteItemsMap({ audioTrackId, workspaceId })
-    if (!pitchName) {
-      for (const { noteItems } of noteItemsMap.values()) {
-        const targetIndex = noteItems.findIndex(
-          (noteItem) => noteItem.id === noteId,
-        )
-        if (targetIndex === -1) continue
-        return noteItems[targetIndex]
-      }
-    } else {
-      const noteItems = noteItemsMap.get(pitchName)
-      const targetIndex = noteItems.findIndex(
-        (noteItem) => noteItem.id === noteId,
-      )
-      if (targetIndex !== -1) return noteItems[targetIndex]
-    }
-    return null
+    return noteItemsMap?.get(noteId)
   }
 
   function getSelectedNoteAverageVelocity(noteIdSet) {
@@ -669,7 +573,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     insertNoteItem,
     deleteNoteItem,
     updateNoteItemPosition,
-    updateNoteItemsMap,
     updateNoteLeftEdge,
     updateNoteRightEdge,
     simulatePlaySpecifiedNote,
@@ -681,62 +584,3 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     transposeNoteItem,
   }
 })
-
-// new Map([
-//   [
-//     "c4",
-//     {
-//       pitchName: "c4",
-//       scaleY: [20,40],
-//       noteItems: [
-//         {
-//           pitchName:"c4",
-//           id: "c4-1",
-//           width: 20,
-//           height: 10,
-//           x: 10,
-//           y: 20,
-//           backGroundColor: "lightblue",
-//           startTime,
-//           duration,
-//         },
-//         {
-//           id: "c4-2",
-//           width: 20,
-//           height: 10,
-//           x: 40,
-//           y: 60,
-//           backGroundColor: "lightblue",
-//           backGroundColor: "lightblue",
-//           startTime,
-//           duration,
-//         },
-//       ],
-//     },
-//   ],
-//   [
-//     "c5",
-//     {
-//       pitchName: "c5",
-//       scaleY: [80,100],
-//       noteItems: [
-//         {
-//           id: "c5-1",
-//           width: 20,
-//           height: 10,
-//           x: 10,
-//           y: 20,
-//           backGroundColor: "lightblue",
-//         },
-//         {
-//           id: "c5-2",
-//           width: 20,
-//           height: 10,
-//           x: 40,
-//           y: 60,
-//           backGroundColor: "lightblue",
-//         },
-//       ],
-//     },
-//   ],
-// ]),
