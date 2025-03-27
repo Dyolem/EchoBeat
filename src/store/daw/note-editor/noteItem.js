@@ -52,9 +52,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const octaveContainerInstance = ref(null)
 
   const pitchNameMappedToArea = computed(() => {
-    const _toFixed = (val, num = 2) => {
-      return Number(val.toFixed(num))
-    }
     const pitchNameMappedToAreaArr = []
     let count = 0
     for (const chromaticScale of CHROMATIC_SCALE_SERIAL_NUMBER.toReversed()) {
@@ -62,19 +59,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
         if (!NATURAL_SEMITONE.includes(chromaticPitchName)) {
           pitchNameMappedToAreaArr.push({
             pitchName: chromaticPitchName + "#" + chromaticScale,
-            scale: [
-              _toFixed(count * noteHeight.value),
-              _toFixed((count + 1) * noteHeight.value),
-            ],
+            scale: [count * noteHeight.value, (count + 1) * noteHeight.value],
           })
           count++
         }
         pitchNameMappedToAreaArr.push({
           pitchName: chromaticPitchName + chromaticScale,
-          scale: [
-            _toFixed(count * noteHeight.value),
-            _toFixed((count + 1) * noteHeight.value),
-          ],
+          scale: [count * noteHeight.value, (count + 1) * noteHeight.value],
         })
         count++
       }
@@ -626,6 +617,46 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     }
   }
 
+  function transposeNoteItem(noteIdSet, increment) {
+    // 浮点数计算并不精确，但是范围判断是精确判断，在通过多次浮点数加减后，会导致相差1.0658141036401503e-14这种极其细微的误差
+    const calculateErrorTolerance = 0.001
+    const waitedTransposeNotesArr = []
+    const _maxY = maxY.value
+    const _pitchNameMappedToArea = pitchNameMappedToArea.value
+    for (const noteId of noteIdSet) {
+      const transposedWork = new Promise((resolve, reject) => {
+        const noteItem = getFlatNoteItem(noteId)
+        const newY = noteItem.y - increment * noteHeight.value
+        const newPitchName = getInsertToSpecifiedPitchName({
+          y: newY + calculateErrorTolerance,
+          pitchNameMappedToArea: _pitchNameMappedToArea,
+        })
+        if (
+          newY >= -calculateErrorTolerance &&
+          newY <= _maxY + calculateErrorTolerance
+        ) {
+          resolve({
+            noteItem,
+            newY,
+            newPitchName,
+          })
+        } else {
+          reject()
+        }
+      })
+      waitedTransposeNotesArr.push(transposedWork)
+    }
+    Promise.all(waitedTransposeNotesArr).then(
+      (resolvedTransposedArr) => {
+        for (const { noteItem, newY, newPitchName } of resolvedTransposedArr) {
+          noteItem.y = newY
+          noteItem.pitchName = newPitchName
+        }
+      },
+      () => {},
+    )
+  }
+
   return {
     flatNoteItemsMap,
     octaveContainerInstance,
@@ -647,6 +678,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     deleteFlatNoteItem,
     getFlatNoteItem,
     updateNoteItemVelocity,
+    transposeNoteItem,
   }
 })
 
