@@ -130,8 +130,7 @@ export function generateAudioTrack(midiData) {
           velocity,
           isDirectPosition: true,
         })
-        const noteItems = noteItemsMap.get(specifiedPitchName)?.noteItems
-        noteItems?.push(template)
+        noteItemsMap.set(template.id, template)
         noteItemStore.addFlatNoteItem(template.id, template)
         audioStore.insertSourceNodeAndGainNode(template)
       }

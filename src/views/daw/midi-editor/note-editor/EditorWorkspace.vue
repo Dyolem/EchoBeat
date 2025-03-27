@@ -317,29 +317,26 @@ function stretchWorkspaceWidth(event) {
         @mousedown="stretchWorkspaceWidth"
       >
         <template
-          class="note-editor-track"
-          v-for="[pitchName, noteTrack] in noteItemsMap"
-          :style="{ transform: `translateY(${noteTrack.positionY}px)` }"
-          :id="pitchName"
+          v-for="[noteId, noteItem] in noteItemsMap"
+          :id="noteId"
+          :key="noteId"
         >
-          <template v-for="noteItem in noteTrack.noteItems" :key="noteItem.id">
-            <note-item
-              v-if="isDisplay(noteItem.relativeX + startPosition, noteItem.y)"
-              :id="noteItem.id"
-              :workspace-id="id"
-              :audio-track-id="noteItem.audioTrackId"
-              :belonged-pitch-name="noteItem.pitchName"
-              :note-width="noteItem.width"
-              :note-height="noteHeight"
-              :note-pad-width="editorCanvasWidth"
-              :note-pad-height="editorCanvasHeight"
-              :x="noteItem.relativeX"
-              :y="noteItem.y"
-              :workspace-start-position="startPosition"
-              :noteEditorRegionRef="noteEditorRegionRef"
-              :note-back-ground-color="noteBgColor(noteItem.velocity)"
-            ></note-item>
-          </template>
+          <note-item
+            v-if="isDisplay(noteItem.relativeX + startPosition, noteItem.y)"
+            :id="noteId"
+            :workspace-id="id"
+            :audio-track-id="noteItem.audioTrackId"
+            :belonged-pitch-name="noteItem.pitchName"
+            :note-width="noteItem.width"
+            :note-height="noteHeight"
+            :note-pad-width="editorCanvasWidth"
+            :note-pad-height="editorCanvasHeight"
+            :x="noteItem.relativeX"
+            :y="noteItem.y"
+            :workspace-start-position="startPosition"
+            :noteEditorRegionRef="noteEditorRegionRef"
+            :note-back-ground-color="noteBgColor(noteItem.velocity)"
+          ></note-item>
         </template>
       </div>
     </div>

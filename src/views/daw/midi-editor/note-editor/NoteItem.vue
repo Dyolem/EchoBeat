@@ -160,7 +160,6 @@ function draggableRegionHandler(event) {
    * const mousedownY = event.clientY - editorNoteRef.value.getBoundingClientRect().top
    * */
 
-  let newId = ""
   function mouseMoveHandler(event) {
     translateXDistance =
       event.clientX -
@@ -173,7 +172,7 @@ function draggableRegionHandler(event) {
       mousedownY
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      const { newNoteId, newPitchName } =
+      const { newPitchName } =
         noteItemMap.updateNoteItemPosition({
           editorId: midiEditorId.value,
           id,
@@ -183,7 +182,6 @@ function draggableRegionHandler(event) {
           x: translateXDistance / pixelsPerTick.value(midiEditorId.value),
           y: translateYDistance,
         }) ?? {}
-      newId = newNoteId
 
       if (newPitchName !== lastPitchName) {
         playNoteAudioSample(newPitchName)
@@ -199,18 +197,6 @@ function draggableRegionHandler(event) {
       e.stopPropagation()
       document.removeEventListener("mousemove", mouseMoveHandler)
       selectionController.abort()
-      if (!newId) return
-      deleteSelectedNoteId(id)
-      updateSelectedNotesIdSet(newId)
-      noteItemMap.updateNoteItemsMap({
-        oldId: id,
-        newId,
-        audioTrackId: selectedAudioTrackId.value,
-        workspaceId: props.workspaceId,
-        oldPitchName: belongedPitchName,
-        newPitchName: props.belongedPitchName,
-      })
-      updateNoteMainSelectedId(newId)
     },
     {
       once: true,
@@ -246,7 +232,6 @@ function stretchEditorNoteLength(event) {
         id: props.id,
         audioTrackId: selectedAudioTrackId.value,
         workspaceId: props.workspaceId,
-        pitchName: props.belongedPitchName,
         absoluteX: initX + props.workspaceStartPosition + tickDeltaX,
         initRightEdgeX: initX + initWidth + props.workspaceStartPosition,
       })
@@ -256,7 +241,6 @@ function stretchEditorNoteLength(event) {
         id: props.id,
         audioTrackId: selectedAudioTrackId.value,
         workspaceId: props.workspaceId,
-        pitchName: props.belongedPitchName,
         absoluteX:
           initX + props.workspaceStartPosition + initWidth + tickDeltaX,
         initLeftEdgeX: initX + props.workspaceStartPosition,

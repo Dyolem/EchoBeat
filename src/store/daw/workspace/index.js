@@ -365,10 +365,8 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     workspace.startPosition = newLeftEdgeX
     workspace.width = newWorkspaceWidth
     const noteItemsMap = workspace.noteItemsMap
-    for (const noteItemsMapItem of noteItemsMap.values()) {
-      for (const noteItem of noteItemsMapItem.noteItems) {
-        noteItem.relativeX += deltaWidth
-      }
+    for (const noteItem of noteItemsMap.values()) {
+      noteItem.relativeX += deltaWidth
     }
     return [newLeftEdgeX, x]
   }
