@@ -463,6 +463,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   function updateNoteRightEdge({
     editorId,
     id,
+    selectedNotesId,
     audioTrackId,
     workspaceId,
     absoluteX,
@@ -477,14 +478,65 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const updateNoteTarget = noteItemsMap.get(id)
 
     const scale = [initLeftEdgeX, workspace.width + workspace.startPosition]
+    const oldNoteWidth = updateNoteTarget.width
+    const oldRightEdgeX = updateNoteTarget.x + oldNoteWidth
     const newRightEdgeX = snapToTickUnitGrid({
       editorId,
       tickX: absoluteX,
       tickScale: scale,
     })
     const newNoteWidth = newRightEdgeX - initLeftEdgeX
-    updateNoteTarget.width = newNoteWidth
-    nextInsertedNoteWidth.value = newNoteWidth
+
+    const rightEdgeXIncrement = newRightEdgeX - oldRightEdgeX
+    const noteWidthIncrement = newNoteWidth - oldNoteWidth
+
+    const updateNoteRightEdgeArr = []
+    for (const noteId of selectedNotesId) {
+      if (noteId === id) continue
+      const waitedUpdateNoteRightEdgeWork = new Promise((resolve, reject) => {
+        const otherNoteTarget = getFlatNoteItem(noteId)
+        const belongedWorkspace = workspaceStore.getWorkspace({
+          audioTrackId: otherNoteTarget.audioTrackId,
+          workspaceId: otherNoteTarget.workspaceId,
+        })
+        const workspaceStartPosition = belongedWorkspace.startPosition
+        const workspaceWidth = belongedWorkspace.width
+
+        const newWidth = otherNoteTarget.width + noteWidthIncrement
+        const absoluteNoteX = otherNoteTarget.relativeX + workspaceStartPosition
+        const newAbsoluteRightEdgeX =
+          absoluteNoteX + otherNoteTarget.width + rightEdgeXIncrement
+
+        const absoluteRightEdgeXJudgement =
+          newAbsoluteRightEdgeX > absoluteNoteX &&
+          newAbsoluteRightEdgeX <= workspaceWidth + workspaceStartPosition
+
+        if (!absoluteRightEdgeXJudgement) {
+          reject(new Error("note element width exceeds workspace scope"))
+        } else {
+          resolve({
+            updatedNoteTarget: otherNoteTarget,
+            newWidth,
+          })
+        }
+      })
+
+      updateNoteRightEdgeArr.push(waitedUpdateNoteRightEdgeWork)
+    }
+
+    return Promise.all(updateNoteRightEdgeArr).then(
+      (updateInfo) => {
+        updateNoteTarget.width = newNoteWidth
+        nextInsertedNoteWidth.value = newNoteWidth
+
+        for (const { updatedNoteTarget, newWidth } of updateInfo) {
+          updatedNoteTarget.width = newWidth
+        }
+      },
+      (reason) => {
+        return Promise.reject(reason)
+      },
+    )
   }
 
   /**
@@ -493,6 +545,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   function updateNoteLeftEdge({
     editorId,
     id,
+    selectedNotesId,
     audioTrackId,
     workspaceId,
     absoluteX,
@@ -508,17 +561,63 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const updateNoteTarget = noteItemsMap.get(id)
 
     const scale = [workspaceStartPosition, initRightEdgeX]
+    const oldRelativeX = updateNoteTarget.relativeX
+    const oldNoteWidth = updateNoteTarget.width
     const newLeftEdgeX = snapToTickUnitGrid({
       editorId,
       tickX: absoluteX,
       tickScale: scale,
     })
     const newRelativeX = newLeftEdgeX - workspaceStartPosition
-    updateNoteTarget.relativeX = newRelativeX
     const newNoteWidth =
       initRightEdgeX - (newRelativeX + workspaceStartPosition)
-    updateNoteTarget.width = newNoteWidth
-    nextInsertedNoteWidth.value = newNoteWidth
+
+    const relativeXIncrement = newRelativeX - oldRelativeX
+    const noteWidthIncrement = newNoteWidth - oldNoteWidth
+    const updateNoteLeftEdgeArr = []
+    for (const noteId of selectedNotesId) {
+      if (noteId === id) continue
+      const waitedUpdateNoteLeftWork = new Promise((resolve, reject) => {
+        const otherNoteTarget = getFlatNoteItem(noteId)
+        const newWidth = otherNoteTarget.width + noteWidthIncrement
+        const newRelativeX = otherNoteTarget.relativeX + relativeXIncrement
+
+        const relativeXJudgement =
+          newRelativeX >= 0 &&
+          newRelativeX < otherNoteTarget.relativeX + otherNoteTarget.width
+        if (!relativeXJudgement) {
+          reject(new Error("note element width exceeds workspace scope"))
+        } else {
+          resolve({
+            updatedNoteTarget: otherNoteTarget,
+            newWidth,
+            newRelativeX,
+          })
+        }
+      })
+
+      updateNoteLeftEdgeArr.push(waitedUpdateNoteLeftWork)
+    }
+
+    return Promise.all(updateNoteLeftEdgeArr).then(
+      (updateInfo) => {
+        updateNoteTarget.relativeX = newRelativeX
+        updateNoteTarget.width = newNoteWidth
+        nextInsertedNoteWidth.value = newNoteWidth
+
+        for (const {
+          updatedNoteTarget,
+          newWidth,
+          newRelativeX,
+        } of updateInfo) {
+          updatedNoteTarget.width = newWidth
+          updatedNoteTarget.relativeX = newRelativeX
+        }
+      },
+      (reason) => {
+        return Promise.reject(reason)
+      },
+    )
   }
 
   function simulatePlaySpecifiedNote(pitchName, audioSignal) {

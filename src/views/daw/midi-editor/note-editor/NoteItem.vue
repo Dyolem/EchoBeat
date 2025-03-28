@@ -234,24 +234,30 @@ function stretchEditorNoteLength(event) {
       mousedownStartX - (pixelsInitX + pixelsWorkspaceStartPosition)
     const tickDeltaX = deltaX / pixelsPerTick.value(midiEditorId.value)
     if (mousedownXInNote < pixelsInitWidth / 2) {
-      noteItemMap.updateNoteLeftEdge({
-        editorId: midiEditorId.value,
-        id: props.id,
-        audioTrackId: selectedAudioTrackId.value,
-        workspaceId: props.workspaceId,
-        absoluteX: initX + props.workspaceStartPosition + tickDeltaX,
-        initRightEdgeX: initX + initWidth + props.workspaceStartPosition,
-      })
+      noteItemMap
+        .updateNoteLeftEdge({
+          editorId: midiEditorId.value,
+          id: props.id,
+          selectedNotesId: selectedNotesIdSet.value,
+          audioTrackId: selectedAudioTrackId.value,
+          workspaceId: props.workspaceId,
+          absoluteX: initX + props.workspaceStartPosition + tickDeltaX,
+          initRightEdgeX: initX + initWidth + props.workspaceStartPosition,
+        })
+        .catch(() => {})
     } else {
-      noteItemMap.updateNoteRightEdge({
-        editorId: midiEditorId.value,
-        id: props.id,
-        audioTrackId: selectedAudioTrackId.value,
-        workspaceId: props.workspaceId,
-        absoluteX:
-          initX + props.workspaceStartPosition + initWidth + tickDeltaX,
-        initLeftEdgeX: initX + props.workspaceStartPosition,
-      })
+      noteItemMap
+        .updateNoteRightEdge({
+          editorId: midiEditorId.value,
+          id: props.id,
+          selectedNotesId: selectedNotesIdSet.value,
+          audioTrackId: selectedAudioTrackId.value,
+          workspaceId: props.workspaceId,
+          absoluteX:
+            initX + props.workspaceStartPosition + initWidth + tickDeltaX,
+          initLeftEdgeX: initX + props.workspaceStartPosition,
+        })
+        .catch(() => {})
     }
   }
   document.addEventListener("mousemove", mousemoveHandler)
