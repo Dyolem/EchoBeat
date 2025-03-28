@@ -1,5 +1,6 @@
 <script setup>
 import { defineOptions } from "vue"
+import { Icon } from "@iconify/vue"
 
 // 设置组件名称用于递归
 defineOptions({
@@ -19,10 +20,15 @@ defineProps({
   <template v-if="item.children?.length">
     <el-sub-menu :index="item.value" :disabled="item.disable">
       <template #title>
-        <el-icon v-if="item.icon">
-          <component :is="item.icon" />
-        </el-icon>
-        <div>{{ item.label }}</div>
+        <div class="title">
+          <Icon
+            v-if="item.icon"
+            :icon="item.icon.name"
+            :style="item.icon.style ?? {}"
+            class="icon"
+          ></Icon>
+          <span>{{ item.label }}</span>
+        </div>
       </template>
       <MenuItem
         v-for="child in item.children"
@@ -32,9 +38,29 @@ defineProps({
     </el-sub-menu>
   </template>
   <el-menu-item v-else :index="item.value" :disabled="item.disable">
-    <el-icon v-if="item.icon">
-      <component :is="item.icon" />
-    </el-icon>
-    <div>{{ item.label }}</div>
+    <div class="title">
+      <Icon
+        v-if="item.icon"
+        :icon="item.icon.name"
+        :style="item.icon.style ?? {}"
+        class="icon"
+      ></Icon>
+      <span>{{ item.label }}</span>
+    </div>
   </el-menu-item>
 </template>
+<style scoped>
+.title {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  color: #ffffff;
+}
+.icon {
+  font-size: 18px;
+  font-weight: 500;
+  color: #ffffff;
+}
+</style>
