@@ -1,6 +1,6 @@
 <script setup>
 import Menu from "@/views/daw/components/context-menu/Menu.vue"
-import { ref } from "vue"
+import { ref, onUnmounted } from "vue"
 const globalMenuIconsSet = {
   GLOBAL_MENU: "material-symbols:menu-rounded",
   PROJECT_SUB_MENU: "ph:music-note-light",
@@ -19,6 +19,7 @@ const globalMenuIconsSet = {
   GLOBAL_SETTINGS: "tdesign:setting",
   SNAP_MAGNET: "bxs:magnet",
 }
+const fullScreenController = new AbortController()
 const globalMenuData = ref([
   {
     value: "global menu",
@@ -136,6 +137,40 @@ const globalMenuData = ref([
           {
             value: "full screen",
             label: "Full Screen",
+            clickHandler({ index, indexPath, active }) {
+              // 切换全屏的核心逻辑
+              const toggleHandler = () => {
+                if (!document.fullscreenElement) {
+                  document.documentElement.requestFullscreen()
+                } else {
+                  document.exitFullscreen()
+                }
+              }
+
+              // 状态更新函数
+              const updateState = () => {
+                const isFullscreen = !!document.fullscreenElement
+                this.value = isFullscreen ? "exit full" : "full screen"
+                this.label = isFullscreen ? "Exit Full" : "Full Screen"
+                this.icon.name = isFullscreen
+                  ? globalMenuIconsSet.EXIT_FULL_SCREEN
+                  : globalMenuIconsSet.FULL_SCREEN
+              }
+
+              // 首次点击时绑定监听器
+              if (!this._fullscreenBound) {
+                document.addEventListener(
+                  "fullscreenchange",
+                  updateState.bind(this),
+                  { signal: fullScreenController.signal },
+                )
+                this._fullscreenBound = true
+              }
+
+              // 执行切换并立即更新状态
+              toggleHandler()
+              updateState()
+            },
             icon: {
               name: globalMenuIconsSet.FULL_SCREEN,
             },
@@ -161,6 +196,10 @@ const globalMenuData = ref([
     ],
   },
 ])
+
+onUnmounted(() => {
+  fullScreenController.abort()
+})
 </script>
 
 <template>
