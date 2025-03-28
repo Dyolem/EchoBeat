@@ -47,7 +47,6 @@ input,select,textarea {
 .el-popper {
   border: 1px solid #25292f !important;
   --el-bg-color-overlay:#0f1214;
-  overflow: hidden;
 }
 .el-menu-item {
   --el-menu-hover-bg-color:#282c32;
