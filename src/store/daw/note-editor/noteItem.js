@@ -348,6 +348,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
    */
   function updateNoteItemPosition({
     id,
+    selectedNoteIdSet,
     audioTrackId,
     workspaceId,
     pitchName,
@@ -356,42 +357,104 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }) {
     if (
       id === undefined ||
+      selectedNoteIdSet === undefined ||
       audioTrackId === undefined ||
       workspaceId === undefined ||
       pitchName === undefined ||
       x === undefined ||
       y === undefined
     )
-      return
-
-    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-    })
+      return Promise.reject(new Error("Parameters error"))
+    const _pitchNameMappedToArea = pitchNameMappedToArea.value
+    const workspaceMap = workspaceStore.getWorkspaceMap({ audioTrackId })
     const workspace = workspaceMap.get(workspaceId)
     const noteItemsMap = workspace.noteItemsMap
-    const updateNoteTarget = noteItemsMap.get(id)
-    if (updateNoteTarget === undefined) return
+    const updateMainNote = noteItemsMap.get(id)
 
     const scaleX = [
       workspace.startPosition,
-      workspace.startPosition + workspace.width - updateNoteTarget.width,
+      workspace.startPosition + workspace.width - updateMainNote.width,
     ]
     const scaleY = [0, maxY.value]
+    const oldAbsoluteX = updateMainNote.x
+    const oldAbsoluteY = updateMainNote.y
     const { alignedAbsolutePosition, alignedPitchName } =
       alignToOtherPitchNameTrack({
         absolutePosition: [x, y],
         scale: [scaleX, scaleY],
       })
-    if (!alignedPitchName) return
+    if (!alignedPitchName)
+      return Promise.reject(new Error("There's no matching pitch name"))
     const [tickAlignedAbsoluteX, alignedAbsoluteY] = alignedAbsolutePosition
-    updateNoteTarget.relativeX = tickAlignedAbsoluteX - workspace.startPosition
-    updateNoteTarget.y = alignedAbsoluteY
+    const incrementX = tickAlignedAbsoluteX - oldAbsoluteX
+    const incrementY = alignedAbsoluteY - oldAbsoluteY
 
-    updateNoteTarget.pitchName = alignedPitchName
-    return {
-      newPitchName: alignedPitchName,
+    const waitedUpdatePositionArr = []
+    for (const selectedNoteId of selectedNoteIdSet) {
+      if (selectedNoteId === id) continue
+      const updateNoteTarget = getFlatNoteItem(selectedNoteId)
+      if (updateNoteTarget === undefined) continue
+
+      const workspace = workspaceMap.get(updateNoteTarget.workspaceId)
+      const scaleX = [
+        workspace.startPosition,
+        workspace.startPosition + workspace.width - updateNoteTarget.width,
+      ]
+      const scaleY = [0, maxY.value]
+
+      const updatePositionWork = new Promise((resolve, reject) => {
+        const [minX, maxX] = scaleX
+        const [minY, maxY] = scaleY
+        const factualX = updateNoteTarget.x + incrementX
+        const factualY = updateNoteTarget.y + incrementY
+        const horizontalJudgement = factualX >= minX && factualX <= maxX
+        const verticalJudgement = factualY >= minY && factualY <= maxY
+
+        if (!horizontalJudgement || !verticalJudgement) {
+          reject(
+            new Error("note element coordinates are out of workspace scope"),
+          )
+        } else {
+          resolve({
+            updateNoteTarget,
+            workspace,
+            absolutePosition: [factualX, factualY],
+          })
+        }
+      })
+      waitedUpdatePositionArr.push(updatePositionWork)
     }
+
+    return Promise.all(waitedUpdatePositionArr).then(
+      (updateInfoArr) => {
+        updateMainNote.relativeX =
+          tickAlignedAbsoluteX - workspace.startPosition
+        updateMainNote.y = alignedAbsoluteY
+        updateMainNote.pitchName = alignedPitchName
+
+        for (const {
+          updateNoteTarget,
+          workspace,
+          absolutePosition,
+        } of updateInfoArr) {
+          const [absoluteX, absoluteY] = absolutePosition
+          updateNoteTarget.relativeX = absoluteX - workspace.startPosition
+          updateNoteTarget.y = absoluteY
+          updateNoteTarget.pitchName = getInsertToSpecifiedPitchName({
+            y: absoluteY,
+            pitchNameMappedToArea: _pitchNameMappedToArea,
+          })
+        }
+
+        return {
+          newPitchName: alignedPitchName,
+        }
+      },
+      (reason) => {
+        // 注意需要显式返回拒绝，不返回会被后续调用链认作已兑现（兑现值为undefined）
+        return Promise.reject(reason)
+      },
+    )
   }
 
   /**

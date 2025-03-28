@@ -172,22 +172,29 @@ function draggableRegionHandler(event) {
       mousedownY
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
-      const { newPitchName } =
-        noteItemMap.updateNoteItemPosition({
+      noteItemMap
+        .updateNoteItemPosition({
           editorId: midiEditorId.value,
           id,
+          selectedNoteIdSet: selectedNotesIdSet.value,
           audioTrackId: selectedAudioTrackId.value,
           workspaceId: props.workspaceId,
           pitchName: belongedPitchName,
           x: translateXDistance / pixelsPerTick.value(midiEditorId.value),
           y: translateYDistance,
-        }) ?? {}
-
-      if (newPitchName !== lastPitchName) {
-        playNoteAudioSample(newPitchName)
-        noteItemMap.simulatePlaySpecifiedNote(newPitchName)
-        lastPitchName = newPitchName
-      }
+        })
+        .then(
+          ({ newPitchName }) => {
+            if (newPitchName !== lastPitchName) {
+              playNoteAudioSample(newPitchName)
+              noteItemMap.simulatePlaySpecifiedNote(newPitchName)
+              lastPitchName = newPitchName
+            }
+          },
+          (error) => {
+            console.warn(error)
+          },
+        )
     }
   }
   document.addEventListener("mousemove", mouseMoveHandler)
