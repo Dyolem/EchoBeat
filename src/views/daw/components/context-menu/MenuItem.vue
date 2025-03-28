@@ -37,7 +37,12 @@ defineProps({
       />
     </el-sub-menu>
   </template>
-  <el-menu-item v-else :index="item.value" :disabled="item.disable">
+  <el-menu-item
+    v-else
+    :index="item.value"
+    :disabled="item.disable"
+    @click="(menuInstance) => item?.clickHandler(menuInstance)"
+  >
     <div class="title">
       <Icon
         v-if="item.icon"
