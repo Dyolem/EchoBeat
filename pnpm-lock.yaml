@@ -33,6 +33,9 @@ importers:
       '@iconify/json':
         specifier: ^2.2.263
         version: 2.2.263
+      '@iconify/vue':
+        specifier: ^4.3.0
+        version: 4.3.0(vue@3.5.12)
       '@types/node':
         specifier: ^22.7.8
         version: 22.7.8
@@ -455,6 +458,11 @@ packages:
 
   '@iconify/utils@2.1.33':
     resolution: {integrity: sha512-jP9h6v/g0BIZx0p7XGJJVtkVnydtbgTgt9mVNcGDYwaa7UhdHdI9dvoq+gKj9sijMSJKxUPEG2JyjsgXjxL7Kw==}
+
+  '@iconify/vue@4.3.0':
+    resolution: {integrity: sha512-Xq0h6zMrHBbrW8jXJ9fISi+x8oDQllg5hTDkDuxnWiskJ63rpJu9CvJshj8VniHVTbsxCg9fVoPAaNp3RQI5OQ==}
+    peerDependencies:
+      vue: '>=3'
 
   '@jridgewell/gen-mapping@0.3.5':
     resolution: {integrity: sha512-IzL8ZoEDIBRWEzlCcRhOaCupYyN5gdIK+Q6fbFdPDg6HqX6jpkItn7DFIpW9LQzXG6Df9sA7+OKnq0qlz/GaQg==}
@@ -2078,6 +2086,11 @@ snapshots:
       mlly: 1.7.2
     transitivePeerDependencies:
       - supports-color
+
+  '@iconify/vue@4.3.0(vue@3.5.12)':
+    dependencies:
+      '@iconify/types': 2.0.0
+      vue: 3.5.12
 
   '@jridgewell/gen-mapping@0.3.5':
     dependencies:
