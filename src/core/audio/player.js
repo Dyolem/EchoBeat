@@ -113,7 +113,7 @@ export function playAudio() {
 }
 
 export function pause() {
-  if (!audioStore.audioContext) return
+  if (!audioStore.audioContext || !controller) return
   controller.abort()
   clearInterval(intervalTimerId)
   changePlayState(false)
