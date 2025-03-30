@@ -1,8 +1,9 @@
 <script setup>
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
-import { computed, inject } from "vue"
+import { computed, inject, ref } from "vue"
 import StereoPannerButton from "@/views/daw/add-track-sidebar/StereoPannerButton.vue"
 import AudioTrackVolume from "@/views/daw/add-track-sidebar/AudioTrackVolume.vue"
+import { generateMidTrack } from "@/core/audio/generateMidFile.js"
 
 const props = defineProps({
   id: {
@@ -35,10 +36,25 @@ const serialNumbering = computed(() => {
     return `0${props.serialNumbering}`
   else return props.serialNumbering
 })
+
+const audioTrackControllerMenu = ref([
+  {
+    value: "midi",
+    label: "As MIDI",
+    clickHandler() {
+      generateMidTrack({
+        audioTrackId: props.id,
+        trackInfo: {
+          name: props.audioTrackName,
+        },
+      })
+    },
+  },
+])
 </script>
 
 <template>
-  <ContextMenu>
+  <ContextMenu :menu="audioTrackControllerMenu">
     <template #default>
       <div
         class="track-controller-pad"

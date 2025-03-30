@@ -9,12 +9,18 @@ import { colorMix } from "@/utils/colorMix.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
 import MixTrackItemThumbnail from "@/views/daw/mix-track-editor/MixTrackItemThumbnail.vue"
+import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
+import { generateMidTrack } from "@/core/audio/generateMidFile.js"
 
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const editorId = inject("mainEditorId")
 const props = defineProps({
   id: {
+    type: String,
+    required: true,
+  },
+  audioTrackId: {
     type: String,
     required: true,
   },
@@ -75,45 +81,69 @@ const trackCopyStretchHandleBgColor = computed(() => {
 const mixContentThumbnailBgColor = computed(() => {
   return colorMix("srgb", props.mainColor + "EE", `${DARKEN_COLOR} 20%`)
 })
+
+const menu = ref([
+  {
+    value: "export",
+    label: "Export Region",
+    children: [
+      {
+        value: "midi",
+        label: "As MIDI",
+        clickHandler() {
+          generateMidTrack({
+            audioTrackId: props.audioTrackId,
+            workspaceId: props.workspaceId,
+            trackInfo: {
+              name: props.trackName,
+            },
+          })
+        },
+      },
+    ],
+  },
+])
 </script>
 
 <template>
-  <div
-    class="track-item-container"
-    :class="selectedTrackItemId === id ? 'selected' : ''"
-    ref="trackItemContainerRef"
-    :data-track-item-id="id"
-  >
+  <ContextMenu :menu="menu">
     <div
-      class="stretch-handle"
-      :style="{
-        left: 0,
-      }"
+      class="track-item-container"
+      :class="selectedTrackItemId === id ? 'selected' : ''"
+      ref="trackItemContainerRef"
+      :data-track-item-id="id"
     >
-      <div class="copy"></div>
-      <div class="stretch"></div>
-    </div>
-    <div class="track-item">
-      <p class="track-name">{{ trackName }}</p>
-      <div class="mix-content-thumbnail">
-        <MixTrackItemThumbnail
-          :id="id"
-          :width="width"
-          :height="height - headerHeight"
-          :note-items-map="noteItemsMap"
-        ></MixTrackItemThumbnail>
+      <div
+        class="stretch-handle"
+        :style="{
+          left: 0,
+        }"
+      >
+        <div class="copy"></div>
+        <div class="stretch"></div>
+      </div>
+      <div class="track-item">
+        <p class="track-name">{{ trackName }}</p>
+        <div class="mix-content-thumbnail">
+          <MixTrackItemThumbnail
+            :id="id"
+            :width="width"
+            :height="height - headerHeight"
+            :note-items-map="noteItemsMap"
+          ></MixTrackItemThumbnail>
+        </div>
+      </div>
+      <div
+        class="stretch-handle"
+        :style="{
+          right: 0,
+        }"
+      >
+        <div class="copy"></div>
+        <div class="stretch"></div>
       </div>
     </div>
-    <div
-      class="stretch-handle"
-      :style="{
-        right: 0,
-      }"
-    >
-      <div class="copy"></div>
-      <div class="stretch"></div>
-    </div>
-  </div>
+  </ContextMenu>
 </template>
 
 <style scoped>

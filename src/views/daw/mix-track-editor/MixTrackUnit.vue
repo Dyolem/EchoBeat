@@ -315,6 +315,7 @@ onUnmounted(() => {
         v-for="[subTrackItemId, subTrackItem] in subTrackItemsMap"
         :key="subTrackItemId"
         :id="subTrackItemId"
+        :audio-track-id="id"
         :workspace-id="subTrackItem.workspaceId"
         :note-items-map="
           getSpecifiedNoteItemsMap({
