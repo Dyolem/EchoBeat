@@ -1,5 +1,12 @@
 <script setup>
-import { inject, onMounted, onUnmounted, useTemplateRef, ref } from "vue"
+import {
+  inject,
+  onMounted,
+  onUnmounted,
+  useTemplateRef,
+  provide,
+  toRef,
+} from "vue"
 import TrackItem from "@/views/daw/mix-track-editor/TrackItem.vue"
 import {
   BASE_GRID_WIDTH,
@@ -15,9 +22,14 @@ import clearSelection from "@/utils/clearSelection.js"
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
+import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
+import { resizeMixTrackItemThumbnailCanvas } from "@/views/daw/mix-track-editor/renderThumbnail.js"
+
 const workspaceStore = useWorkspaceStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 const beatControllerStore = useBeatControllerStore()
+const noteItemsStore = useNoteItemStore()
+const { getSpecifiedNoteItemsMap } = noteItemsStore
 
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const editorId = inject("mainEditorId")
@@ -51,6 +63,9 @@ const props = defineProps({
     default: () => [],
   },
 })
+
+provide("mixTrackMainColor", toRef(props, "mainColor"))
+
 const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
   "selectedAudioTrackId",
   {},
@@ -260,6 +275,12 @@ onMounted(() => {
         document.addEventListener(
           "mouseup",
           () => {
+            resizeMixTrackItemThumbnailCanvas({
+              id: trackItemId,
+              width:
+                subTrackItem.trackItemWidth *
+                pixelsPerTick.value(MAIN_EDITOR_ID),
+            })
             selectionController.abort()
             controller.abort()
           },
@@ -294,13 +315,21 @@ onUnmounted(() => {
         v-for="[subTrackItemId, subTrackItem] in subTrackItemsMap"
         :key="subTrackItemId"
         :id="subTrackItemId"
+        :workspace-id="subTrackItem.workspaceId"
+        :note-items-map="
+          getSpecifiedNoteItemsMap({
+            audioTrackId: id,
+            workspaceId: subTrackItem.workspaceId,
+          })
+        "
         :main-color="mainColor"
         :width="subTrackItem.trackItemWidth"
         :height="subTrackItem.trackItemHeight"
         :start-position="subTrackItem.startPosition"
         :track-name="subTrackItem.trackName"
         :track-zoom-ratio="subTrackItem.trackZoomRatio"
-      ></TrackItem>
+      >
+      </TrackItem>
     </div>
   </context-menu>
 </template>

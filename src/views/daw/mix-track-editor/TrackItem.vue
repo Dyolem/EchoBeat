@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, onMounted, useTemplateRef } from "vue"
+import { computed, inject, onMounted, useTemplateRef, ref } from "vue"
 import {
   BASE_GRID_HEIGHT,
   DARKEN_COLOR,
@@ -8,6 +8,7 @@ import {
 import { colorMix } from "@/utils/colorMix.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
+import MixTrackItemThumbnail from "@/views/daw/mix-track-editor/MixTrackItemThumbnail.vue"
 
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
@@ -16,6 +17,14 @@ const props = defineProps({
   id: {
     type: String,
     required: true,
+  },
+  workspaceId: {
+    type: String,
+    required: true,
+  },
+  noteItemsMap: {
+    type: Object,
+    default: () => new Map(),
   },
   width: {
     type: Number,
@@ -45,9 +54,11 @@ const props = defineProps({
 const width = computed(() => {
   return props.width * pixelsPerTick.value(editorId.value)
 })
+const headerHeight = ref(18)
 const startPosition = computed(() => {
   return props.startPosition * pixelsPerTick.value(editorId.value)
 })
+
 const { selectedTrackItemId, updateSelectedTrackItemId } = inject(
   "selectedTrackItemId",
 )
@@ -73,17 +84,32 @@ const mixContentThumbnailBgColor = computed(() => {
     ref="trackItemContainerRef"
     :data-track-item-id="id"
   >
-    <div class="stretch-handle">
+    <div
+      class="stretch-handle"
+      :style="{
+        left: 0,
+      }"
+    >
       <div class="copy"></div>
       <div class="stretch"></div>
     </div>
     <div class="track-item">
       <p class="track-name">{{ trackName }}</p>
       <div class="mix-content-thumbnail">
-        <slot name="mix-content-thumbnail"></slot>
+        <MixTrackItemThumbnail
+          :id="id"
+          :width="width"
+          :height="height - headerHeight"
+          :note-items-map="noteItemsMap"
+        ></MixTrackItemThumbnail>
       </div>
     </div>
-    <div class="stretch-handle">
+    <div
+      class="stretch-handle"
+      :style="{
+        right: 0,
+      }"
+    >
       <div class="copy"></div>
       <div class="stretch"></div>
     </div>
@@ -98,16 +124,21 @@ const mixContentThumbnailBgColor = computed(() => {
   --main-bg-color: v-bind(mixContentThumbnailBgColor);
   --main-color-mix-value: v-bind(mainColor + "EE");
   --header-color-mix-value: var(--main-color);
-  --header-height: 18px;
+  --header-height: v-bind(headerHeight + "px");
   --track-item-min-width: 0;
+  --container-width: v-bind(width + "px");
+  --container-height: v-bind(height + "px");
+  --stretch-handle-width: 5px;
   position: absolute;
   display: flex;
-  width: v-bind(width + "px");
-  height: v-bind(height + "px");
+  width: var(--container-width);
+  height: var(--container-height);
+  overflow: hidden;
   border-radius: 4px;
   transform: translateX(var(--track-item-start-position));
 }
 .stretch-handle {
+  position: absolute;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -143,6 +174,7 @@ const mixContentThumbnailBgColor = computed(() => {
 .track-name {
   width: 100%;
   height: var(--header-height);
+  padding-left: var(--stretch-handle-width);
   color: #ffffff;
   font-size: 12px;
   font-weight: bold;
@@ -153,7 +185,7 @@ const mixContentThumbnailBgColor = computed(() => {
 }
 .mix-content-thumbnail {
   width: 100%;
-  flex-grow: 1;
+  height: calc(var(--container-height) - var(--header-height));
   background-color: var(--main-bg-color);
 }
 .track-item:hover {
