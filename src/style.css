@@ -59,6 +59,9 @@ input,select,textarea {
   --el-menu-item-height:40px;
   --el-menu-sub-item-height:calc(var(--el-menu-item-height) - 6px);
 }
+.el-sub-menu .el-sub-menu__icon-arrow {
+  color: #ffffff;
+}
 .el-slider__runway {
   --el-slider-runway-bg-color:#282c32;
 }
