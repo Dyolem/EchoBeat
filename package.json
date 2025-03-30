@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tonejs/midi": "^2.0.28",
     "axios": "^1.7.7",
     "element-plus": "^2.9.5",
     "midi-parser-js": "^4.0.4",
