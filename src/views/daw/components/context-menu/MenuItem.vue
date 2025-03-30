@@ -41,7 +41,7 @@ defineProps({
     v-else
     :index="item.value"
     :disabled="item.disable"
-    @click="(menuInstance) => item?.clickHandler(menuInstance)"
+    @click="(menuInstance) => item.clickHandler?.(menuInstance)"
   >
     <div class="title">
       <Icon
