@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 import { computed } from "vue"
-import { NOTE_FREQUENCY_MAP } from "@/constants/daw/index.js"
+import { NOTE_FREQUENCY_MAP, noteToMidi } from "@/constants/daw/index.js"
 
 export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
@@ -68,31 +68,6 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
     return sampleMap
   }
 
-  // 将音符名称（如 C4, D#3）转化为 MIDI 编号
-  function noteToMidi(noteName) {
-    const noteToMIDI = {
-      C: 0,
-      "C#": 1,
-      D: 2,
-      "D#": 3,
-      E: 4,
-      F: 5,
-      "F#": 6,
-      G: 7,
-      "G#": 8,
-      A: 9,
-      "A#": 10,
-      B: 11,
-    }
-    const match = noteName.match(/^([A-Ga-g#b]+)(\d+)$/)
-    if (!match) {
-      throw new Error("Invalid note name")
-    }
-    const pitch = match[1].toUpperCase()
-    const octave = parseInt(match[2], 10)
-    return (octave + 1) * 12 + noteToMIDI[pitch] // MIDI 号码
-  }
-
   // 找到与 MIDI 编号最接近的样本
   function getSampleUrl(midiNumber, sampleMap) {
     const midiNumbers = Object.keys(sampleMap).map(Number)
@@ -134,7 +109,6 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
       )
 
     const semitoneDifference = targetMidiNumber - closestMidiNumber
-    console.log(targetMidiNumber, closestMidiNumber)
 
     source.detune.value = semitoneDifference * 100
     // 使用 playbackRate 来调整音高

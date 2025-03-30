@@ -194,6 +194,32 @@ export const NOTES_TABLE = [
   "A#",
   "B",
 ]
+
+// 将音符名称（如 C4, D#3）转化为 MIDI 编号
+export function noteToMidi(noteName) {
+  const noteToMIDI = {
+    C: 0,
+    "C#": 1,
+    D: 2,
+    "D#": 3,
+    E: 4,
+    F: 5,
+    "F#": 6,
+    G: 7,
+    "G#": 8,
+    A: 9,
+    "A#": 10,
+    B: 11,
+  }
+  const match = noteName.match(/^([A-Ga-g#b]+)(\d+)$/)
+  if (!match) {
+    throw new Error("Invalid note name")
+  }
+  const pitch = match[1].toUpperCase()
+  const octave = parseInt(match[2], 10)
+  return (octave + 1) * 12 + noteToMIDI[pitch] // MIDI 号码
+}
+
 export function midiToNoteName(midiNumber) {
   const noteNames = [
     "C",
@@ -246,6 +272,7 @@ export const NOTE_FREQUENCY_MAP = generateNoteFrequencyMap()
 export const SCROLLBAR_WIDTH = 10
 export const FALLBACK_THEME_COLOR = "#A4CFF8"
 export const DARKEN_COLOR = "#404040"
+export const LIGHTEN_COLOR = "#ffffff"
 
 // 编辑器选区矩形参数枚举值
 export const SELECTION_RECT_PROPERTIES = Object.freeze({
