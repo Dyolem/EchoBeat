@@ -1,7 +1,7 @@
 <template>
   <div class="pc-header">
     <div class="logo">
-      <img src="../assets/img/favicon.jpg" alt="" />
+      <img src="../assets/img/favicon.png" alt="" />
       <h1>EchoBeat</h1>
     </div>
     <NavBar>
@@ -32,7 +32,7 @@
   </div>
   <div class="mobile-header">
     <div class="logo">
-      <img src="../assets/img/favicon.jpg" alt="" />
+      <img src="../assets/img/favicon.png" alt="" />
       <h1>EchoBeat</h1>
     </div>
     <searchVue></searchVue>
