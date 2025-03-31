@@ -62,6 +62,9 @@ input,select,textarea {
 .el-sub-menu .el-sub-menu__icon-arrow {
   color: #ffffff;
 }
+.el-menu-item-group {
+  border-block: 1px solid #25292f;
+}
 .el-slider__runway {
   --el-slider-runway-bg-color:#282c32;
 }

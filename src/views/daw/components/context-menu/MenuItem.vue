@@ -37,6 +37,26 @@ defineProps({
       />
     </el-sub-menu>
   </template>
+  <template v-else-if="item.group">
+    <el-menu-item-group
+      :index="item.value"
+      :disabled="item.disable"
+      :class="!!item.label ? '' : 'custom-group'"
+    >
+      <template #title>
+        <div class="title" v-if="!!item.label">
+          <Icon
+            v-if="item.icon"
+            :icon="item.icon.name"
+            :style="item.icon.style ?? {}"
+            class="icon"
+          ></Icon>
+          <span>{{ item.label }}</span>
+        </div>
+      </template>
+      <MenuItem v-for="group in item.group" :key="group.index" :item="group" />
+    </el-menu-item-group>
+  </template>
   <el-menu-item
     v-else
     :index="item.value"
@@ -67,5 +87,8 @@ defineProps({
   font-size: 18px;
   font-weight: 500;
   color: #ffffff;
+}
+.custom-group :deep(.el-menu-item-group__title) {
+  padding-block: 0;
 }
 </style>
