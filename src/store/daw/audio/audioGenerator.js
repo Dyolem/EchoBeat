@@ -10,8 +10,9 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
   const penultimateMidiNumber = 106
   const lastMidiNumber = 108
   const interval = 3
+  const baseURL = import.meta.env.BASE_URL
   const pathTemplate = (midiNumber) =>
-    `/public/soundbanks/studio-grand/${midiNumber >= 100 ? "" : 0}${midiNumber}-StudioGrand.wav`
+    `${baseURL}soundbanks/studio-grand/${midiNumber >= 100 ? "" : 0}${midiNumber}-StudioGrand.wav`
 
   const sampleMap = computed(() => {
     return generateSampleMap(
