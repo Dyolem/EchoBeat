@@ -18,6 +18,14 @@ import {
   MAIN_EDITOR_ID,
 } from "@/constants/daw/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import {
+  registerDeleteAudioTrackEvent,
+  removeDeleteAudioTrackEventListener,
+} from "@/core/custom-event/deleteAudioTrack.js"
+import {
+  registerDeleteSubTrackEvent,
+  removeDeleteSubTrackEventListener,
+} from "@/core/custom-event/deleteSubTrack.js"
 
 const zoomRatioStore = useZoomRatioStore()
 
@@ -53,13 +61,17 @@ onMounted(() => {
 })
 onUnmounted(() => {
   controller.abort()
+  removeDeleteAudioTrackEventListener()
+  removeDeleteSubTrackEventListener()
 })
 
 const selectedAudioTrackId = ref("")
 function updateSelectedAudioTrackId(newId) {
-  if (!newId) return
+  if (newId === undefined || newId === null) return
   selectedAudioTrackId.value = newId
 }
+registerDeleteAudioTrackEvent(() => updateSelectedAudioTrackId(""))
+
 provide("selectedAudioTrackId", {
   selectedAudioTrackId,
   updateSelectedAudioTrackId,
@@ -67,8 +79,10 @@ provide("selectedAudioTrackId", {
 
 const selectedTrackItemId = ref("")
 function updateSelectedTrackItemId(newId) {
+  if (newId === undefined || newId === null) return
   selectedTrackItemId.value = newId
 }
+registerDeleteSubTrackEvent(() => updateSelectedTrackItemId(""))
 provide("selectedTrackItemId", {
   selectedTrackItemId,
   updateSelectedTrackItemId,

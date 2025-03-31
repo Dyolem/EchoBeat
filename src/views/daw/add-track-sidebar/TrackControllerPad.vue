@@ -4,6 +4,7 @@ import { computed, inject, ref } from "vue"
 import StereoPannerButton from "@/views/daw/add-track-sidebar/StereoPannerButton.vue"
 import AudioTrackVolume from "@/views/daw/add-track-sidebar/AudioTrackVolume.vue"
 import { generateMidTrack } from "@/core/audio/generateMidFile.js"
+import { disPatchDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTrack.js"
 
 const props = defineProps({
   id: {
@@ -48,6 +49,14 @@ const audioTrackControllerMenu = ref([
           name: props.audioTrackName,
         },
       })
+    },
+  },
+  {
+    value: "delete",
+    label: "Delete",
+    clickHandler() {
+      const audioTrackId = props.id
+      disPatchDeleteAudioTrackEvent({ audioTrackId })
     },
   },
 ])

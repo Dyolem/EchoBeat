@@ -11,6 +11,7 @@ import { storeToRefs } from "pinia"
 import MixTrackItemThumbnail from "@/views/daw/mix-track-editor/MixTrackItemThumbnail.vue"
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 import { generateMidTrack } from "@/core/audio/generateMidFile.js"
+import { disPatchDeleteSubTrackEvent } from "@/core/custom-event/deleteSubTrack.js"
 
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
@@ -101,6 +102,16 @@ const menu = ref([
         },
       },
     ],
+  },
+  {
+    value: "delete",
+    label: "Delete",
+    clickHandler() {
+      const audioTrackId = props.audioTrackId
+      const workspaceId = props.workspaceId
+      const subTrackItemId = props.id
+      disPatchDeleteSubTrackEvent({ audioTrackId, workspaceId, subTrackItemId })
+    },
   },
 ])
 </script>

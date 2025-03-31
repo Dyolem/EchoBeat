@@ -10,6 +10,7 @@ import {
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { computed } from "vue"
 import { snapToTickUnitGrid } from "@/core/grid-size/snapToTickUnitGrid.js"
+import { registerDeleteSubTrackEvent } from "@/core/custom-event/deleteSubTrack.js"
 
 export const useWorkspaceStore = defineStore("workspaceStore", () => {
   const noteItemStore = useNoteItemStore()
@@ -378,6 +379,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     })
     workspaceMap?.delete(workspaceId)
   }
+  registerDeleteSubTrackEvent(deleteWorkspace)
 
   function getWorkspaceMap({ audioTrackId }) {
     return trackFeatureMapStore.getSelectedTrackWorkspaceMap({

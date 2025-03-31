@@ -11,6 +11,8 @@ import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { snapToTickUnitGrid } from "@/core/grid-size/snapToTickUnitGrid.js"
+import { registerDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTrack.js"
+import { registerDeleteSubTrackEvent } from "@/core/custom-event/deleteSubTrack.js"
 
 export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const audioTrackMainColorStore = useAudioTrackMainColorStore()
@@ -198,6 +200,12 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     const subTrackItemsMap = getSubTrackItemsMap({ audioTrackId })
     subTrackItemsMap?.delete(subTrackItemId)
   }
+  registerDeleteSubTrackEvent(deleteSpecifiedSubTrackItem)
+
+  function deleteSpecifiedAudioTrack({ audioTrackId }) {
+    mixTracksMap.value.delete(audioTrackId)
+  }
+  registerDeleteAudioTrackEvent(deleteSpecifiedAudioTrack)
 
   return {
     mixTracksMap,
@@ -210,5 +218,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     updateRightEdge,
     updateSubTrackItemStartPosition,
     deleteSpecifiedSubTrackItem,
+    deleteSpecifiedAudioTrack,
   }
 })

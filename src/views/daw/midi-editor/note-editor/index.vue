@@ -138,6 +138,7 @@ function insertNote({ x: insertX, y: insertY }) {
   audioStore
     .generateSingleAudioNode({
       noteId: insertedItemInfo.id,
+      workspaceId: insertedItemInfo.workspaceId,
       audioTrackId: selectedAudioTrackId.value,
       audioContext: audioStore.audioContext,
     })

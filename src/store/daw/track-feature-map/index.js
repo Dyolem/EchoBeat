@@ -1,5 +1,6 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
+import { registerDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTrack.js"
 
 export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
   /**
@@ -42,11 +43,18 @@ export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
     return getSelectedTrackFeature({ selectedAudioTrackId, featureType })
       ?.workspaceMap
   }
+
+  function deleteDataRelativeToAudioTrack({ audioTrackId }) {
+    trackFeatureMap.value.delete(audioTrackId)
+  }
+  registerDeleteAudioTrackEvent(deleteDataRelativeToAudioTrack)
+
   return {
     featureEnum,
     trackFeatureMap,
     addTrackFeatureMap,
     getSelectedTrackFeature,
     getSelectedTrackWorkspaceMap,
+    deleteDataRelativeToAudioTrack,
   }
 })

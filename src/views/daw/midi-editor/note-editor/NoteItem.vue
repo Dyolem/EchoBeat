@@ -309,6 +309,7 @@ function noteMainMousedownHandler(event) {
       audioStore
         .generateSingleAudioNode({
           noteId: props.id,
+          workspaceId: props.workspaceId,
           audioTrackId: props.audioTrackId,
           audioContext: audioStore.audioContext,
         })

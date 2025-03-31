@@ -280,7 +280,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const noteItemsMap = workspace.noteItemsMap
     noteItemsMap.delete(id)
     deleteFlatNoteItem(id)
-    audioStore.removeNodeFromNoteId({ audioTrackId, id })
+    audioStore.removeNodeFromNoteId({ audioTrackId, workspaceId, id })
   }
 
   function alignToOtherPitchNameTrack({
