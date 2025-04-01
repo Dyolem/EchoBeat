@@ -5,6 +5,10 @@ import StereoPannerButton from "@/views/daw/add-track-sidebar/StereoPannerButton
 import AudioTrackVolume from "@/views/daw/add-track-sidebar/AudioTrackVolume.vue"
 import { generateMidTrack } from "@/core/audio/generateMidFile.js"
 import { disPatchDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTrack.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+
+const mixTrackEditorStore = useMixTrackEditorStore()
+const { updateMixTrackInfo } = mixTrackEditorStore
 
 const props = defineProps({
   id: {
@@ -90,6 +94,10 @@ const audioTrackControllerMenu = ref([
     },
   },
 ])
+
+function modifyAudioTrackName(event) {
+  updateMixTrackInfo({ audioTrackId: props.id, trackName: event.target.value })
+}
 </script>
 
 <template>
@@ -107,7 +115,14 @@ const audioTrackControllerMenu = ref([
             ></echo-fluent:midi-24-regular>
 
             <span class="track-number">{{ serialNumbering }}</span>
-            <span class="track-name">{{ audioTrackName }}</span>
+
+            <span class="track-name">
+              <input
+                type="text"
+                :value="audioTrackName"
+                @change="modifyAudioTrackName"
+                class="track-name-input"
+            /></span>
           </div>
           <div class="control-features">
             <echo-mi:options-vertical
@@ -157,10 +172,15 @@ const audioTrackControllerMenu = ref([
   height: 30px;
 }
 .track-name {
+  width: fit-content;
+}
+.track-name-input {
   max-width: 120px;
+  display: block;
+  background: transparent;
+  color: #ffffff;
   white-space: nowrap;
   text-overflow: ellipsis;
-  overflow: hidden;
 }
 .track-info {
   display: flex;

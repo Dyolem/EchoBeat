@@ -44,6 +44,16 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     return newAudioTrackId
   }
 
+  function updateMixTrackInfo({ audioTrackId, trackName, color }) {
+    const mixTrack = mixTracksMap.value.get(audioTrackId)
+    if (trackName !== undefined) {
+      mixTrack.audioTrackName = trackName
+    }
+    if (color !== undefined) {
+      mixTrack.mainColor = color
+    }
+  }
+
   const generateSubTrackItemId = (prefix) => ID_SET.SUB_TRACK_ITEM(prefix)
   function createSubTrackItem({
     audioTrackId,
@@ -211,6 +221,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     mixTracksMap,
     generateSubTrackItemId,
     addAudioTrack,
+    updateMixTrackInfo,
     getSubTrackItem,
     getSubTrackItemsMap,
     createSubTrackItem,
