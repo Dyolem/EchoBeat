@@ -24,6 +24,7 @@ const { updateWorkspaceInfo } = workspaceStore
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const editorId = inject("mainEditorId")
+
 const props = defineProps({
   id: {
     type: String,
@@ -78,6 +79,7 @@ const { selectedTrackItemId, updateSelectedTrackItemId } = inject(
   "selectedTrackItemId",
 )
 const trackItemContainerRef = useTemplateRef("trackItemContainerRef")
+const subTrackRegionRef = useTemplateRef("subTrackRegionRef")
 onMounted(() => {
   updateSelectedTrackItemId(props.id)
   trackItemContainerRef.value.addEventListener("mousedown", (event) => {
@@ -92,6 +94,14 @@ const mixContentThumbnailBgColor = computed(() => {
 })
 
 const menu = ref([
+  {
+    value: "rename",
+    label: "Rename Region",
+    clickHandler() {
+      subTrackRegionRef.value.focus()
+      subTrackRegionRef.value.select()
+    },
+  },
   {
     value: "export",
     label: "Export Region",
@@ -160,6 +170,7 @@ const debouncedModifySubTrackName = debounce(modifySubTrackName, 100)
       <div class="track-item">
         <p class="track-name" @mousedown.stop="() => {}">
           <input
+            ref="subTrackRegionRef"
             type="text"
             :value="trackName"
             class="sub-track-name"

@@ -1,6 +1,6 @@
 <script setup>
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, useTemplateRef } from "vue"
 import StereoPannerButton from "@/views/daw/add-track-sidebar/StereoPannerButton.vue"
 import AudioTrackVolume from "@/views/daw/add-track-sidebar/AudioTrackVolume.vue"
 import { generateMidTrack } from "@/core/audio/generateMidFile.js"
@@ -10,7 +10,7 @@ import { sanitizeInput } from "@/utils/sanitizeInput.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const { updateMixTrackInfo } = mixTrackEditorStore
-
+const audioTrackNameRef = useTemplateRef("audioTrackNameRef")
 const props = defineProps({
   id: {
     type: [String, Number],
@@ -46,6 +46,14 @@ const serialNumbering = computed(() => {
 const emit = defineEmits(["update:move"])
 
 const audioTrackControllerMenu = ref([
+  {
+    value: "rename",
+    label: "Rename",
+    clickHandler() {
+      audioTrackNameRef.value.focus()
+      audioTrackNameRef.value.select()
+    },
+  },
   {
     value: "move-option",
     label: "",
@@ -122,6 +130,7 @@ function modifyAudioTrackName(event) {
 
             <span class="track-name">
               <input
+                ref="audioTrackNameRef"
                 type="text"
                 :value="audioTrackName"
                 @change="modifyAudioTrackName"
