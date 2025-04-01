@@ -33,12 +33,42 @@ const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
   {},
 )
 const serialNumbering = computed(() => {
-  if (props.serialNumbering >= 0 && props.serialNumbering < 10)
-    return `0${props.serialNumbering}`
-  else return props.serialNumbering
+  const serialNumbering = props.serialNumbering + 1
+  if (serialNumbering >= 0 && serialNumbering < 10) return `0${serialNumbering}`
+  else return serialNumbering
 })
 
+const emit = defineEmits(["update:move"])
+
 const audioTrackControllerMenu = ref([
+  {
+    value: "move-option",
+    label: "",
+    group: [
+      {
+        value: "move up",
+        label: "Move Up",
+        clickHandler() {
+          emit("update:move", {
+            direction: -1,
+            audioTrackId: props.id,
+            order: props.serialNumbering,
+          })
+        },
+      },
+      {
+        value: "move down",
+        label: "Move Down",
+        clickHandler() {
+          emit("update:move", {
+            direction: 1,
+            audioTrackId: props.id,
+            order: props.serialNumbering,
+          })
+        },
+      },
+    ],
+  },
   {
     value: "midi",
     label: "As MIDI",

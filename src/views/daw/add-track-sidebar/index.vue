@@ -2,8 +2,10 @@
 import FeatureBar from "@/views/daw/add-track-sidebar/FeatureBar.vue"
 import TrackControllerPad from "@/views/daw/add-track-sidebar/TrackControllerPad.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { useTemplateRef, watchEffect } from "vue"
+import { useTemplateRef, watchEffect, computed } from "vue"
+import { storeToRefs } from "pinia"
 const mixTrackEditorStore = useMixTrackEditorStore()
+const { mixTracksMap } = storeToRefs(mixTrackEditorStore)
 const mainEditorSidebarRef = useTemplateRef("mainEditorSidebarRef")
 const mainEditorSidebarScrollTop = defineModel("mainEditorSidebarScrollTop", {
   type: Number,
@@ -17,6 +19,32 @@ watchEffect(() => {
 function scrollHandler() {
   mainEditorSidebarScrollTop.value = mainEditorSidebarRef.value.scrollTop
 }
+const mixTracksArr = computed({
+  get: () => {
+    return [...mixTracksMap.value]
+  },
+  set: (newValue) => {
+    mixTracksMap.value = new Map(newValue)
+  },
+})
+
+function adjustAudioTrackOrder({ direction, order }) {
+  const trackArr = mixTracksArr.value.slice()
+  const trackCount = trackArr.length
+  const targetIndex = order
+  if (targetIndex === -1) return
+  if (
+    (targetIndex === 0 && direction < 0) ||
+    (targetIndex === trackCount - 1 && direction > 0)
+  )
+    return
+  const moveDirection = direction > 0 ? 1 : -1
+
+  const temp = mixTracksArr.value[order]
+  trackArr[order] = trackArr[order + moveDirection]
+  trackArr[order + moveDirection] = temp
+  mixTracksArr.value = trackArr
+}
 </script>
 
 <template>
@@ -28,12 +56,13 @@ function scrollHandler() {
     <FeatureBar></FeatureBar>
     <div class="track-controllers-container">
       <TrackControllerPad
-        v-for="[audioTrackId, audioTrack] in mixTrackEditorStore.mixTracksMap"
+        v-for="([audioTrackId, audioTrack], index) in mixTracksArr"
         :key="audioTrackId"
         :id="audioTrackId"
-        :serial-numbering="audioTrack.serialNumbering"
+        :serial-numbering="index"
         :audio-track-name="audioTrack.audioTrackName"
         :main-color="audioTrack.mainColor"
+        @update:move="adjustAudioTrackOrder"
       ></TrackControllerPad>
     </div>
   </div>

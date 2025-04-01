@@ -37,7 +37,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       id: newAudioTrackId,
       audioTrackName,
       mainColor,
-      serialNumbering: existedTracksSize + 1,
+      originalSerialNumbering: existedTracksSize,
       subTrackItemsMap: new Map(),
       mainEditorZoomRatio,
     })
