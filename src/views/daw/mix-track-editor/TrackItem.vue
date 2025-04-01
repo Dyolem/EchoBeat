@@ -12,7 +12,11 @@ import MixTrackItemThumbnail from "@/views/daw/mix-track-editor/MixTrackItemThum
 import ContextMenu from "@/views/daw/components/context-menu/ContextMenu.vue"
 import { generateMidTrack } from "@/core/audio/generateMidFile.js"
 import { disPatchDeleteSubTrackEvent } from "@/core/custom-event/deleteSubTrack.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { debounce } from "@/utils/debounce.js"
 
+const mixTrackEditorStore = useMixTrackEditorStore()
+const { updateSubTrackItemInfo } = mixTrackEditorStore
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const editorId = inject("mainEditorId")
@@ -114,6 +118,15 @@ const menu = ref([
     },
   },
 ])
+
+function modifySubTrackName(event) {
+  updateSubTrackItemInfo({
+    audioTrackId: props.audioTrackId,
+    subTrackItemId: props.id,
+    subTrackName: event.target.value,
+  })
+}
+const debouncedModifySubTrackName = debounce(modifySubTrackName, 100)
 </script>
 
 <template>
@@ -134,7 +147,14 @@ const menu = ref([
         <div class="stretch"></div>
       </div>
       <div class="track-item">
-        <p class="track-name">{{ trackName }}</p>
+        <p class="track-name" @mousedown.stop="() => {}">
+          <input
+            type="text"
+            :value="trackName"
+            class="sub-track-name"
+            @input="debouncedModifySubTrackName"
+          />
+        </p>
         <div class="mix-content-thumbnail">
           <MixTrackItemThumbnail
             :id="id"
@@ -224,6 +244,22 @@ const menu = ref([
   text-overflow: ellipsis;
   background-color: var(--header-bg-color);
 }
+.sub-track-name {
+  display: block;
+  width: 100%;
+  height: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: transparent;
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+}
+.sub-track-name:focus {
+  background: #e3e9ed;
+  color: #000000;
+}
+
 .mix-content-thumbnail {
   width: 100%;
   height: calc(var(--container-height) - var(--header-height));

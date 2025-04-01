@@ -114,6 +114,21 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     return newTrackId
   }
 
+  function updateSubTrackItemInfo({
+    audioTrackId,
+    subTrackItemId,
+    subTrackName,
+    color,
+  }) {
+    const subTrackItem = getSubTrackItem({ audioTrackId, subTrackItemId })
+    if (subTrackName !== undefined) {
+      subTrackItem.trackName = subTrackName
+    }
+    if (color !== undefined) {
+      subTrackItem.mainColor = color
+    }
+  }
+
   function getSubTrackItemsMap({ audioTrackId }) {
     return mixTracksMap.value.get(audioTrackId).subTrackItemsMap
   }
@@ -225,6 +240,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     getSubTrackItem,
     getSubTrackItemsMap,
     createSubTrackItem,
+    updateSubTrackItemInfo,
     updateLeftEdge,
     updateRightEdge,
     updateSubTrackItemStartPosition,
