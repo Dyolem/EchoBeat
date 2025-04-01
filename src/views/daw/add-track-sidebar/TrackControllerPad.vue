@@ -6,6 +6,7 @@ import AudioTrackVolume from "@/views/daw/add-track-sidebar/AudioTrackVolume.vue
 import { generateMidTrack } from "@/core/audio/generateMidFile.js"
 import { disPatchDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTrack.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { sanitizeInput } from "@/utils/sanitizeInput.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const { updateMixTrackInfo } = mixTrackEditorStore
@@ -96,7 +97,10 @@ const audioTrackControllerMenu = ref([
 ])
 
 function modifyAudioTrackName(event) {
-  updateMixTrackInfo({ audioTrackId: props.id, trackName: event.target.value })
+  updateMixTrackInfo({
+    audioTrackId: props.id,
+    trackName: sanitizeInput(event.target.value),
+  })
 }
 </script>
 

@@ -14,6 +14,7 @@ import { generateMidTrack } from "@/core/audio/generateMidFile.js"
 import { disPatchDeleteSubTrackEvent } from "@/core/custom-event/deleteSubTrack.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { debounce } from "@/utils/debounce.js"
+import { sanitizeInput } from "@/utils/sanitizeInput.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
@@ -124,7 +125,7 @@ const menu = ref([
 
 function modifySubTrackName(event) {
   const audioTrackId = props.audioTrackId
-  const newName = event.target.value
+  const newName = sanitizeInput(event.target.value)
   updateSubTrackItemInfo({
     audioTrackId: audioTrackId,
     subTrackItemId: props.id,
