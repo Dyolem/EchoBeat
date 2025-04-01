@@ -287,6 +287,13 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     return newId
   }
 
+  function updateWorkspaceInfo({ audioTrackId, workspaceId, workspaceName }) {
+    if (workspaceName !== undefined) {
+      const workspace = getWorkspace({ audioTrackId, workspaceId })
+      workspace.workspaceBadgeName = workspaceName
+    }
+  }
+
   /**
    * 传入参数中的长度值和函数返回值均为tick单位
    */
@@ -395,6 +402,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     shallCreateWorkspace,
     createNewWorkspaceMap,
     addNewWorkspace,
+    updateWorkspaceInfo,
     updateWorkspacePosition,
     updateLeftEdge,
     updateRightEdge,
