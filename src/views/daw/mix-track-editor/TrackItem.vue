@@ -14,9 +14,12 @@ import { generateMidTrack } from "@/core/audio/generateMidFile.js"
 import { disPatchDeleteSubTrackEvent } from "@/core/custom-event/deleteSubTrack.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { debounce } from "@/utils/debounce.js"
+import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const { updateSubTrackItemInfo } = mixTrackEditorStore
+const workspaceStore = useWorkspaceStore()
+const { updateWorkspaceInfo } = workspaceStore
 const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const editorId = inject("mainEditorId")
@@ -120,10 +123,17 @@ const menu = ref([
 ])
 
 function modifySubTrackName(event) {
+  const audioTrackId = props.audioTrackId
+  const newName = event.target.value
   updateSubTrackItemInfo({
-    audioTrackId: props.audioTrackId,
+    audioTrackId: audioTrackId,
     subTrackItemId: props.id,
-    subTrackName: event.target.value,
+    subTrackName: newName,
+  })
+  updateWorkspaceInfo({
+    audioTrackId,
+    workspaceId: props.workspaceId,
+    workspaceName: newName,
   })
 }
 const debouncedModifySubTrackName = debounce(modifySubTrackName, 100)
