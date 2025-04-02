@@ -139,6 +139,17 @@ function soloHandler() {
     specifySoloAudioTrack({ audioTrackId })
   }
 }
+
+const { isFolded, addFoldedAudioTrack, cancelSpecifiedFoldedAudioTrack } =
+  inject("foldedAudioTrack")
+
+function foldAudioTrack(audioTrackId) {
+  if (isFolded.value(audioTrackId)) {
+    cancelSpecifiedFoldedAudioTrack({ audioTrackId })
+  } else {
+    addFoldedAudioTrack({ audioTrackId })
+  }
+}
 </script>
 
 <template>
@@ -188,9 +199,17 @@ function soloHandler() {
                 S
               </button>
             </div>
-            <i class="collapse-track-icon">
-              <echo-ooui:collapse></echo-ooui:collapse>
-            </i>
+            <div class="fold-exchange">
+              <i
+                class="collapse-track-icon"
+                :class="{
+                  'is-folded': isFolded(id),
+                }"
+                @click="foldAudioTrack(id)"
+              >
+                <echo-ooui:collapse></echo-ooui:collapse>
+              </i>
+            </div>
           </div>
         </div>
         <div class="gain-controller">
@@ -207,14 +226,17 @@ function soloHandler() {
 
 <style scoped>
 .track-controller-pad {
+  --pad-height: v-bind(height + "px");
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 0 4px;
+  padding: 0 10px;
   position: relative;
   width: 100%;
-  height: v-bind(height + "px");
+  height: var(--pad-height);
   background-color: hsl(0, 0%, 8%);
+  transition: all 0.1s ease-in-out;
 }
 .selected {
   box-shadow: v-bind("`inset -4px 0 0 0 ${mainColor}`");
@@ -223,8 +245,9 @@ function soloHandler() {
 .controller-nav {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
-  height: 30px;
+  padding: 4px 0;
 }
 .track-name {
   width: fit-content;
@@ -271,6 +294,7 @@ function soloHandler() {
   align-items: center;
   width: 20px;
   height: 20px;
+  transition: all 0.1s ease-in-out;
   transform: rotate(180deg);
   font-size: 12px;
   border-radius: 50%;
@@ -281,6 +305,9 @@ function soloHandler() {
 }
 .collapse-track-icon:hover {
   cursor: pointer;
+}
+.is-folded {
+  transform: rotate(90deg);
 }
 .play-mode {
   display: flex;

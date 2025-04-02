@@ -2,7 +2,7 @@
 import MixTrackUnit from "@/views/daw/mix-track-editor/MixTrackUnit.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import { ref, computed, provide, useTemplateRef, watch } from "vue"
+import { ref, computed, provide, useTemplateRef, inject } from "vue"
 import { GRID_OPTIONS } from "@/constants/daw/index.js"
 import { storeToRefs } from "pinia"
 
@@ -66,6 +66,9 @@ const getGeometryInfoInScrollableContainer = computed(() => {
     mixTrackManagementContainer.value,
   )
 })
+
+const { isFolded, totalAudioTracksHeight, unfoldHeight, foldHeight } =
+  inject("foldedAudioTrack")
 </script>
 
 <template>
@@ -75,7 +78,7 @@ const getGeometryInfoInScrollableContainer = computed(() => {
       :key="id"
       :id="id"
       :track-width="width"
-      :track-height="trackUnit.trackHeight"
+      :track-height="isFolded(id) ? foldHeight : unfoldHeight"
       :main-color="trackUnit.mainColor"
       :sub-track-items-map="trackUnit.subTrackItemsMap"
       :get-geometry-info-in-parent-element="
@@ -83,7 +86,6 @@ const getGeometryInfoInScrollableContainer = computed(() => {
       "
       :context-menu="mixTrackContextMenu"
     >
-      <template #mix-content-thumbnail> </template>
     </MixTrackUnit>
   </div>
 </template>
@@ -92,6 +94,6 @@ const getGeometryInfoInScrollableContainer = computed(() => {
 .mix-track-management-container {
   position: relative;
   width: v-bind(width * pixelsPerTick(id) + "px");
-  height: v-bind(height + "px");
+  height: v-bind(totalAudioTracksHeight + "px");
 }
 </style>

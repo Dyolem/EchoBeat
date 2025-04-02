@@ -2,7 +2,7 @@
 import FeatureBar from "@/views/daw/add-track-sidebar/FeatureBar.vue"
 import TrackControllerPad from "@/views/daw/add-track-sidebar/TrackControllerPad.vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { useTemplateRef, watchEffect, computed } from "vue"
+import { useTemplateRef, watchEffect, computed, inject, ref } from "vue"
 import { storeToRefs } from "pinia"
 const mixTrackEditorStore = useMixTrackEditorStore()
 const { mixTracksMap } = storeToRefs(mixTrackEditorStore)
@@ -45,6 +45,8 @@ function adjustAudioTrackOrder({ direction, order }) {
   trackArr[order + moveDirection] = temp
   mixTracksArr.value = trackArr
 }
+
+const { isFolded, unfoldHeight, foldHeight } = inject("foldedAudioTrack")
 </script>
 
 <template>
@@ -62,6 +64,7 @@ function adjustAudioTrackOrder({ direction, order }) {
         :serial-numbering="index"
         :audio-track-name="audioTrack.audioTrackName"
         :main-color="audioTrack.mainColor"
+        :height="isFolded(audioTrackId) ? foldHeight : unfoldHeight"
         @update:move="adjustAudioTrackOrder"
       ></TrackControllerPad>
     </div>

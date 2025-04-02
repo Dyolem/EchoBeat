@@ -331,7 +331,7 @@ onUnmounted(() => {
         "
         :main-color="mainColor"
         :width="subTrackItem.trackItemWidth"
-        :height="subTrackItem.trackItemHeight"
+        :height="trackHeight"
         :start-position="subTrackItem.startPosition"
         :track-name="subTrackItem.trackName"
         :track-zoom-ratio="subTrackItem.trackZoomRatio"

@@ -1,12 +1,10 @@
 <script setup>
 import Editor from "@/views/daw/editor-template/index.vue"
 import MixTrackUnitManagement from "@/views/daw/mix-track-editor/MixTrackUnitManagement.vue"
-import { computed, provide, ref, toRef } from "vue"
+import { inject, provide, ref, toRef } from "vue"
 import AddTrackSidebar from "@/views/daw/add-track-sidebar/index.vue"
-import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { BASE_GRID_HEIGHT } from "@/constants/daw/index.js"
 import MixTrackPlaceholder from "@/views/daw/mix-track-editor/MixTrackPlaceholder.vue"
-const mixTrackEditorStore = useMixTrackEditorStore()
+
 const props = defineProps({
   mainEditorId: {
     type: String,
@@ -25,11 +23,10 @@ provide(
   "mainEditorId",
   toRef(() => props.mainEditorId),
 )
-const dynamicSvgHeight = computed(() => {
-  return mixTrackEditorStore.mixTracksMap.size * BASE_GRID_HEIGHT
-})
-provide("bgSvgHeight", dynamicSvgHeight)
-provide("canvasContentHeight", { canvasContentHeight: dynamicSvgHeight })
+
+const { totalAudioTracksHeight } = inject("foldedAudioTrack")
+provide("bgSvgHeight", totalAudioTracksHeight)
+provide("canvasContentHeight", { canvasContentHeight: totalAudioTracksHeight })
 
 const addTrackSidebarScrollTop = ref(0)
 const scrollMovement = ref({

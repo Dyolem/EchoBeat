@@ -13,6 +13,8 @@ import {
   watchEffect,
 } from "vue"
 import {
+  FOLDED_AUDIO_TRACK_HEIGHT,
+  UNFOLDED_AUDIO_TRACK_HEIGHT,
   INIT_FOOTER_HEIGHT,
   INIT_HEADER_HEIGHT,
   MAIN_EDITOR_ID,
@@ -28,7 +30,9 @@ import {
 } from "@/core/custom-event/deleteSubTrack.js"
 import { storeToRefs } from "pinia"
 import { useAudioStore } from "@/store/daw/audio/index.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 
+const mixTrackEditorStore = useMixTrackEditorStore()
 const audioStore = useAudioStore()
 const { mutedAudioTrackIdSet, soloAudioTrackId } = storeToRefs(audioStore)
 const zoomRatioStore = useZoomRatioStore()
@@ -113,6 +117,37 @@ const filterEffect = computed(() => {
 })
 
 provide("playableAudioTrack", { isMuted, isSolo, filterEffect })
+
+const unfoldHeight = ref(UNFOLDED_AUDIO_TRACK_HEIGHT)
+const foldHeight = ref(FOLDED_AUDIO_TRACK_HEIGHT)
+const foldedAudioTrackIdSet = ref(new Set())
+const isFolded = computed(() => {
+  return (audioTrackId) => foldedAudioTrackIdSet.value.has(audioTrackId)
+})
+const totalAudioTracksHeight = computed(() => {
+  return (
+    mixTrackEditorStore.mixTracksMap.size * unfoldHeight.value -
+    foldedAudioTrackIdSet.value.size * (unfoldHeight.value - foldHeight.value)
+  )
+})
+function addFoldedAudioTrack({ audioTrackId }) {
+  foldedAudioTrackIdSet.value.add(audioTrackId)
+}
+function cancelSpecifiedFoldedAudioTrack({ audioTrackId }) {
+  foldedAudioTrackIdSet.value.delete(audioTrackId)
+}
+provide("foldedAudioTrack", {
+  unfoldHeight,
+  foldHeight,
+  totalAudioTracksHeight,
+  isFolded,
+  foldedAudioTrackIdSet,
+  addFoldedAudioTrack,
+  cancelSpecifiedFoldedAudioTrack,
+})
+registerDeleteSubTrackEvent(({ audioTrackId }) =>
+  cancelSpecifiedFoldedAudioTrack({ audioTrackId }),
+)
 </script>
 
 <template>

@@ -2,6 +2,9 @@ import { generateUniqueId } from "@/utils/generateUniqueId.js"
 export const INIT_HEADER_HEIGHT = 110
 export const INIT_FOOTER_HEIGHT = 50
 
+export const FOLDED_AUDIO_TRACK_HEIGHT = 32
+export const UNFOLDED_AUDIO_TRACK_HEIGHT = 90
+
 export const EDITOR_TYPE_ENUM = {
   MAIN_EDITOR: "mainEditor",
   SUBORDINATE_EDITOR: "subordinateEditor",
