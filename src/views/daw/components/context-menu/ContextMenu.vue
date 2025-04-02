@@ -8,7 +8,8 @@ const contextMenuRef = useTemplateRef("contextMenuRef")
 const contextMenuZIndex = ref(ZIndex.CONTEXT_MENU)
 
 const { vw, vh } = useViewPort()
-const { showMenu, x, y } = useContextMenu(contextMenuRef)
+const { activeTriggerContextMenu, showMenu, x, y } =
+  useContextMenu(contextMenuRef)
 const props = defineProps({
   menu: {
     type: Array,
@@ -38,9 +39,7 @@ const computedMenuPosition = computed(() => {
 
 <template>
   <div class="context-menu" ref="contextMenuRef">
-    <slot>
-      <h1>hello</h1>
-    </slot>
+    <slot :activeTriggerContextMenu="activeTriggerContextMenu"></slot>
     <Teleport to="body">
       <div
         v-size-ob="menuResizeHandler"

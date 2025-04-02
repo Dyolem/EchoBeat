@@ -5,6 +5,13 @@ export function useContextMenu(containerRef) {
   const x = ref(0)
   const y = ref(0)
   const controller = new AbortController()
+
+  let triggerType = ""
+  function activeTriggerContextMenu(event) {
+    console.log(event)
+    triggerType = "active"
+    handleContextMenu(event)
+  }
   function handleContextMenu(event) {
     event.preventDefault()
     event.stopPropagation()
@@ -14,7 +21,10 @@ export function useContextMenu(containerRef) {
   }
   function closeMenu() {
     const timer = setTimeout(() => {
-      showMenu.value = false
+      if (triggerType !== "active") {
+        showMenu.value = false
+      }
+      triggerType = ""
       clearTimeout(timer)
     }, 100)
   }
@@ -45,5 +55,6 @@ export function useContextMenu(containerRef) {
     x,
     y,
     showMenu,
+    activeTriggerContextMenu,
   }
 }
