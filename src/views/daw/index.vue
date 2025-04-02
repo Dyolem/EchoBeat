@@ -26,7 +26,11 @@ import {
   registerDeleteSubTrackEvent,
   removeDeleteSubTrackEventListener,
 } from "@/core/custom-event/deleteSubTrack.js"
+import { storeToRefs } from "pinia"
+import { useAudioStore } from "@/store/daw/audio/index.js"
 
+const audioStore = useAudioStore()
+const { mutedAudioTrackIdSet, soloAudioTrackId } = storeToRefs(audioStore)
 const zoomRatioStore = useZoomRatioStore()
 
 zoomRatioStore.initZoomRatioMap()
@@ -87,6 +91,28 @@ provide("selectedTrackItemId", {
   selectedTrackItemId,
   updateSelectedTrackItemId,
 })
+
+const isMuted = computed(() => {
+  return (audioTrackId) => mutedAudioTrackIdSet.value.has(audioTrackId)
+})
+const isSolo = computed(() => {
+  return (audioTrackId) => soloAudioTrackId.value === audioTrackId
+})
+const filterEffect = computed(() => {
+  return (audioTrackId) => {
+    let grayscale = `grayscale(0)`
+    if (isMuted.value(audioTrackId)) {
+      grayscale = `grayscale(1)`
+    } else {
+      if (!!soloAudioTrackId.value && !isSolo.value(audioTrackId)) {
+        grayscale = `grayscale(1)`
+      }
+    }
+    return `${grayscale}`
+  }
+})
+
+provide("playableAudioTrack", { isMuted, isSolo, filterEffect })
 </script>
 
 <template>

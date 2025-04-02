@@ -57,6 +57,8 @@ const props = defineProps({
 })
 const editorId = inject("subordinateEditorId")
 
+const { filterEffect } = inject("playableAudioTrack")
+
 const pianoKeySizeStore = usePianoKeySizeStore()
 const { octaveItemHeight, chromaticInfo, noteTrackHeight } =
   storeToRefs(pianoKeySizeStore)
@@ -183,6 +185,9 @@ function noteEditorDblClickHandler(event) {
   <div
     class="note-editor-container"
     ref="noteEditorContainerRef"
+    :style="{
+      filter: filterEffect(selectedAudioTrackId),
+    }"
     :class="{
       'is-inserted': isInsertMode,
     }"

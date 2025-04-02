@@ -109,8 +109,13 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     const audioTrackVolumeGainNode = audioStore.createAudioTrackVolumeGainNode({
       audioTrackId: newTrackId,
     })
-    audioTrackStereoPannerNode.connect(audioTrackVolumeGainNode)
-    audioStore.connectMixGainNode(audioTrackVolumeGainNode)
+    const audioTrackMutedGainNode = audioStore.createAudioTrackMutedGainNode({
+      audioTrackId: newTrackId,
+    })
+    audioTrackStereoPannerNode
+      .connect(audioTrackVolumeGainNode)
+      .connect(audioTrackMutedGainNode)
+    audioStore.connectMixGainNode(audioTrackMutedGainNode)
     return newTrackId
   }
 

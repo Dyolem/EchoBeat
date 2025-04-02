@@ -31,6 +31,20 @@ export const useAudioStore = defineStore("audio", () => {
   //存储每个音轨的总分贝值，音轨id为键，代表Volume的GainNode实例为值
   const audioTrackVolumeGainNodeMap = new Map()
 
+  // 控制每个音轨是否被静音
+  const audioTrackMutedGainNodeMap = new Map()
+  const mutedAudioTrackIdSet = ref(new Set())
+
+  // solo功能,控制哪条音轨进行solo，即只生成该音轨节点
+  const soloAudioTrackId = ref("")
+  function specifySoloAudioTrack({ audioTrackId }) {
+    if (!audioTracksBufferSourceMap.value.has(audioTrackId)) return
+    soloAudioTrackId.value = audioTrackId
+  }
+  function cancelSoloAudioTrack() {
+    soloAudioTrackId.value = ""
+  }
+
   //全局音量总控制
   const globalGainNode = audioContext.value.createGain()
 
@@ -93,6 +107,7 @@ export const useAudioStore = defineStore("audio", () => {
         audioType: AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
         workspaceAudioMap,
         stereoValue: 0,
+        muted: false,
       }
       audioTracksBufferSourceMap.value.set(audioTrackId, midiAudioInfo)
       return midiAudioInfo
@@ -290,6 +305,10 @@ export const useAudioStore = defineStore("audio", () => {
     if (audioContext.state === "suspended") return
 
     for (const [audioTrackId, audioInfo] of audioTracksBufferSourceMap) {
+      if (soloAudioTrackId.value && soloAudioTrackId.value !== audioTrackId) {
+        continue
+      }
+
       const workspaceAudioMap = audioInfo.workspaceAudioMap
       workspaceAudioMap.forEach((workspaceAudio, workspaceId) => {
         const noteBufferSourceMap =
@@ -311,6 +330,7 @@ export const useAudioStore = defineStore("audio", () => {
           ]
 
         const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
+        const mutedGainNode = audioTrackMutedGainNodeMap.get(audioTrackId)
         for (const [id, noteBufferSourceInstance] of noteBufferSourceMap) {
           let startTime = 0
           let duration = 0
@@ -406,6 +426,7 @@ export const useAudioStore = defineStore("audio", () => {
             .connect(fadeGainNode)
             .connect(velocityGainNode)
             .connect(stereoPannerNode)
+            .connect(mutedGainNode)
           audioBufferSourceNode.start(
             audioStartTime,
             offsetTime,
@@ -423,7 +444,7 @@ export const useAudioStore = defineStore("audio", () => {
     fadeInDuration = Math.min(duration, fadeInDuration)
     const fadeInStopTime = startTime + fadeInDuration
     const fadeInStartTime = fadeInStopTime - fadeInDuration // 淡出开始时间
-    fadeGainNode.gain.setValueAtTime(0, fadeInStartTime) // 保持音量为 1
+    fadeGainNode.gain.setValueAtTime(0, fadeInStartTime)
     fadeGainNode.gain.linearRampToValueAtTime(1, fadeInStopTime)
   }
 
@@ -548,12 +569,13 @@ export const useAudioStore = defineStore("audio", () => {
     const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
     stereoPannerNode.pan.value = clamp(stereoValue, [-1, 1])
   }
-  function deleteStereoPannerNode(audioTrackId) {
+  function deleteStereoPannerNode({ audioTrackId }) {
     const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
     if (!stereoPannerNode) return
     stereoPannerNode.disconnect()
     audioTrackStereoMap.delete(audioTrackId)
   }
+  registerDeleteAudioTrackEvent(deleteStereoPannerNode)
 
   function createAudioTrackVolumeGainNode({ audioTrackId, gainValue = 1 }) {
     const volumeGainNode = audioContext.value.createGain()
@@ -567,12 +589,54 @@ export const useAudioStore = defineStore("audio", () => {
 
     volumeGainNode.gain.value = gainValue
   }
-  function deleteVolumeGainNode(audioTrackId) {
+  function deleteVolumeGainNode({ audioTrackId }) {
     const volumeGainNode = audioTrackVolumeGainNodeMap.get(audioTrackId)
     if (!volumeGainNode) return
     volumeGainNode.disconnect()
     audioTrackVolumeGainNodeMap.delete(audioTrackId)
   }
+  registerDeleteAudioTrackEvent(deleteVolumeGainNode)
+
+  //音轨静音功能
+  function createAudioTrackMutedGainNode({ audioTrackId }) {
+    const mutedGainNode = audioContext.value.createGain()
+    audioTrackMutedGainNodeMap.set(audioTrackId, mutedGainNode)
+    mutedGainNode.gain.value = 1
+    return mutedGainNode
+  }
+  function recoverMutedAudioTrack({ audioTrackId }) {
+    mutedAudioTrackIdSet.value.delete(audioTrackId)
+    updateAudioTrackMutedGainNodeValue({ audioTrackId, gainValue: 1 })
+  }
+  function muteSpecifiedAudioTrack({ audioTrackId }) {
+    mutedAudioTrackIdSet.value.add(audioTrackId)
+    updateAudioTrackMutedGainNodeValue({ audioTrackId, gainValue: 0 })
+  }
+  function updateAudioTrackMutedGainNodeValue({ audioTrackId, gainValue }) {
+    const delayTime = 0.01
+    const mutedGainNode = audioTrackMutedGainNodeMap.get(audioTrackId)
+    if (!mutedGainNode) return
+    if (gainValue !== 0 && gainValue !== 1) return
+
+    const currentTime = mutedGainNode.context.currentTime
+    mutedGainNode.gain.setValueAtTime(mutedGainNode.gain.value, currentTime)
+    mutedGainNode.gain.linearRampToValueAtTime(
+      gainValue,
+      currentTime + delayTime,
+    )
+  }
+  function deleteMutedGainNode({ audioTrackId }) {
+    const mutedGainNode = audioTrackMutedGainNodeMap.get(audioTrackId)
+    if (!mutedGainNode) return
+    mutedGainNode.disconnect()
+    audioTrackMutedGainNodeMap.delete(audioTrackId)
+  }
+  registerDeleteAudioTrackEvent(deleteMutedGainNode)
+  registerDeleteAudioTrackEvent(({ audioTrackId }) => {
+    mutedAudioTrackIdSet.value.delete(audioTrackId)
+    cancelSoloAudioTrack()
+  })
+
   function connectMixGainNode(audioNode) {
     audioNode.connect(mixingGainNode)
   }
@@ -661,6 +725,8 @@ export const useAudioStore = defineStore("audio", () => {
   return {
     audioContext,
     audioTracksBufferSourceMap,
+    soloAudioTrackId,
+    mutedAudioTrackIdSet,
     generateSingleAudioNode,
     generateAudioNode,
     stopAllNodes,
@@ -675,6 +741,12 @@ export const useAudioStore = defineStore("audio", () => {
     createAudioTrackVolumeGainNode,
     updateAudioTrackVolumeGainNodeValue,
     deleteVolumeGainNode,
+    createAudioTrackMutedGainNode,
+    recoverMutedAudioTrack,
+    muteSpecifiedAudioTrack,
+    deleteMutedGainNode,
+    specifySoloAudioTrack,
+    cancelSoloAudioTrack,
     connectMixGainNode,
     updateGlobalGainNodeValue,
     updateMeter,

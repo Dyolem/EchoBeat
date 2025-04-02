@@ -18,6 +18,8 @@ const props = defineProps({
   },
 })
 const mainColor = inject("mainColor")
+const { selectedAudioTrackId } = inject("selectedAudioTrackId")
+const { filterEffect } = inject("playableAudioTrack")
 const smartViewHintContent = `<pre style="font-family: reset">Smart View only shows rows that
 belong to the selected scale, or that
 contain notes</pre>`
@@ -28,7 +30,12 @@ const midiNotesWorkableDisabledState = computed(() => {
 </script>
 
 <template>
-  <div class="midi-option-container">
+  <div
+    class="midi-option-container"
+    :style="{
+      filter: filterEffect(selectedAudioTrackId),
+    }"
+  >
     <div class="option-head">
       <div class="close-button">
         <echo-material-symbols:close-rounded></echo-material-symbols:close-rounded>

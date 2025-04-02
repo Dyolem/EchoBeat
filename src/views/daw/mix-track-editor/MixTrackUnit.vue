@@ -65,6 +65,7 @@ const props = defineProps({
 })
 
 provide("mixTrackMainColor", toRef(props, "mainColor"))
+const { filterEffect } = inject("playableAudioTrack")
 
 const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
   "selectedAudioTrackId",
@@ -308,7 +309,12 @@ onUnmounted(() => {
     <div
       class="track-unit-grid"
       ref="trackUnitGridRef"
-      :class="selectedAudioTrackId === id ? 'track-unit-grid-selected' : ''"
+      :style="{
+        filter: filterEffect(id),
+      }"
+      :class="{
+        'track-unit-grid-selected': selectedAudioTrackId === id,
+      }"
       @click="updateSelectedId"
     >
       <TrackItem

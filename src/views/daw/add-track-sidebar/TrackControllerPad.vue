@@ -7,9 +7,17 @@ import { generateMidTrack } from "@/core/audio/generateMidFile.js"
 import { disPatchDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTrack.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { sanitizeInput } from "@/utils/sanitizeInput.js"
+import { useAudioStore } from "@/store/daw/audio/index.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const { updateMixTrackInfo } = mixTrackEditorStore
+const audioStore = useAudioStore()
+const {
+  specifySoloAudioTrack,
+  muteSpecifiedAudioTrack,
+  recoverMutedAudioTrack,
+  cancelSoloAudioTrack,
+} = audioStore
 const audioTrackNameRef = useTemplateRef("audioTrackNameRef")
 const props = defineProps({
   id: {
@@ -37,6 +45,9 @@ const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
   "selectedAudioTrackId",
   {},
 )
+
+const { isMuted, isSolo, filterEffect } = inject("playableAudioTrack")
+
 const serialNumbering = computed(() => {
   const serialNumbering = props.serialNumbering + 1
   if (serialNumbering >= 0 && serialNumbering < 10) return `0${serialNumbering}`
@@ -110,6 +121,24 @@ function modifyAudioTrackName(event) {
     trackName: sanitizeInput(event.target.value),
   })
 }
+
+function muteHandler() {
+  const audioTrackId = props.id
+  if (isMuted.value(audioTrackId)) {
+    recoverMutedAudioTrack({ audioTrackId })
+  } else {
+    muteSpecifiedAudioTrack({ audioTrackId })
+  }
+}
+
+function soloHandler() {
+  const audioTrackId = props.id
+  if (isSolo.value(audioTrackId)) {
+    cancelSoloAudioTrack()
+  } else {
+    specifySoloAudioTrack({ audioTrackId })
+  }
+}
 </script>
 
 <template>
@@ -118,7 +147,12 @@ function modifyAudioTrackName(event) {
       <div
         class="track-controller-pad"
         @click="() => updateSelectedAudioTrackId(id)"
-        :class="selectedAudioTrackId === id ? 'selected' : ''"
+        :style="{
+          filter: filterEffect(id),
+        }"
+        :class="{
+          selected: selectedAudioTrackId === id,
+        }"
       >
         <div class="controller-nav">
           <div class="track-info">
@@ -143,8 +177,14 @@ function modifyAudioTrackName(event) {
             ></echo-mi:options-vertical>
 
             <div class="play-mode">
-              <button class="mute gain-button">M</button>
-              <button class="solo gain-button">S</button>
+              <button class="mute gain-button" @click="muteHandler">M</button>
+              <button
+                class="solo gain-button"
+                :class="isSolo(id) ? 'solo-ratio' : ''"
+                @click="soloHandler"
+              >
+                S
+              </button>
             </div>
             <i class="collapse-track-icon">
               <echo-ooui:collapse></echo-ooui:collapse>
@@ -255,17 +295,21 @@ function modifyAudioTrackName(event) {
   border-radius: 8px;
   color: inherit;
   background-color: inherit;
-  &:hover {
+  cursor: pointer;
+  &:not(.solo-ratio):hover {
     background-color: hsl(0, 0%, 35%);
-    cursor: pointer;
   }
 }
-.gain-button:hover {
+.gain-button:not(.solo-ratio):hover {
   background-color: hsl(0, 0%, 35%);
   cursor: pointer;
 }
 .gain-controller {
   display: flex;
   align-items: center;
+}
+.solo-ratio {
+  background-color: #ffaf13;
+  color: #000000;
 }
 </style>
