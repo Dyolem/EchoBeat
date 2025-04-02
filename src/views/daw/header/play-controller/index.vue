@@ -4,7 +4,11 @@ import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import { storeToRefs } from "pinia"
-import { playAudio } from "@/core/audio/player.js"
+import {
+  playAudio,
+  registerVisibilityChangeEvent,
+} from "@/core/audio/player.js"
+registerVisibilityChangeEvent()
 const trackRulerStore = useTrackRulerStore()
 const { isPlaying, timelineCurrentTime } = storeToRefs(trackRulerStore)
 const accurateTime = computed(() => {

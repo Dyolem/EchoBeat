@@ -9,23 +9,27 @@ const dynamicGenerationTimeInterval = 4
 const GENERATE_AUDIO_POLLING_INTERVAL =
   (1000 * dynamicGenerationTimeInterval) / 2
 const UPDATE_TRACK_TIME_POLLING_INTERVAL = 16.7
-const documentVisibilityController = new AbortController()
-document.addEventListener(
-  "visibilitychange",
-  () => {
-    if (!controller) controller = new AbortController()
-    queryCurrentTime({
-      audioContext: audioStore.audioContext,
-      signal: controller.signal,
-      maxTime,
-      initTime,
-    })
-  },
-  { signal: documentVisibilityController.signal },
-)
-onUnmounted(() => {
-  documentVisibilityController.abort()
-})
+
+export function registerVisibilityChangeEvent() {
+  const documentVisibilityController = new AbortController()
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+      if (!controller) controller = new AbortController()
+      queryCurrentTime({
+        audioContext: audioStore.audioContext,
+        signal: controller.signal,
+        maxTime,
+        initTime,
+      })
+    },
+    { signal: documentVisibilityController.signal },
+  )
+  onUnmounted(() => {
+    documentVisibilityController.abort()
+  })
+}
+
 const audioStore = useAudioStore()
 const trackRulerStore = useTrackRulerStore()
 const {
