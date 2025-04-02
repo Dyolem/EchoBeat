@@ -143,7 +143,7 @@ function soloHandler() {
 
 <template>
   <ContextMenu :menu="audioTrackControllerMenu">
-    <template #default>
+    <template #default="{ activeTriggerContextMenu }">
       <div
         class="track-controller-pad"
         @click="() => updateSelectedAudioTrackId(id)"
@@ -172,9 +172,11 @@ function soloHandler() {
             /></span>
           </div>
           <div class="control-features">
-            <echo-mi:options-vertical
-              class="context-icon"
-            ></echo-mi:options-vertical>
+            <div @click="activeTriggerContextMenu">
+              <echo-mi:options-vertical
+                class="context-icon"
+              ></echo-mi:options-vertical>
+            </div>
 
             <div class="play-mode">
               <button class="mute gain-button" @click="muteHandler">M</button>
