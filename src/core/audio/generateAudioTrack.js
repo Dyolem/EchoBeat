@@ -49,7 +49,11 @@ import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import { midiToNoteName } from "@/constants/daw/index.js"
+import {
+  AUDIO_TRACK_ENUM,
+  AUDIO_TRACK_TYPE_CONFIG,
+  midiToNoteName,
+} from "@/constants/daw/index.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 
 /**
@@ -76,6 +80,9 @@ export function generateAudioTrack(midiData) {
     ppqn,
     timeSignature,
   })
+  const midiTypeAudioTrackInfo = AUDIO_TRACK_TYPE_CONFIG.get(
+    AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
+  )
   for (const { events, timeRange, notes, name, color } of tracks) {
     if (notes.length === 0) continue
     else {
@@ -85,6 +92,8 @@ export function generateAudioTrack(midiData) {
       })
       const audioTrackId = mixTrackEditorStore.addAudioTrack({
         audioTrackName: name,
+        audioTrackType: midiTypeAudioTrackInfo.type,
+        audioTrackIcon: midiTypeAudioTrackInfo.icon,
         mainEditorZoomRatio,
         midiWorkspaceZoomRatio,
       })

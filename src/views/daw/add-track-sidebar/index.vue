@@ -64,6 +64,8 @@ const { isFolded, unfoldHeight, foldHeight } = inject("foldedAudioTrack")
         :serial-numbering="index"
         :audio-track-name="audioTrack.audioTrackName"
         :main-color="audioTrack.mainColor"
+        :audio-track-icon="audioTrack.audioTrackIcon"
+        :audio-track-type="audioTrack.audioTrackType"
         :height="isFolded(audioTrackId) ? foldHeight : unfoldHeight"
         @update:move="adjustAudioTrackOrder"
       ></TrackControllerPad>

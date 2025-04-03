@@ -8,6 +8,7 @@ import { disPatchDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTr
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { sanitizeInput } from "@/utils/sanitizeInput.js"
 import { useAudioStore } from "@/store/daw/audio/index.js"
+import { Icon } from "@iconify/vue"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const { updateMixTrackInfo } = mixTrackEditorStore
@@ -39,6 +40,14 @@ const props = defineProps({
   height: {
     type: Number,
     default: 90,
+  },
+  audioTrackIcon: {
+    type: String,
+    default: "",
+  },
+  audioTrackType: {
+    type: String,
+    default: "",
   },
 })
 const { selectedAudioTrackId, updateSelectedAudioTrackId } = inject(
@@ -167,9 +176,7 @@ function foldAudioTrack(audioTrackId) {
       >
         <div class="controller-nav">
           <div class="track-info">
-            <echo-fluent:midi-24-regular
-              class="track-type-icon"
-            ></echo-fluent:midi-24-regular>
+            <Icon :icon="audioTrackIcon" class="track-type-icon"></Icon>
 
             <span class="track-number">{{ serialNumbering }}</span>
 

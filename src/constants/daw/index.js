@@ -135,13 +135,69 @@ export const INIT_BEATS_PER_MEASURE = 4
 export const INIT_NOTE_VALUE_DENOMINATOR = 4
 
 export const AUDIO_TRACK_ENUM = {
-  VOICE: "voice",
-  VIRTUAL_INSTRUMENTS: "virtual-instruments",
-  DRUM_MACHINE: "drum-machine",
-  SAMPLE: "sample",
-  GUITAR: "guitar",
-  BASS: "bass",
+  VOICE: "Voice/Audio",
+  VIRTUAL_INSTRUMENTS: "Virtual instruments",
+  DRUM_MACHINE: "Drum Machine",
+  SAMPLE: "Sample",
+  GUITAR: "Guitar",
+  BASS: "Bass",
 }
+export const AUDIO_TRACK_TYPE_CONFIG = new Map([
+  [
+    AUDIO_TRACK_ENUM.VOICE,
+    {
+      type: AUDIO_TRACK_ENUM.VOICE,
+      title: AUDIO_TRACK_ENUM.VOICE,
+      desc: "Record with AutoPitch + Fx",
+      icon: "tabler:microphone",
+    },
+  ],
+  [
+    AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
+    {
+      type: AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
+      title: AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
+      desc: "Record kits,keys and more",
+      icon: "lucide:piano",
+    },
+  ],
+  [
+    AUDIO_TRACK_ENUM.DRUM_MACHINE,
+    {
+      type: AUDIO_TRACK_ENUM.DRUM_MACHINE,
+      title: AUDIO_TRACK_ENUM.DRUM_MACHINE,
+      desc: "Create beats in seconds",
+      icon: "fluent:midi-24-regular",
+    },
+  ],
+  [
+    AUDIO_TRACK_ENUM.SAMPLE,
+    {
+      type: AUDIO_TRACK_ENUM.SAMPLE,
+      title: AUDIO_TRACK_ENUM.SAMPLE,
+      desc: "Turn any sound into an instrument",
+      icon: "fluent:sound-wave-circle-32-regular",
+    },
+  ],
+  [
+    AUDIO_TRACK_ENUM.GUITAR,
+    {
+      type: AUDIO_TRACK_ENUM.GUITAR,
+      title: AUDIO_TRACK_ENUM.GUITAR,
+      desc: "Jam with Amps + Fx",
+      icon: "qlementine-icons:guitar-strat-16",
+    },
+  ],
+  [
+    AUDIO_TRACK_ENUM.BASS,
+    {
+      type: AUDIO_TRACK_ENUM.BASS,
+      title: AUDIO_TRACK_ENUM.BASS,
+      desc: "Find your signature tone",
+      icon: "qlementine-icons:bass-16",
+    },
+  ],
+])
 
 //midi虚拟琴键参数
 export const BLACK_KEY_HEIGHT = 10

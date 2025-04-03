@@ -28,6 +28,8 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const mixTracksMap = ref(new Map([]))
   function createNewTrack({
     audioTrackName,
+    audioTrackType,
+    audioTrackIcon,
     mainColor = audioTrackMainColorStore.getRandomColor(),
     mainEditorZoomRatio = 1,
   }) {
@@ -37,6 +39,8 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       id: newAudioTrackId,
       audioTrackName,
       mainColor,
+      audioTrackIcon,
+      audioTrackType,
       originalSerialNumbering: existedTracksSize,
       subTrackItemsMap: new Map(),
       mainEditorZoomRatio,
@@ -83,12 +87,16 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   }
   function addAudioTrack({
     audioTrackName,
+    audioTrackType,
+    audioTrackIcon,
     mainColor = audioTrackMainColorStore.getRandomColor(),
     mainEditorZoomRatio,
     midiWorkspaceZoomRatio,
   }) {
     const newTrackId = createNewTrack({
       audioTrackName,
+      audioTrackType,
+      audioTrackIcon,
       mainColor,
       mainEditorZoomRatio,
     })
