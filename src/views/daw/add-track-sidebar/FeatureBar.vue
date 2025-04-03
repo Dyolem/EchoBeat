@@ -43,6 +43,8 @@ function addAudioTrackHandler() {
   align-items: center;
   width: 100%;
   height: 50px;
+  padding: 0 10px;
+  background: inherit;
   flex-shrink: 0;
   z-index: 1;
 }
