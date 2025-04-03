@@ -358,8 +358,39 @@ function bytesToString(bytes) {
 }
 
 export function parseMidi(arrayBuffer) {
-  const unit8ArrayBuffer = new Uint8Array(arrayBuffer)
-  const midiObj = MidiParser.parse(unit8ArrayBuffer)
-  const midiData = parseMidiForDAW(midiObj)
-  return midiData
+  return new Promise((resolve, reject) => {
+    const unit8ArrayBuffer = new Uint8Array(arrayBuffer)
+    let warningMessages = []
+
+    // 保存原始 console.warn 方法
+    const originalWarn = console.warn
+
+    // 临时覆盖 warn 方法以捕获警告
+    console.warn = (...args) => {
+      warningMessages.push(args.join(" "))
+      originalWarn.apply(console, args) // 保持原始控制台输出
+    }
+
+    try {
+      const midiObj = MidiParser.parse(unit8ArrayBuffer)
+
+      // 恢复原始 console.warn
+      console.warn = originalWarn
+
+      if (midiObj === false) {
+        const errorMessage =
+          warningMessages.join(" || ") ||
+          "Unable to import file.Please check that your file is not corrupted"
+        reject(new Error(errorMessage))
+        return
+      }
+
+      const midiData = parseMidiForDAW(midiObj)
+      resolve(midiData)
+    } catch (error) {
+      // 确保异常时也恢复 console.warn
+      console.warn = originalWarn
+      reject(error)
+    }
+  })
 }
