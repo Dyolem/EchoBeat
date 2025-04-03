@@ -426,7 +426,6 @@ export const useAudioStore = defineStore("audio", () => {
             .connect(fadeGainNode)
             .connect(velocityGainNode)
             .connect(stereoPannerNode)
-            .connect(mutedGainNode)
           audioBufferSourceNode.start(
             audioStartTime,
             offsetTime,
