@@ -346,3 +346,16 @@ export const SELECTION_RECT_PROPERTIES = Object.freeze({
     END_Y: "endY",
   },
 })
+
+// 节拍器音效列表
+export const METRONOME_TYPE_LIST = [
+  "Bleep",
+  "Cat",
+  "Clave",
+  "Conga",
+  "CowBell",
+  "Default",
+  "Rim",
+  "Slap",
+  "Tick",
+]

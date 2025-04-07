@@ -13,6 +13,7 @@ import {
   INIT_NOTE_VALUE_DENOMINATOR,
   MAX_BPM,
   MAX_GRID_WIDTH,
+  METRONOME_TYPE_LIST,
   MIN_BPM,
   MIN_GRID_WIDTH,
   NOTE_VALUE_DENOMINATOR_ENUM,
@@ -28,6 +29,9 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const zoomRatioStore = useZoomRatioStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
   const trackRulerStore = useTrackRulerStore()
+
+  const currentMetronomeSoundType = ref(METRONOME_TYPE_LIST[0])
+
   const ppqn = ref(PPQ) //一个四分音符的tick数
   const bpm = ref(INIT_BPM) // 每分钟的四分音符个数
 
@@ -241,6 +245,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     return updatedValue
   }
   return {
+    currentMetronomeSoundType,
     bpm,
     editableTotalTime,
     baseGridWidth,

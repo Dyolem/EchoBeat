@@ -31,6 +31,7 @@ import {
 import { storeToRefs } from "pinia"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { initMetronome } from "@/core/audio/playMetronome.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const audioStore = useAudioStore()
@@ -38,6 +39,8 @@ const { mutedAudioTrackIdSet, soloAudioTrackId } = storeToRefs(audioStore)
 const zoomRatioStore = useZoomRatioStore()
 
 zoomRatioStore.initZoomRatioMap()
+
+initMetronome(audioStore.audioContext)
 
 const headerHeight = ref(INIT_HEADER_HEIGHT)
 const footerHeight = ref(INIT_FOOTER_HEIGHT)

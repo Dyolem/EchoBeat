@@ -11,6 +11,10 @@ import {
 import SelectValue from "@/views/daw/components/SelectValue.vue"
 import { pause } from "@/core/audio/player.js"
 import MetronomeSetting from "@/views/daw/header/beat-controller/MetronomeSetting.vue"
+import {
+  metronomeEnabledState,
+  toggleMetronomeState,
+} from "@/core/audio/playMetronome.js"
 const beatControllerStore = useBeatControllerStore()
 function validateBpm(event) {
   const tobeValidatedBpm = event.target.value
@@ -28,13 +32,18 @@ function focusHandler() {
 <template>
   <MixEditorButtonGroup size="large">
     <MixEditorButton circle>
-      <i>
-        <echo-f7:metronome class="metronome-icon"></echo-f7:metronome>
+      <i @click="toggleMetronomeState">
+        <echo-f7:metronome
+          class="metronome-icon"
+          :style="{
+            color: metronomeEnabledState ? '#2f93f6' : '#ffffff',
+          }"
+        ></echo-f7:metronome>
       </i>
     </MixEditorButton>
     <MixEditorButton>
       <el-tooltip trigger="click" popper-class="metronome-tooltip">
-        <i class="metronome-settings">
+        <i class="metronome-settings" @click="pause">
           <echo-ooui:collapse></echo-ooui:collapse>
         </i>
         <template #content>
@@ -106,6 +115,7 @@ function focusHandler() {
   gap: 6px;
 }
 .metronome-icon {
+  transition: all 0.2s ease-in-out;
   font-size: 20px;
 }
 .metronome-settings {

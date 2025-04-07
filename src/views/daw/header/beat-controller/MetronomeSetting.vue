@@ -1,27 +1,41 @@
 <script setup>
 import { ref, computed } from "vue"
 import VolumeSlider from "@/views/daw/components/VolumeSlider.vue"
+import { MAX_BPM, METRONOME_TYPE_LIST, MIN_BPM } from "@/constants/daw/index.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { storeToRefs } from "pinia"
+import {
+  isPlayingMetronomeSample,
+  playBeatOnce,
+  startMetronome,
+  stopMetronome,
+  updateMetronomeVolumeGainValue,
+} from "@/core/audio/playMetronome.js"
+import { generateNormalBpm } from "@/core/audio/generateNormalBpm.js"
 
-const isPlaying = ref(false)
-const metronomeSoundType = ref("Rim")
-const metronomeTypeList = ref([
-  "Bleep",
-  "Cat",
-  "Clave",
-  "Conga",
-  "CowBell",
-  "Default",
-  "Rim",
-  "Slap",
-  "Tick",
-])
+const beatControllerStore = useBeatControllerStore()
+const { currentMetronomeSoundType, bpm } = storeToRefs(beatControllerStore)
+const { updateChoreAudioParams } = beatControllerStore
+
+const metronomeTypeList = ref(METRONOME_TYPE_LIST)
 const metronomeSoundOptions = computed(() => {
   return metronomeTypeList.value.map((type) => ({ value: type, label: type }))
 })
 
-function updateMetronomeVolume({ gainValue }) {}
+function updateMetronomeVolume({ gainValue }) {
+  updateMetronomeVolumeGainValue({ gainValue })
+}
 function playMetronomeDemo() {
-  isPlaying.value = !isPlaying.value
+  if (isPlayingMetronomeSample.value) {
+    stopMetronome()
+  } else {
+    startMetronome()
+  }
+}
+
+function normalChangeBpm() {
+  const normalBpmValue = generateNormalBpm([MIN_BPM, MAX_BPM])
+  updateChoreAudioParams({ bpm: normalBpmValue })
 }
 </script>
 
@@ -31,12 +45,22 @@ function playMetronomeDemo() {
       <h2 class="title">Tap Tempo</h2>
       <div class="settings-content">
         <div class="adjust-tempo">
-          <div class="adjust-button">-</div>
-          <div class="tap-tempo">
-            <span class="specify-tempo">95</span>
+          <div
+            class="adjust-button"
+            @click="updateChoreAudioParams({ bpm: bpm - 1 })"
+          >
+            -
+          </div>
+          <div class="tap-tempo" @click="normalChangeBpm">
+            <span class="specify-tempo">{{ bpm }}</span>
             <span>tap</span>
           </div>
-          <div class="adjust-button">+</div>
+          <div
+            class="adjust-button"
+            @click="updateChoreAudioParams({ bpm: bpm + 1 })"
+          >
+            +
+          </div>
         </div>
       </div>
     </div>
@@ -44,7 +68,11 @@ function playMetronomeDemo() {
       <h2 class="title">Metronome Sound</h2>
       <div class="settings-content">
         <div class="metronome-sound-selector">
-          <el-select v-model="metronomeSoundType" placeholder="Select">
+          <el-select
+            v-model="currentMetronomeSoundType"
+            @change="(value) => playBeatOnce(value)"
+            :teleported="false"
+          >
             <el-option
               v-for="item in metronomeSoundOptions"
               :key="item.value"
@@ -54,9 +82,11 @@ function playMetronomeDemo() {
           </el-select>
         </div>
         <div class="metronome-demo-sound" @click="playMetronomeDemo">
-          <echo-iconoir:play-solid v-if="!isPlaying"></echo-iconoir:play-solid>
+          <echo-iconoir:play-solid
+            v-show="!isPlayingMetronomeSample"
+          ></echo-iconoir:play-solid>
           <echo-material-symbols:pause-rounded
-            v-if="isPlaying"
+            v-show="isPlayingMetronomeSample"
           ></echo-material-symbols:pause-rounded>
         </div>
       </div>
