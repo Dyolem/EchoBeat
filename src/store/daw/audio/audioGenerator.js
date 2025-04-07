@@ -181,16 +181,18 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
 
   const audioSourceNodeBuffer = new Map()
   async function preCreateBuffer(audioContext) {
-    const preCreatePianoAudioResourceWorkArr = []
-    for (const pitchName of NOTE_FREQUENCY_MAP.keys()) {
-      preCreatePianoAudioResourceWorkArr.push(
-        fetchPitchNameSample(pitchName, audioContext).then((buffer) => {
-          audioSourceNodeBuffer.set(pitchName, buffer)
-          return Promise.resolve({ pitchName, buffer })
-        }),
-      )
-    }
-    return Promise.all(preCreatePianoAudioResourceWorkArr)
+    const pitchNames = Array.from(NOTE_FREQUENCY_MAP.keys())
+
+    // 并行加载所有音频资源
+    const buffers = await Promise.all(
+      pitchNames.map(async (pitchName) => {
+        const buffer = await fetchPitchNameSample(pitchName, audioContext)
+        audioSourceNodeBuffer.set(pitchName, buffer)
+        return { pitchName, buffer }
+      }),
+    )
+
+    return buffers
   }
   function fetchPreLoadedBuffer(pitchName) {
     return audioSourceNodeBuffer.get(pitchName)

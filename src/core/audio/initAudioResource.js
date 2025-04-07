@@ -6,8 +6,12 @@ const { preCreateBuffer } = audioGeneratorStore
 const audioStore = useAudioStore()
 export async function initAudioResource(_audioContext) {
   const audioContext = _audioContext || audioStore.audioContext
-  return Promise.all([
-    initMetronome(audioContext),
-    preCreateBuffer(audioContext),
-  ])
+  try {
+    return await Promise.all([
+      initMetronome(audioContext),
+      preCreateBuffer(audioContext),
+    ])
+  } catch (error) {
+    throw error
+  }
 }

@@ -35,43 +35,30 @@ const INTERVAL = computed(() => {
 }) // seconds per beat
 
 // 初始化音频上下文和加载样本
-export function initMetronome(_audioContext) {
-  onUnmounted(() => {
-    resetState()
-  })
+export async function initMetronome(_audioContext) {
   audioContext = _audioContext
+  onUnmounted(resetState)
+
+  // 初始化节拍器音量节点
   metronomeVolumeGainNode = audioContext.createGain()
   metronomeVolumeGainNode.connect(audioContext.destination)
-  const loadMetronomeBufferAsyncWorkArr = []
-  METRONOME_TYPE_LIST.forEach((metronomeType) => {
-    // 加载音频文件
+
+  // 统一加载单条音频的逻辑
+  const loadAndStoreAudio = async (metronomeType, suffix) => {
     const baseURL = import.meta.env.BASE_URL
-    const highMetronomeAudioURL = `${baseURL}metronome-sound/${metronomeType}-Hi.wav`
-    const lowMetronomeAudioURL = `${baseURL}metronome-sound/${metronomeType}-Low.wav`
-    loadMetronomeBufferAsyncWorkArr.push(
-      loadAudio(highMetronomeAudioURL).then((highBuffer) => {
-        return {
-          type: `${metronomeType}-Hi`,
-          buffer: highBuffer,
-        }
-      }),
-    )
-    loadMetronomeBufferAsyncWorkArr.push(
-      loadAudio(lowMetronomeAudioURL).then((lowBuffer) => {
-        return {
-          type: `${metronomeType}-Low`,
-          buffer: lowBuffer,
-        }
-      }),
-    )
-  })
-  return Promise.all(loadMetronomeBufferAsyncWorkArr)
-    .then((metronomeInfoArr) => {
-      metronomeInfoArr.forEach(({ type, buffer }) => {
-        metronomeAudioBufferMap.set(type, buffer)
-      })
-    })
-    .catch(() => Promise.reject(false))
+    const url = `${baseURL}metronome-sound/${metronomeType}-${suffix}.wav`
+    const buffer = await loadAudio(url)
+    const type = `${metronomeType}-${suffix}`
+    metronomeAudioBufferMap.set(type, buffer)
+  }
+
+  // 并行加载所有节拍器音频
+  const loadPromises = METRONOME_TYPE_LIST.flatMap((type) => [
+    loadAndStoreAudio(type, "Hi"),
+    loadAndStoreAudio(type, "Low"),
+  ])
+
+  await Promise.all(loadPromises)
 }
 
 async function loadAudio(url) {
