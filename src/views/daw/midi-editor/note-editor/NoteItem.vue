@@ -129,14 +129,10 @@ function getMovementInNoteEditorRegion(event) {
 }
 
 function playNoteAudioSample(pitchName) {
-  audioGenerator
-    .generateAudio(pitchName)
-    .then((audioController) => {
-      audioController?.abort()
-    })
-    .catch((error) => {
-      console.error("Failed to abort audioController:", error)
-    })
+  const audioController = audioGenerator.generateAudio(pitchName)
+  setTimeout(() => {
+    audioController?.abort()
+  }, 100)
 }
 
 function draggableRegionHandler(event) {

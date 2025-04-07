@@ -20,7 +20,6 @@ export const useAudioStore = defineStore("audio", () => {
   const audioTrackMap = new Map([
     [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, instrumentsAudioNodeMap],
   ])
-  audioGeneratorStore.preCreateBuffer(audioContext.value)
 
   const scheduler = new AudioScheduler(audioContext.value)
   scheduler.initialize()

@@ -31,16 +31,34 @@ import {
 import { storeToRefs } from "pinia"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { initMetronome } from "@/core/audio/playMetronome.js"
+import { initAudioResource } from "@/core/audio/initAudioResource.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const audioStore = useAudioStore()
 const { mutedAudioTrackIdSet, soloAudioTrackId } = storeToRefs(audioStore)
 const zoomRatioStore = useZoomRatioStore()
 
+const loading = ElLoading.service({
+  lock: true,
+  text: "Loading",
+  background: "rgba(0, 0, 0, 0.7)",
+})
+
 zoomRatioStore.initZoomRatioMap()
 
-initMetronome(audioStore.audioContext)
+initAudioResource(audioStore.audioContext)
+  .then(() => {
+    loading.close()
+  })
+  .catch(() => {
+    loading.close()
+    ElNotification({
+      title: "Error",
+      message:
+        "Audio resource loading error, please refresh the page and try again",
+      type: "error",
+    })
+  })
 
 const headerHeight = ref(INIT_HEADER_HEIGHT)
 const footerHeight = ref(INIT_FOOTER_HEIGHT)

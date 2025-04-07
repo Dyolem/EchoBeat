@@ -84,7 +84,6 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
 
   // 加载样本
   function loadSample(url, audioContext) {
-    console.log(url)
     return fetch(url)
       .then((response) => response.arrayBuffer())
       .then((data) => audioContext.decodeAudioData(data))
@@ -161,14 +160,9 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
 
     // 音符转 MIDI 编号
     const midiNumber = noteToMidi(noteName)
-
-    // 获取样本 URL
-    const sampleUrl = getSampleUrl(midiNumber, _sampleMap)
-
+    const buffer = fetchPreLoadedBuffer(noteName)
     // 加载并播放样本
-    return loadSample(sampleUrl, audioContext).then((buffer) => {
-      return playSample(buffer, midiNumber, _sampleMap)
-    })
+    return playSample(buffer, midiNumber, _sampleMap)
   }
   function fetchPitchNameSample(
     noteName,
@@ -187,11 +181,16 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
 
   const audioSourceNodeBuffer = new Map()
   async function preCreateBuffer(audioContext) {
+    const preCreatePianoAudioResourceWorkArr = []
     for (const pitchName of NOTE_FREQUENCY_MAP.keys()) {
-      fetchPitchNameSample(pitchName, audioContext).then((buffer) => {
-        audioSourceNodeBuffer.set(pitchName, buffer)
-      })
+      preCreatePianoAudioResourceWorkArr.push(
+        fetchPitchNameSample(pitchName, audioContext).then((buffer) => {
+          audioSourceNodeBuffer.set(pitchName, buffer)
+          return Promise.resolve({ pitchName, buffer })
+        }),
+      )
     }
+    return Promise.all(preCreatePianoAudioResourceWorkArr)
   }
   function fetchPreLoadedBuffer(pitchName) {
     return audioSourceNodeBuffer.get(pitchName)

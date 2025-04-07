@@ -109,24 +109,12 @@ function playPianoAudioTrack(event) {
       const nextNote = event.target
       if (!isNoteElement(nextNote)) {
         resetState(emittedTarget)
-        emittedAudioController
-          ?.then((controller) => {
-            controller.abort()
-          })
-          .catch((error) => {
-            console.error("Failed to abort emittedAudioController:", error)
-          })
+        emittedAudioController?.abort()
         return
       }
       if (nextNote !== emittedTarget) {
         resetState(emittedTarget)
-        emittedAudioController
-          ?.then((controller) => {
-            controller.abort()
-          })
-          .catch((error) => {
-            console.error("Failed to abort emittedAudioController:", error)
-          })
+        emittedAudioController?.abort()
 
         emittedTarget = nextNote
         emittedAudioController = playNote(nextNote)
@@ -141,13 +129,7 @@ function playPianoAudioTrack(event) {
     (event) => {
       resetState(event.target)
       noteController.abort()
-      emittedAudioController
-        ?.then((controller) => {
-          controller.abort()
-        })
-        .catch((error) => {
-          console.error("Failed to abort emittedAudioController:", error)
-        })
+      emittedAudioController?.abort()
     },
     {
       once: true,
