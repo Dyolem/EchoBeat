@@ -8,6 +8,8 @@ import {
   metronomeEnabledState,
 } from "@/core/audio/playMetronome.js"
 
+let lastPlayHead = 0
+
 //所有源节点停止时，继续等待一段时间，因为增益节点是物理执行时间，可能还未结束,在增益结束前挂起音频上下文依然会导致咔哒声
 const GAIN_NODE_PHYSICAL_WAIT_MS = 300
 const dynamicGenerationTimeInterval = 4
@@ -42,7 +44,7 @@ const {
   timelineCurrentTime,
   maxTime: maxTrackTime,
 } = storeToRefs(trackRulerStore)
-const { changePlayState } = trackRulerStore
+const { changePlayState, updateCurrentTime } = trackRulerStore
 
 let intervalTimerId = null
 let controller = null
@@ -77,7 +79,7 @@ function queryCurrentTime({ audioContext, signal, maxTime, initTime } = {}) {
     return
   }
   if (timelineCurrentTime.value >= maxTime) {
-    pause(audioContext, controller)
+    pause()
     return
   }
   function queryHandler() {
@@ -121,7 +123,7 @@ export function playAudio() {
   }
 }
 
-export function pause() {
+export function pause(backPlayHead = false) {
   if (!audioStore.audioContext || !controller) return
   controller.abort()
   clearInterval(intervalTimerId)
@@ -135,6 +137,10 @@ export function pause() {
       }, GAIN_NODE_PHYSICAL_WAIT_MS)
     }).then(() => {
       audioStore.audioContext.suspend()
+      if (backPlayHead) {
+        // 暂停音频并将时间线回退为上一次起始值
+        updateCurrentTime(lastPlayHead)
+      }
     })
   })
 }
@@ -144,6 +150,7 @@ export function resume() {
   audioStore.audioContext.resume().then(() => {
     resetFlags()
     initTime = timelineCurrentTime.value
+    lastPlayHead = initTime
     if (metronomeEnabledState.value) {
       startMetronome(initTime, true)
     }

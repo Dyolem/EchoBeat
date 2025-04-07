@@ -5,11 +5,13 @@ import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonG
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import { storeToRefs } from "pinia"
 import {
+  pause,
   playAudio,
   registerVisibilityChangeEvent,
 } from "@/core/audio/player.js"
 registerVisibilityChangeEvent()
 const trackRulerStore = useTrackRulerStore()
+const { updateCurrentTime } = trackRulerStore
 const { isPlaying, timelineCurrentTime } = storeToRefs(trackRulerStore)
 const accurateTime = computed(() => {
   return timelineCurrentTime.value
@@ -32,10 +34,10 @@ const timeDisplay = computed(() => {
         v-if="isPlaying"
       ></echo-material-symbols:pause-rounded>
     </MixEditorButton>
-    <MixEditorButton v-if="!isPlaying">
+    <MixEditorButton v-show="!isPlaying" @click="updateCurrentTime(0)">
       <echo-ri:skip-back-fill></echo-ri:skip-back-fill>
     </MixEditorButton>
-    <MixEditorButton v-if="isPlaying">
+    <MixEditorButton v-show="isPlaying" @click="pause(true)">
       <echo-ri:stop-fill></echo-ri:stop-fill>
     </MixEditorButton>
     <MixEditorButton>
