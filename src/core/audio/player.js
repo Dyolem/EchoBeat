@@ -2,6 +2,11 @@ import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import { storeToRefs } from "pinia"
 import { onUnmounted } from "vue"
+import {
+  startMetronome,
+  stopMetronome,
+  metronomeEnabledState,
+} from "@/core/audio/playMetronome.js"
 
 //所有源节点停止时，继续等待一段时间，因为增益节点是物理执行时间，可能还未结束,在增益结束前挂起音频上下文依然会导致咔哒声
 const GAIN_NODE_PHYSICAL_WAIT_MS = 300
@@ -121,6 +126,7 @@ export function pause() {
   controller.abort()
   clearInterval(intervalTimerId)
   changePlayState(false)
+  stopMetronome()
   audioStore.stopAllNodes().then(() => {
     new Promise((resolve) => {
       const suspendDelayTimer = setTimeout(() => {
@@ -138,6 +144,9 @@ export function resume() {
   audioStore.audioContext.resume().then(() => {
     resetFlags()
     initTime = timelineCurrentTime.value
+    if (metronomeEnabledState.value) {
+      startMetronome(initTime, true)
+    }
     generateAudioHandler()
     maxTime = maxTrackTime.value
 
