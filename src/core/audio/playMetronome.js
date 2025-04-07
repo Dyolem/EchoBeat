@@ -51,7 +51,7 @@ export function initMetronome(_audioContext) {
     loadMetronomeBufferAsyncWorkArr.push(
       loadAudio(highMetronomeAudioURL).then((highBuffer) => {
         return {
-          type: `${metronomeType}-Low`,
+          type: `${metronomeType}-Hi`,
           buffer: highBuffer,
         }
       }),
@@ -59,7 +59,7 @@ export function initMetronome(_audioContext) {
     loadMetronomeBufferAsyncWorkArr.push(
       loadAudio(lowMetronomeAudioURL).then((lowBuffer) => {
         return {
-          type: `${metronomeType}-Hi`,
+          type: `${metronomeType}-Low`,
           buffer: lowBuffer,
         }
       }),
@@ -100,7 +100,7 @@ function playBeat(buffer, time = 0) {
 
 function getMetronomeBuffer(type, isLow = true) {
   if (!METRONOME_TYPE_LIST.includes(type)) return
-  return metronomeAudioBufferMap.get(`${type}-${isLow ? "Hi" : "Low"}`)
+  return metronomeAudioBufferMap.get(`${type}-${isLow ? "Low" : "Hi"}`)
 }
 
 let timer = null
