@@ -1,4 +1,4 @@
-import { randomUtils } from "@/utils/randomUtils.js"
+import { generateNormalValue } from "@/core/audio/generateNormalValue.js"
 
 /**
  * 生成符合正态分布的 Velocity 值（限制在指定范围内）
@@ -8,16 +8,5 @@ import { randomUtils } from "@/utils/randomUtils.js"
  * @returns {number} 符合正态分布且位于 range 内的整数 Velocity 值
  */
 export function generateNormalVelocity(range, mean, stdDev) {
-  const [min, max] = range
-  // 默认均值为范围中点，标准差为范围跨度的 1/4
-  if (mean === undefined) mean = (min + max) / 2
-  if (stdDev === undefined) stdDev = (max - min) / 4
-
-  // 生成正态分布随机数并限制在范围内
-  let value
-  do {
-    value = Math.round(randomUtils.generateNormalRandom(mean, stdDev)) // 四舍五入为整数
-  } while (value < min || value > max) // 确保值在范围内
-
-  return value
+  return generateNormalValue(range, mean, stdDev)
 }
