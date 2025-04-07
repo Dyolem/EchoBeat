@@ -4,7 +4,7 @@ import { ref, computed, onUnmounted } from "vue"
 import { METRONOME_TYPE_LIST } from "@/constants/daw/index.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 const trackRulerStore = useTrackRulerStore()
-const { timelineCurrentTime } = storeToRefs(trackRulerStore)
+const { timelineCurrentTime, isPlaying } = storeToRefs(trackRulerStore)
 export const isPlayingMetronomeSample = ref(false)
 export const metronomeEnabledState = ref(false)
 const metronomeAudioBufferMap = new Map()
@@ -143,7 +143,9 @@ export function toggleMetronomeState() {
   if (metronomeEnabledState.value) {
     stopMetronome(true)
   } else {
-    startMetronome(timelineCurrentTime.value, true)
+    if (isPlaying.value) {
+      startMetronome(timelineCurrentTime.value, true)
+    }
   }
   metronomeEnabledState.value = !metronomeEnabledState.value
 }
