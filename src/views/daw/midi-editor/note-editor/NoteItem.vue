@@ -73,7 +73,7 @@ const props = defineProps({
   },
   noteEditorRegionRef: {
     type: Object,
-    required: true,
+    default: null,
   },
   workspaceStartPosition: {
     type: Number,
