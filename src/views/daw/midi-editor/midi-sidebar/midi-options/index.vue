@@ -27,6 +27,8 @@ contain notes</pre>`
 const midiNotesWorkableDisabledState = computed(() => {
   return selectedNotesIdSet.value.size === 0
 })
+
+const { changeDrawerVisibility } = inject("drawerVisibility")
 </script>
 
 <template>
@@ -37,7 +39,7 @@ const midiNotesWorkableDisabledState = computed(() => {
     }"
   >
     <div class="option-head">
-      <div class="close-button">
+      <div class="close-button" @click="changeDrawerVisibility(false)">
         <echo-material-symbols:close-rounded></echo-material-symbols:close-rounded>
       </div>
       <div class="audio-track-type">
@@ -116,6 +118,7 @@ const midiNotesWorkableDisabledState = computed(() => {
   justify-content: center;
   text-align: center;
   border-right: 1px solid var(--drawer-editor-border-color);
+  cursor: pointer;
 }
 .audio-track-type {
   font-size: 14px;

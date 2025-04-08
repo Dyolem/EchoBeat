@@ -1,5 +1,13 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  provide,
+  toRef,
+} from "vue"
 import { storeToRefs } from "pinia"
 import Editor from "@/views/daw/editor-template/index.vue"
 import { debounce } from "@/utils/debounce.js"
@@ -45,6 +53,20 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  visible: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits(["update:visible"])
+function changeDrawerVisibility(visible) {
+  if (typeof visible !== "boolean") return
+  emit("update:visible", visible)
+}
+provide("drawerVisibility", {
+  visible: toRef(props, "visible"),
+  changeDrawerVisibility,
 })
 
 const drawerEditorViewHeight = computed({
@@ -140,6 +162,7 @@ onUnmounted(() => {
 
 <template>
   <div
+    v-show="visible"
     class="drawer-editor-container"
     ref="drawerEditorContainerRef"
     tabindex="-1"

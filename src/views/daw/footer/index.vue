@@ -1,18 +1,27 @@
 <script setup>
 import {
+  AUDIO_EDIT_TOOLS,
   INIT_FOOTER_HEIGHT,
   SUBORDINATE_EDITOR_ID,
+  TOOLS_TYPE_ENUM,
 } from "@/constants/daw/index.js"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import MidiEditor from "@/views/daw/midi-editor/index.vue"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
-import { onMounted, onBeforeUnmount, ref, useTemplateRef } from "vue"
+import { onMounted, onBeforeUnmount, ref, useTemplateRef, computed } from "vue"
+import { Icon } from "@iconify/vue"
 
+const props = defineProps({
+  toolsSet: {
+    type: Array,
+    default: () => AUDIO_EDIT_TOOLS,
+  },
+})
 const footerHeight = defineModel("footerHeight", {
   type: Number,
   default: INIT_FOOTER_HEIGHT,
 })
-const isOpenDrawerEditor = ref(false)
+
 const footerContainerRef = useTemplateRef("footerContainerRef")
 // // 创建一个 ResizeObserver 实例
 const resizeObserver = new ResizeObserver((entries) => {
@@ -28,36 +37,46 @@ onBeforeUnmount(() => {
   // 不再需要观察，调用 unobserve() 取消监听
   resizeObserver.unobserve(footerContainerRef.value)
 })
+
+const showToolsName = ref("")
+const toolsComponent = {
+  [TOOLS_TYPE_ENUM.Instrument]: null,
+  [TOOLS_TYPE_ENUM.Effect]: null,
+  [TOOLS_TYPE_ENUM.Midi]: MidiEditor,
+}
+const currentDrawerTool = computed(() => {
+  return toolsComponent[showToolsName.value]
+})
+function toggleTools(toolType) {
+  if (showToolsName.value === toolType) {
+    showToolsName.value = ""
+  } else {
+    showToolsName.value = toolType
+  }
+}
 </script>
 
 <template>
   <footer class="footer" ref="footerContainerRef">
-    <MidiEditor
-      :id="SUBORDINATE_EDITOR_ID"
-      v-show="isOpenDrawerEditor"
-    ></MidiEditor>
+    <keep-alive>
+      <component
+        :is="currentDrawerTool"
+        :id="SUBORDINATE_EDITOR_ID"
+        :toggle-tools="toggleTools"
+      ></component>
+    </keep-alive>
     <div class="footer-tool-bar">
       <div class="left-side-tool">
         <MixEditorButtonGroup>
-          <MixEditorButton circle>
-            <div class="tool-name">
-              <echo-lucide:piano></echo-lucide:piano>
-              <span>Instrument</span>
-            </div>
-          </MixEditorButton>
-          <MixEditorButton>
-            <div class="tool-name">
-              <echo-solar:special-effects-linear></echo-solar:special-effects-linear>
-              <span>Effects</span>
-            </div>
-          </MixEditorButton>
           <MixEditorButton
-            @click="isOpenDrawerEditor = !isOpenDrawerEditor"
-            circle
+            v-for="(tool, index) in toolsSet"
+            :key="tool.toolName"
+            :circle="index === 0 || index === toolsSet.length - 1"
+            @click="() => toggleTools(tool.toolName)"
           >
             <div class="tool-name">
-              <echo-fluent:midi-24-regular></echo-fluent:midi-24-regular>
-              <span>MIDI Editor</span>
+              <Icon :icon="tool.iconName"></Icon>
+              <span>{{ tool.label }}</span>
             </div>
           </MixEditorButton>
         </MixEditorButtonGroup>

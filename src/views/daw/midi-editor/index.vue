@@ -2,7 +2,7 @@
 import DrawerEditor from "@/views/daw/drawer-editor/index.vue"
 import MidiSidebar from "@/views/daw/midi-editor/midi-sidebar/index.vue"
 import NoteEditor from "@/views/daw/midi-editor/note-editor/index.vue"
-import { computed, inject, provide, ref, toRef } from "vue"
+import { computed, inject, provide, ref, toRef, onActivated } from "vue"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
 const mixTrackEditorStore = useMixTrackEditorStore()
@@ -14,6 +14,10 @@ const props = defineProps({
   },
   editorScrollTop: {
     type: Number,
+  },
+  toggleTools: {
+    type: Function,
+    default: () => {},
   },
 })
 
@@ -102,10 +106,24 @@ provide("canvasContentHeight", {
   updateCanvasContentHeight,
 })
 provide("bgSvgHeight", canvasContentHeight)
+
+const midiEditorVisible = ref(true)
+onActivated(() => {
+  midiEditorVisible.value = true
+})
+function closeMidiEditor(visibility) {
+  if (!visibility) {
+    props.toggleTools("")
+  }
+}
 </script>
 
 <template>
-  <DrawerEditor :id="id">
+  <DrawerEditor
+    :id="id"
+    v-model:visible="midiEditorVisible"
+    @update:visible="closeMidiEditor"
+  >
     <template #editor-sidebar="{ editorSidebarWidth, editorSidebarHeight }">
       <div
         class="midi-editor-sidebar"

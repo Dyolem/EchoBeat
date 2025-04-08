@@ -359,3 +359,26 @@ export const METRONOME_TYPE_LIST = [
   "Slap",
   "Tick",
 ]
+
+export const TOOLS_TYPE_ENUM = {
+  Instrument: "Instrument",
+  Effect: "Effect",
+  Midi: "Midi",
+}
+export const AUDIO_EDIT_TOOLS = [
+  {
+    toolName: TOOLS_TYPE_ENUM.Instrument,
+    iconName: "lucide:piano",
+    label: "Instrument",
+  },
+  {
+    toolName: TOOLS_TYPE_ENUM.Effect,
+    iconName: "solar:special-effects-linear",
+    label: "Effect",
+  },
+  {
+    toolName: TOOLS_TYPE_ENUM.Midi,
+    iconName: "fluent:midi-24-regular",
+    label: "MIDI Editor",
+  },
+]
