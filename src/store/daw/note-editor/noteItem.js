@@ -73,8 +73,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     return pitchNameMappedToAreaArr
   })
 
-  const flatNoteItemsMap = ref(createNoteItemsMap())
-
   /**
    * @typedef {string} NoteId - note 元素的唯一标识符
    */
@@ -258,7 +256,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     })
     if (!template) return
     noteItemsMap.set(template.id, template)
-    addFlatNoteItem(template.id, template)
     audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
   }
@@ -279,7 +276,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const workspace = workspaceStore.getWorkspace({ audioTrackId, workspaceId })
     const noteItemsMap = workspace.noteItemsMap
     noteItemsMap.delete(id)
-    deleteFlatNoteItem(id)
     audioStore.removeNodeFromNoteId({ audioTrackId, workspaceId, id })
   }
 
@@ -392,7 +388,11 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const waitedUpdatePositionArr = []
     for (const selectedNoteId of selectedNoteIdSet.keys()) {
       if (selectedNoteId === id) continue
-      const updateNoteTarget = getFlatNoteItem(selectedNoteId)
+      const updateNoteTarget = getSpecifiedNoteItem({
+        audioTrackId,
+        workspaceId,
+        noteId: selectedNoteId,
+      })
       if (updateNoteTarget === undefined) continue
 
       const workspace = workspaceMap.get(updateNoteTarget.workspaceId)
@@ -491,10 +491,15 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const noteWidthIncrement = newNoteWidth - oldNoteWidth
 
     const updateNoteRightEdgeArr = []
-    for (const noteId of selectedNotesId.keys()) {
+    for (const [noteId, idsGroup] of selectedNotesId) {
       if (noteId === id) continue
+      const { audioTrackId, workspaceId } = idsGroup
       const waitedUpdateNoteRightEdgeWork = new Promise((resolve, reject) => {
-        const otherNoteTarget = getFlatNoteItem(noteId)
+        const otherNoteTarget = getSpecifiedNoteItem({
+          audioTrackId,
+          workspaceId,
+          noteId,
+        })
         const belongedWorkspace = workspaceStore.getWorkspace({
           audioTrackId: otherNoteTarget.audioTrackId,
           workspaceId: otherNoteTarget.workspaceId,
@@ -575,10 +580,15 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const relativeXIncrement = newRelativeX - oldRelativeX
     const noteWidthIncrement = newNoteWidth - oldNoteWidth
     const updateNoteLeftEdgeArr = []
-    for (const noteId of selectedNotesId.keys()) {
+    for (const [noteId, idsGroup] of selectedNotesId) {
       if (noteId === id) continue
+      const { audioTrackId, workspaceId } = idsGroup
       const waitedUpdateNoteLeftWork = new Promise((resolve, reject) => {
-        const otherNoteTarget = getFlatNoteItem(noteId)
+        const otherNoteTarget = getSpecifiedNoteItem({
+          audioTrackId,
+          workspaceId,
+          noteId,
+        })
         const newWidth = otherNoteTarget.width + noteWidthIncrement
         const newRelativeX = otherNoteTarget.relativeX + relativeXIncrement
 
@@ -632,17 +642,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     )
   }
 
-  function addFlatNoteItem(id, noteItem) {
-    flatNoteItemsMap.value.set(id, noteItem)
-  }
-  function deleteFlatNoteItem(id) {
-    flatNoteItemsMap.value.delete(id)
-  }
-
-  function getFlatNoteItem(id) {
-    return flatNoteItemsMap.value.get(id)
-  }
-
   function getSpecifiedNoteItemsMap({ audioTrackId, workspaceId }) {
     return workspaceStore.getWorkspace({ audioTrackId, workspaceId })
       ?.noteItemsMap
@@ -658,7 +657,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     if (size === 0) return 0
     let velocityCount = 0
     for (const [noteId, idsGroup] of noteIdSet) {
-      const noteItem = getFlatNoteItem(noteId)
+      const { audioTrackId, workspaceId } = idsGroup
+      const noteItem = getSpecifiedNoteItem({
+        audioTrackId,
+        workspaceId,
+        noteId,
+      })
       if (!noteItem) continue
       velocityCount += noteItem.velocity
     }
@@ -671,7 +675,12 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }) {
     const averageVelocity = getSelectedNoteAverageVelocity(noteIdSet)
     for (const [noteId, idsGroup] of noteIdSet) {
-      const noteItem = getFlatNoteItem(noteId)
+      const { audioTrackId, workspaceId } = idsGroup
+      const noteItem = getSpecifiedNoteItem({
+        audioTrackId,
+        workspaceId,
+        noteId,
+      })
       if (absoluteAdjustMode) {
         noteItem.velocity = clamp(velocity, VELOCITY_SCALE)
       } else {
@@ -690,8 +699,13 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const _maxY = maxY.value
     const _pitchNameMappedToArea = pitchNameMappedToArea.value
     for (const [noteId, idsGroup] of noteIdSet) {
+      const { audioTrackId, workspaceId } = idsGroup
       const transposedWork = new Promise((resolve, reject) => {
-        const noteItem = getFlatNoteItem(noteId)
+        const noteItem = getSpecifiedNoteItem({
+          audioTrackId,
+          workspaceId,
+          noteId,
+        })
         const newY = noteItem.y - increment * noteHeight.value
         const newPitchName = getInsertToSpecifiedPitchName({
           y: newY + calculateErrorTolerance,
@@ -724,7 +738,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }
 
   return {
-    flatNoteItemsMap,
     octaveContainerInstance,
     noteWidth,
     noteHeight,
@@ -739,9 +752,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     updateNoteRightEdge,
     simulatePlaySpecifiedNote,
     getSelectedNoteAverageVelocity,
-    addFlatNoteItem,
-    deleteFlatNoteItem,
-    getFlatNoteItem,
     updateNoteItemVelocity,
     transposeNoteItem,
   }

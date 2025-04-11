@@ -140,7 +140,6 @@ export function generateAudioTrack(midiData) {
           isDirectPosition: true,
         })
         noteItemsMap.set(template.id, template)
-        noteItemStore.addFlatNoteItem(template.id, template)
         audioStore.insertSourceNodeAndGainNode(template)
       }
     }
