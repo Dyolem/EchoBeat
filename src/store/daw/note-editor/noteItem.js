@@ -390,7 +390,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const incrementY = alignedAbsoluteY - oldAbsoluteY
 
     const waitedUpdatePositionArr = []
-    for (const selectedNoteId of selectedNoteIdSet) {
+    for (const selectedNoteId of selectedNoteIdSet.keys()) {
       if (selectedNoteId === id) continue
       const updateNoteTarget = getFlatNoteItem(selectedNoteId)
       if (updateNoteTarget === undefined) continue
@@ -491,7 +491,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const noteWidthIncrement = newNoteWidth - oldNoteWidth
 
     const updateNoteRightEdgeArr = []
-    for (const noteId of selectedNotesId) {
+    for (const noteId of selectedNotesId.keys()) {
       if (noteId === id) continue
       const waitedUpdateNoteRightEdgeWork = new Promise((resolve, reject) => {
         const otherNoteTarget = getFlatNoteItem(noteId)
@@ -575,7 +575,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const relativeXIncrement = newRelativeX - oldRelativeX
     const noteWidthIncrement = newNoteWidth - oldNoteWidth
     const updateNoteLeftEdgeArr = []
-    for (const noteId of selectedNotesId) {
+    for (const noteId of selectedNotesId.keys()) {
       if (noteId === id) continue
       const waitedUpdateNoteLeftWork = new Promise((resolve, reject) => {
         const otherNoteTarget = getFlatNoteItem(noteId)
@@ -657,7 +657,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const size = noteIdSet.size
     if (size === 0) return 0
     let velocityCount = 0
-    for (const noteId of noteIdSet) {
+    for (const [noteId, idsGroup] of noteIdSet) {
       const noteItem = getFlatNoteItem(noteId)
       if (!noteItem) continue
       velocityCount += noteItem.velocity
@@ -670,7 +670,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     absoluteAdjustMode = true,
   }) {
     const averageVelocity = getSelectedNoteAverageVelocity(noteIdSet)
-    for (const noteId of noteIdSet) {
+    for (const [noteId, idsGroup] of noteIdSet) {
       const noteItem = getFlatNoteItem(noteId)
       if (absoluteAdjustMode) {
         noteItem.velocity = clamp(velocity, VELOCITY_SCALE)
@@ -689,7 +689,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const waitedTransposeNotesArr = []
     const _maxY = maxY.value
     const _pitchNameMappedToArea = pitchNameMappedToArea.value
-    for (const noteId of noteIdSet) {
+    for (const [noteId, idsGroup] of noteIdSet) {
       const transposedWork = new Promise((resolve, reject) => {
         const noteItem = getFlatNoteItem(noteId)
         const newY = noteItem.y - increment * noteHeight.value

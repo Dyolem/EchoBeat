@@ -12,17 +12,17 @@ const noteItemsStore = useNoteItemStore()
 const { updateNoteItemVelocity, getSelectedNoteAverageVelocity } =
   noteItemsStore
 const selectionStore = useSelectionStore()
-const { selectedNotesIdSet } = storeToRefs(selectionStore)
+const { selectedNotesIdMap } = storeToRefs(selectionStore)
 
 const [minVelocity, maxVelocity] = VELOCITY_SCALE
 const averageVelocity = computed({
   get: () => {
-    return getSelectedNoteAverageVelocity(selectedNotesIdSet.value)
+    return getSelectedNoteAverageVelocity(selectedNotesIdMap.value)
   },
   set: (newAverageVelocity) => {
     updateNoteItemVelocity({
       velocity: newAverageVelocity,
-      noteIdSet: selectedNotesIdSet.value,
+      noteIdSet: selectedNotesIdMap.value,
     })
   },
 })

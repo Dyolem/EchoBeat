@@ -18,13 +18,10 @@ const noteItemMap = useNoteItemStore()
 const audioGenerator = useAudioGeneratorStore()
 const { isSelectMode, isInsertMode } = storeToRefs(zoomRatioStore)
 const selectionStore = useSelectionStore()
-const { selectionRectMap, whetherInSelectionBox, selectedNotesIdSet } =
+const { selectionRectMap, whetherInSelectionBox, selectedNotesIdMap } =
   storeToRefs(selectionStore)
-const {
-  updateSelectedNotesIdSet,
-  deleteSelectedNoteId,
-  deleteAllSelectedNoteId,
-} = selectionStore
+const { addSelectedNoteIds, deleteSelectedNoteId, deleteAllSelectedNoteId } =
+  selectionStore
 const editorNoteRef = useTemplateRef("editorNoteRef")
 const props = defineProps({
   id: {
@@ -100,7 +97,11 @@ watch(
     }
     isOverlap = whetherInSelectionBox.value(midiEditorId.value, noteItemRect)
     if (isOverlap) {
-      updateSelectedNotesIdSet(noteItemId)
+      addSelectedNoteIds({
+        audioTrackId: props.audioTrackId,
+        workspaceId: props.workspaceId,
+        noteId: props.id,
+      })
     } else {
       deleteSelectedNoteId(noteItemId)
     }
@@ -138,9 +139,13 @@ function playNoteAudioSample(pitchName) {
 function draggableRegionHandler(event) {
   if (isInsertMode.value) return
   if (noteMainSelectedId.value !== props.id) updateNoteMainSelectedId(props.id)
-  if (!selectedNotesIdSet.value.has(props.id)) {
+  if (!selectedNotesIdMap.value.has(props.id)) {
     deleteAllSelectedNoteId()
-    updateSelectedNotesIdSet(props.id)
+    addSelectedNoteIds({
+      audioTrackId: props.audioTrackId,
+      workspaceId: props.workspaceId,
+      noteId: props.id,
+    })
   }
 
   const selectionController = clearSelection()
@@ -172,7 +177,7 @@ function draggableRegionHandler(event) {
         .updateNoteItemPosition({
           editorId: midiEditorId.value,
           id,
-          selectedNoteIdSet: selectedNotesIdSet.value,
+          selectedNoteIdSet: selectedNotesIdMap.value,
           audioTrackId: selectedAudioTrackId.value,
           workspaceId: props.workspaceId,
           pitchName: belongedPitchName,
@@ -210,9 +215,13 @@ function draggableRegionHandler(event) {
 
 function stretchEditorNoteLength(event) {
   if (noteMainSelectedId.value !== props.id) updateNoteMainSelectedId(props.id)
-  if (!selectedNotesIdSet.value.has(props.id)) {
+  if (!selectedNotesIdMap.value.has(props.id)) {
     deleteAllSelectedNoteId()
-    updateSelectedNotesIdSet(props.id)
+    addSelectedNoteIds({
+      audioTrackId: props.audioTrackId,
+      workspaceId: props.workspaceId,
+      noteId: props.id,
+    })
   }
 
   const selectionController = clearSelection()
@@ -234,7 +243,7 @@ function stretchEditorNoteLength(event) {
         .updateNoteLeftEdge({
           editorId: midiEditorId.value,
           id: props.id,
-          selectedNotesId: selectedNotesIdSet.value,
+          selectedNotesId: selectedNotesIdMap.value,
           audioTrackId: selectedAudioTrackId.value,
           workspaceId: props.workspaceId,
           absoluteX: initX + props.workspaceStartPosition + tickDeltaX,
@@ -246,7 +255,7 @@ function stretchEditorNoteLength(event) {
         .updateNoteRightEdge({
           editorId: midiEditorId.value,
           id: props.id,
-          selectedNotesId: selectedNotesIdSet.value,
+          selectedNotesId: selectedNotesIdMap.value,
           audioTrackId: selectedAudioTrackId.value,
           workspaceId: props.workspaceId,
           absoluteX:
@@ -369,8 +378,8 @@ function noteMainMousedownHandler(event) {
   <div
     class="editor-note"
     :class="{
-      'is-edited': selectedNotesIdSet.has(id),
-      'is-selected': selectedNotesIdSet.has(id) && isSelectMode,
+      'is-edited': selectedNotesIdMap.has(id),
+      'is-selected': selectedNotesIdMap.has(id) && isSelectMode,
     }"
     ref="editorNoteRef"
     @click.stop="() => {}"

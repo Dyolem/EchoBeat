@@ -9,7 +9,7 @@ import { useSelectionStore } from "@/store/daw/selection.js"
 import { storeToRefs } from "pinia"
 
 const selectionStore = useSelectionStore()
-const { selectedNotesIdSet } = storeToRefs(selectionStore)
+const { selectedNotesIdMap } = storeToRefs(selectionStore)
 
 const props = defineProps({
   badgeName: {
@@ -25,7 +25,7 @@ belong to the selected scale, or that
 contain notes</pre>`
 
 const midiNotesWorkableDisabledState = computed(() => {
-  return selectedNotesIdSet.value.size === 0
+  return selectedNotesIdMap.value.size === 0
 })
 
 const { changeDrawerVisibility } = inject("drawerVisibility")

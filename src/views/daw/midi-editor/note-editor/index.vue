@@ -28,7 +28,7 @@ const beatControllerStore = useBeatControllerStore()
 const { pixelsPerTick } = storeToRefs(beatControllerStore)
 const { isSelectMode, isInsertMode } = storeToRefs(zoomRatioStore)
 const selectionStore = useSelectionStore()
-const { deleteAllSelectedNoteId, updateSelectedNotesIdSet } = selectionStore
+const { deleteAllSelectedNoteId, addSelectedNoteIds } = selectionStore
 const props = defineProps({
   notePadWidth: {
     type: Number,
@@ -136,7 +136,11 @@ function insertNote({ x: insertX, y: insertY }) {
   if (!insertedItemInfo) return
   noteMainSelectedId.value = insertedItemInfo.id
   deleteAllSelectedNoteId()
-  updateSelectedNotesIdSet(insertedItemInfo.id)
+  addSelectedNoteIds({
+    audioTrackId: insertedItemInfo.audioTrackId,
+    workspaceId: insertedItemInfo.workspaceId,
+    noteId: insertedItemInfo.id,
+  })
   audioStore
     .generateSingleAudioNode({
       noteId: insertedItemInfo.id,

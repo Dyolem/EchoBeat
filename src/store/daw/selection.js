@@ -76,35 +76,27 @@ export const useSelectionStore = defineStore("selectionStore", () => {
     }
   })
 
-  const selectedNotesIdSet = ref(new Set())
-  function updateSelectedNotesIdSet(newNotesIdSet) {
-    if (typeof newNotesIdSet === "string") {
-      if (!selectedNotesIdSet.value.has(newNotesIdSet))
-        selectedNotesIdSet.value.add(newNotesIdSet)
-    } else if (newNotesIdSet instanceof Set) {
-      selectedNotesIdSet.value = newNotesIdSet
-    } else {
-      throw new TypeError(
-        `Parameters Types error,expect 'Array' or 'String',but ${typeof newNotesIdSet}`,
-      )
-    }
+  const selectedNotesIdMap = ref(new Map())
+
+  function addSelectedNoteIds({ audioTrackId, workspaceId, noteId }) {
+    selectedNotesIdMap.value.set(noteId, { audioTrackId, workspaceId })
   }
   function deleteSelectedNoteId(noteId) {
-    selectedNotesIdSet.value.delete(noteId)
+    selectedNotesIdMap.value.delete(noteId)
   }
   function deleteAllSelectedNoteId() {
-    selectedNotesIdSet.value.clear()
+    selectedNotesIdMap.value.clear()
   }
 
   return {
     selectionRectMap,
     specifiedSelectionParamValue,
     whetherInSelectionBox,
+    selectedNotesIdMap,
     initSelectionMap,
     updateSelectionRect,
-    selectedNotesIdSet,
+    addSelectedNoteIds,
     deleteSelectedNoteId,
     deleteAllSelectedNoteId,
-    updateSelectedNotesIdSet,
   }
 })

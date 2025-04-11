@@ -7,9 +7,9 @@ import { storeToRefs } from "pinia"
 const noteItemsStore = useNoteItemStore()
 const { transposeNoteItem } = noteItemsStore
 const selectionStore = useSelectionStore()
-const { selectedNotesIdSet } = storeToRefs(selectionStore)
+const { selectedNotesIdMap } = storeToRefs(selectionStore)
 function transposeNoteItemHandler(increment) {
-  transposeNoteItem(selectedNotesIdSet.value, increment)
+  transposeNoteItem(selectedNotesIdMap.value, increment)
 }
 </script>
 
