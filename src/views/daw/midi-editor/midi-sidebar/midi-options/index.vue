@@ -11,12 +11,6 @@ import { storeToRefs } from "pinia"
 const selectionStore = useSelectionStore()
 const { selectedNotesIdMap } = storeToRefs(selectionStore)
 
-const props = defineProps({
-  badgeName: {
-    type: String,
-    default: "Instrument",
-  },
-})
 const mainColor = inject("mainColor")
 const audioTrackName = inject("audioTrackName")
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
