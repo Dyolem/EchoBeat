@@ -2,10 +2,7 @@
 import DrawerEditor from "@/views/daw/drawer-editor/index.vue"
 import MidiSidebar from "@/views/daw/midi-editor/midi-sidebar/index.vue"
 import NoteEditor from "@/views/daw/midi-editor/note-editor/index.vue"
-import { computed, inject, provide, ref, toRef, onActivated } from "vue"
-import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
-import { FALLBACK_THEME_COLOR } from "@/constants/daw/index.js"
-const mixTrackEditorStore = useMixTrackEditorStore()
+import { inject, provide, ref, toRef, onActivated } from "vue"
 
 const props = defineProps({
   id: {
@@ -42,17 +39,6 @@ provide("workspaceSelectedId", {
   updateWorkspaceSelectedId,
 })
 
-const mainColor = computed(() => {
-  return (
-    mixTrackEditorStore.mixTracksMap.get(selectedAudioTrackId.value)
-      ?.mainColor ?? FALLBACK_THEME_COLOR
-  )
-})
-const workspaceBadgeName = computed(() => {
-  return mixTrackEditorStore.mixTracksMap.get(selectedAudioTrackId.value)
-    ?.audioTrackName
-})
-provide("mainColor", mainColor)
 const emit = defineEmits(["update:editorScrollTop"])
 
 const BLACK_KEY_HEIGHT = 10
@@ -154,7 +140,6 @@ function closeMidiEditor(visibility) {
         :note-pad-height="interactableLayerHeight"
         :editable-view-width="editableViewWidth"
         :editable-view-height="editableViewHeight"
-        :workspace-badge-name="workspaceBadgeName"
         :zoom-ratio="zoomRatio"
         :track-ruler-height="trackRulerHeight"
       ></NoteEditor>

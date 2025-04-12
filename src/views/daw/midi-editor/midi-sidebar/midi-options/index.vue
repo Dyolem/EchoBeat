@@ -18,6 +18,7 @@ const props = defineProps({
   },
 })
 const mainColor = inject("mainColor")
+const audioTrackName = inject("audioTrackName")
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const { filterEffect } = inject("playableAudioTrack")
 const smartViewHintContent = `<pre style="font-family: reset">Smart View only shows rows that
@@ -48,7 +49,7 @@ const { changeDrawerVisibility } = inject("drawerVisibility")
             class="icon-main-color"
           ></echo-fluent:midi-24-regular>
         </i>
-        <span class="badge-name">{{ badgeName }}</span>
+        <span class="badge-name">{{ audioTrackName }}</span>
       </div>
     </div>
     <div class="option-main beatified-scrollbar">

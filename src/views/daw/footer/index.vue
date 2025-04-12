@@ -1,6 +1,7 @@
 <script setup>
 import {
   AUDIO_EDIT_TOOLS,
+  FALLBACK_THEME_COLOR,
   INIT_FOOTER_HEIGHT,
   SUBORDINATE_EDITOR_ID,
   TOOLS_TYPE_ENUM,
@@ -8,9 +9,21 @@ import {
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import MidiEditor from "@/views/daw/midi-editor/index.vue"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
-import { onMounted, onBeforeUnmount, ref, useTemplateRef, computed } from "vue"
+import {
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  computed,
+  provide,
+  inject,
+} from "vue"
 import { Icon } from "@iconify/vue"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 
+const mixTrackEditorStore = useMixTrackEditorStore()
+
+const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const props = defineProps({
   toolsSet: {
     type: Array,
@@ -54,6 +67,22 @@ function toggleTools(toolType) {
     showToolsName.value = toolType
   }
 }
+
+const mainColor = computed(() => {
+  return (
+    mixTrackEditorStore.mixTracksMap.get(selectedAudioTrackId.value)
+      ?.mainColor ?? FALLBACK_THEME_COLOR
+  )
+})
+provide("mainColor", mainColor)
+
+const audioTrackName = computed(() => {
+  return (
+    mixTrackEditorStore.mixTracksMap.get(selectedAudioTrackId.value)
+      ?.audioTrackName ?? "Unknown Instrument"
+  )
+})
+provide("audioTrackName", audioTrackName)
 </script>
 
 <template>
