@@ -11,8 +11,13 @@ import { storeToRefs } from "pinia"
 const selectionStore = useSelectionStore()
 const { selectedNotesIdMap } = storeToRefs(selectionStore)
 
-const mainColor = inject("mainColor")
-const audioTrackName = inject("audioTrackName")
+const audioTrackAppearanceInfo = inject("audioTrackAppearanceInfo")
+const mainColor = computed(() => {
+  return audioTrackAppearanceInfo.value.mainColor
+})
+const audioTrackName = computed(() => {
+  return audioTrackAppearanceInfo.value.audioTrackName
+})
 const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const { filterEffect } = inject("playableAudioTrack")
 const smartViewHintContent = `<pre style="font-family: reset">Smart View only shows rows that

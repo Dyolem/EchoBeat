@@ -8,6 +8,7 @@ import {
 } from "@/constants/daw/index.js"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import MidiEditor from "@/views/daw/midi-editor/index.vue"
+import Instrument from "@/views/daw/footer/instrument/index.vue"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
 import {
   onMounted,
@@ -53,7 +54,7 @@ onBeforeUnmount(() => {
 
 const showToolsName = ref("")
 const toolsComponent = {
-  [TOOLS_TYPE_ENUM.Instrument]: null,
+  [TOOLS_TYPE_ENUM.Instrument]: Instrument,
   [TOOLS_TYPE_ENUM.Effect]: null,
   [TOOLS_TYPE_ENUM.Midi]: MidiEditor,
 }
@@ -83,6 +84,17 @@ const audioTrackName = computed(() => {
   )
 })
 provide("audioTrackName", audioTrackName)
+const audioTrackAppearanceInfo = computed(() => {
+  const audioTrack = mixTrackEditorStore.mixTracksMap.get(
+    selectedAudioTrackId.value,
+  )
+  return {
+    audioTrackName: audioTrack?.audioTrackName ?? "Unknown Instrument ",
+    mainColor: audioTrack?.mainColor ?? FALLBACK_THEME_COLOR,
+    audioTrackIcon: audioTrack?.audioTrackIcon ?? "fluent:midi-24-regular",
+  }
+})
+provide("audioTrackAppearanceInfo", audioTrackAppearanceInfo)
 </script>
 
 <template>
