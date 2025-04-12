@@ -66,7 +66,6 @@ function generateAudioHandler(
 ) {
   const timelineTime = trackRulerStore.timelineCurrentTime
   audioStore.generateAudioNode({
-    audioTracksBufferSourceMap: audioStore.audioTracksBufferSourceMap,
     timelinePlayTime: timelineTime,
     generableAudioTimeEnd: timelineTime + _dynamicGenerationTimeInterval,
     audioContext: audioStore.audioContext,

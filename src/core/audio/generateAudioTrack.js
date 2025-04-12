@@ -54,7 +54,6 @@ import {
   AUDIO_TRACK_TYPE_CONFIG,
   midiToNoteName,
 } from "@/constants/daw/index.js"
-import { useAudioStore } from "@/store/daw/audio/index.js"
 
 /**
  *
@@ -71,7 +70,6 @@ export function generateAudioTrack(midiData) {
   const mixTrackEditorStore = useMixTrackEditorStore()
   const workspaceStore = useWorkspaceStore()
   const noteItemStore = useNoteItemStore()
-  const audioStore = useAudioStore()
   const beatControllerStore = useBeatControllerStore()
 
   const parsedAudioTrackIdArr = []
@@ -140,7 +138,6 @@ export function generateAudioTrack(midiData) {
           isDirectPosition: true,
         })
         noteItemsMap.set(template.id, template)
-        audioStore.insertSourceNodeAndGainNode(template)
       }
     }
   }

@@ -1,10 +1,6 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
-import {
-  AUDIO_TRACK_ENUM,
-  BASE_GRID_HEIGHT,
-  ID_SET,
-} from "@/constants/daw/index.js"
+import { BASE_GRID_HEIGHT, ID_SET } from "@/constants/daw/index.js"
 import { useAudioTrackMainColorStore } from "@/store/daw/audio-track-color/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
@@ -107,23 +103,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
         zoomRatio: midiWorkspaceZoomRatio,
       },
     })
-    audioStore.initAudioTrackBufferSourceMap({
-      audioTrackId: newTrackId,
-      type: AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
-    })
-    const audioTrackStereoPannerNode = audioStore.createStereoPannerNode({
-      audioTrackId: newTrackId,
-    })
-    const audioTrackVolumeGainNode = audioStore.createAudioTrackVolumeGainNode({
-      audioTrackId: newTrackId,
-    })
-    const audioTrackMutedGainNode = audioStore.createAudioTrackMutedGainNode({
-      audioTrackId: newTrackId,
-    })
-    audioTrackStereoPannerNode
-      .connect(audioTrackVolumeGainNode)
-      .connect(audioTrackMutedGainNode)
-    audioStore.connectMixGainNode(audioTrackMutedGainNode)
     return newTrackId
   }
 

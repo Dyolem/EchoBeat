@@ -23,7 +23,6 @@ import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 
 export const useNoteItemStore = defineStore("noteItem", () => {
   const zoomRatioStore = useZoomRatioStore()
-  const audioStore = useAudioStore()
   const mixTrackEditorStore = useMixTrackEditorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
@@ -256,7 +255,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     })
     if (!template) return
     noteItemsMap.set(template.id, template)
-    audioStore.insertSourceNodeAndGainNode(template)
     return returnInsertedItemFullInfo ? template : template.id
   }
 
@@ -276,7 +274,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const workspace = workspaceStore.getWorkspace({ audioTrackId, workspaceId })
     const noteItemsMap = workspace.noteItemsMap
     noteItemsMap.delete(id)
-    audioStore.removeNodeFromNoteId({ audioTrackId, workspaceId, id })
   }
 
   function alignToOtherPitchNameTrack({

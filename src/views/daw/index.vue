@@ -10,6 +10,7 @@ import {
   onUnmounted,
   provide,
   ref,
+  watch,
   watchEffect,
 } from "vue"
 import {
@@ -35,6 +36,7 @@ import { initAudioResource } from "@/core/audio/initAudioResource.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const audioStore = useAudioStore()
+const { initAudioTrackRelativeNode } = audioStore
 const { mutedAudioTrackIdSet, soloAudioTrackId } = storeToRefs(audioStore)
 const zoomRatioStore = useZoomRatioStore()
 
@@ -45,7 +47,13 @@ const loading = ElLoading.service({
 })
 
 zoomRatioStore.initZoomRatioMap()
-
+watch(
+  () => mixTrackEditorStore.mixTracksMap.keys(),
+  (newMixTrackIdsArray) => {
+    initAudioTrackRelativeNode(new Set(newMixTrackIdsArray))
+  },
+  { immediate: true },
+)
 initAudioResource(audioStore.audioContext)
   .then(() => {
     loading.close()
