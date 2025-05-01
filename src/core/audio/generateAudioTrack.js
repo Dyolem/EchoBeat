@@ -52,65 +52,107 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import {
   AUDIO_TRACK_ENUM,
   AUDIO_TRACK_TYPE_CONFIG,
-  midiToNoteName,
 } from "@/constants/daw/index.js"
+import {
+  getInitInstrumentInfo,
+  gmProgramMap,
+} from "@/constants/daw/instruments.js"
+import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 
-/**
- *
- * @param {{meta:MidiMeta,tracks:Track[],version:number,mainEditorZoomRatio:number,midiWorkspaceZoomRatio:number}} midiData
- */
-export function generateAudioTrack(midiData) {
-  const {
-    meta,
-    tracks,
-    version,
-    midiWorkspaceZoomRatio = 1,
-    mainEditorZoomRatio = 1,
-  } = midiData
+// /**
+//  *
+//  * @param {{meta:MidiMeta,tracks:Track[],version:number,mainEditorZoomRatio:number,midiWorkspaceZoomRatio:number}} midiData
+//  */
+export function generateAudioTrack({
+  midiData,
+  generatedStartTick = 100,
+  alignTracks = false,
+}) {
+  const { header, tracks } = midiData
+  const { name: headerName, tempos, timeSignatures, ppq } = header
   const mixTrackEditorStore = useMixTrackEditorStore()
   const workspaceStore = useWorkspaceStore()
   const noteItemStore = useNoteItemStore()
   const beatControllerStore = useBeatControllerStore()
+  const audioGeneratorStore = useAudioGeneratorStore()
+  const { addSoundBuffer } = audioGeneratorStore
 
+  const addSoundBufferWorkArr = []
   const parsedAudioTrackIdArr = []
-  const { ppqn, timeSignature } = meta
+  const bpm = tempos[0]?.bpm
+  const ppqn = ppq
+  const timeSignature = timeSignatures[0]?.timeSignature
   beatControllerStore.updateChoreAudioParams({
     ppqn,
     timeSignature,
   })
+
   const midiTypeAudioTrackInfo = AUDIO_TRACK_TYPE_CONFIG.get(
     AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
   )
-  for (const { events, timeRange, notes, name, color } of tracks) {
+  const defaultInstrument = { number: 0, ...gmProgramMap["0"] }
+  for (const {
+    channel = 0,
+    notes,
+    name,
+    instrument = defaultInstrument,
+    endOfTrackTicks,
+    durationTicks,
+  } of tracks) {
     if (notes.length === 0) continue
     else {
-      const { startTick = 0, endTick = 0 } = timeRange
+      let endTick = 0
+      if (endOfTrackTicks === undefined) {
+        endTick = durationTicks + generatedStartTick
+      } else {
+        endTick = endOfTrackTicks + generatedStartTick
+      }
+
       beatControllerStore.updateChoreAudioParams({
         editableTotalTick: endTick,
       })
+      let startTick = 0
+      if (alignTracks) {
+        startTick = generatedStartTick
+      } else {
+        startTick = endTick - durationTicks
+      }
+
+      const audioTrackType = midiTypeAudioTrackInfo.type
+      const audioTrackName = name === "" ? audioTrackType : name
+      const { number } = instrument
+      const { instrumentName, family, sound, customInstrumentType } =
+        getInitInstrumentInfo({ programNumber: number, channel })
+      addSoundBufferWorkArr.push(addSoundBuffer({ soundName: sound }))
+
       const audioTrackId = mixTrackEditorStore.addAudioTrack({
-        audioTrackName: name,
-        audioTrackType: midiTypeAudioTrackInfo.type,
+        audioTrackName,
+        audioTrackType,
         audioTrackIcon: midiTypeAudioTrackInfo.icon,
-        mainEditorZoomRatio,
-        midiWorkspaceZoomRatio,
+        channel,
+        instrument: {
+          number,
+          customInstrumentType,
+          family,
+          name: instrumentName,
+          sound,
+        },
       })
       parsedAudioTrackIdArr.push(audioTrackId)
       const newWorkspaceWidth = endTick - startTick
       const newWorkspaceStartPosition = startTick
       const newWorkspaceId = workspaceStore.addNewWorkspace({
         audioTrackId,
-        badgeName: name,
+        badgeName: audioTrackName,
         width: newWorkspaceWidth,
         startPosition: newWorkspaceStartPosition,
-        zoomRatio: midiWorkspaceZoomRatio,
       })
       const subTrackItemId = mixTrackEditorStore.createSubTrackItem({
         audioTrackId,
         workspaceId: newWorkspaceId,
         trackItemWidth: newWorkspaceWidth,
         startPosition: newWorkspaceStartPosition,
-        trackName: name,
+        trackName: audioTrackName,
       })
 
       const workspace = workspaceStore.getWorkspace({
@@ -120,26 +162,28 @@ export function generateAudioTrack(midiData) {
       workspace.subTrackItemId = subTrackItemId
       const noteItemsMap = workspace.noteItemsMap
       for (const {
-        channel,
         durationTicks,
         midi,
-        startTicks,
+        ticks: startTicks,
         velocity,
+        name,
       } of notes) {
-        const specifiedPitchName = midiToNoteName(midi)
+        const midiVelocity = velocity * 127
         const template = noteItemStore.getNoteItemTemplate({
           x: startTicks,
           y: noteItemStore.noteHeight * (119 - midi),
           noteItemWidth: durationTicks,
-          insertToSpecifiedPitchName: specifiedPitchName,
+          insertToSpecifiedPitchName: name,
           workspaceId: newWorkspaceId,
           audioTrackId,
-          velocity,
+          velocity: midiVelocity,
           isDirectPosition: true,
         })
         noteItemsMap.set(template.id, template)
       }
     }
   }
-  return parsedAudioTrackIdArr?.[0] ?? ""
+  return Promise.all(addSoundBufferWorkArr).then(() => {
+    return parsedAudioTrackIdArr?.[0] ?? ""
+  })
 }

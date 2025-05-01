@@ -1,4 +1,5 @@
 import MidiParser from "midi-parser-js"
+import { Midi } from "@tonejs/midi"
 
 /**
  * @typedef {Object} MidiEvent
@@ -360,6 +361,7 @@ function bytesToString(bytes) {
 export function parseMidi(arrayBuffer) {
   return new Promise((resolve, reject) => {
     const unit8ArrayBuffer = new Uint8Array(arrayBuffer)
+    const midi = new Midi(unit8ArrayBuffer)
     let warningMessages = []
 
     // 保存原始 console.warn 方法
@@ -385,8 +387,7 @@ export function parseMidi(arrayBuffer) {
         return
       }
 
-      const midiData = parseMidiForDAW(midiObj)
-      resolve(midiData)
+      resolve(midi)
     } catch (error) {
       // 确保异常时也恢复 console.warn
       console.warn = originalWarn
