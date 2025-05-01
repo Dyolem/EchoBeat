@@ -19,6 +19,7 @@ const props = defineProps({
 const { chromaticInfo } = storeToRefs(pianoKeySizeStore)
 
 const mainColor = inject("mainColor")
+const { selectedAudioTrackId } = inject("selectedAudioTrackId")
 const emit = defineEmits(["update:chromaticScaleScrollTop"])
 const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", 20)
 const octaveContainerRef = useTemplateRef("octaveContainerRef")
@@ -85,7 +86,10 @@ onMounted(() => {
 function playNote(target) {
   target.style.backgroundColor = mainColor.value
   const noteName = target.dataset["noteName"]
-  return audioGenerator.generateAudio(noteName)
+  return audioGenerator.generateAudio({
+    audioTrackId: selectedAudioTrackId.value,
+    noteName,
+  })
 }
 function isNoteElement(elementTarget) {
   return (

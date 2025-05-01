@@ -1,7 +1,6 @@
 import { defineStore } from "pinia"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { ref, isRef } from "vue"
-import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
 import { AudioScheduler } from "@/core/audio/AudioScheduler.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
@@ -20,10 +19,6 @@ export const useAudioStore = defineStore("audio", () => {
 
   const noteItemStore = useNoteItemStore()
   const audioGeneratorStore = useAudioGeneratorStore()
-  const instrumentsAudioNodeMap = new Map()
-  const audioTrackMap = new Map([
-    [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, instrumentsAudioNodeMap],
-  ])
 
   const audioBufferSourceNodeMap = new Map() //根据note的id存储所有创建的对应的音频节点
   const velocityGainNodesMap = new Map() //用于处理单个音符起始音量（按压力度）的增益节点的映射表
@@ -41,12 +36,13 @@ export const useAudioStore = defineStore("audio", () => {
 
   // 控制每个音轨是否被静音
   const audioTrackMutedGainNodeMap = new Map()
+
   const mutedAudioTrackIdSet = ref(new Set())
 
   // solo功能,控制哪条音轨进行solo，即只生成该音轨节点
   const soloAudioTrackId = ref("")
   function specifySoloAudioTrack({ audioTrackId }) {
-    if (!audioTracksBufferSourceMap.value.has(audioTrackId)) return
+    if (!mixTrackEditorStore.mixTracksMap.has(audioTrackId)) return
     soloAudioTrackId.value = audioTrackId
   }
   function cancelSoloAudioTrack() {
@@ -126,16 +122,31 @@ export const useAudioStore = defineStore("audio", () => {
     AUDIO_CONTROLLER_MAP: "audioControllerMap",
   }
 
-  function createBufferSourceNode({ id, pitchName, audioContext }) {
-    const audioBuffer = audioGeneratorStore.fetchPreLoadedBuffer(pitchName)
+  function createBufferSourceNode({
+    audioTrackId,
+    id,
+    pitchName,
+    audioContext,
+  }) {
+    const soundName = mixTrackEditorStore.getAudioTrackInstrument({
+      audioTrackId,
+    }).sound
+
+    const audioBuffer = audioGeneratorStore.fetchPreLoadedBuffer({
+      audioTrackId,
+      pitchName,
+      soundName,
+    })
+    if (!audioBuffer) return null
     const audioBufferSourceNode = audioContext.createBufferSource()
     audioBufferSourceNode.buffer = audioBuffer
     const midiNumber = audioGeneratorStore.noteToMidi(pitchName)
-    audioGeneratorStore.adjustPitch(
-      audioBufferSourceNode,
+
+    audioGeneratorStore.adjustPitch({
+      source: audioBufferSourceNode,
       midiNumber,
-      audioGeneratorStore.sampleMap,
-    )
+      soundName,
+    })
     audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
     return audioBufferSourceNode
   }
@@ -174,7 +185,6 @@ export const useAudioStore = defineStore("audio", () => {
   }
 
   let controller = null
-  //a
   async function generateSingleAudioNode({
     noteId,
     audioTrackId,
@@ -193,10 +203,13 @@ export const useAudioStore = defineStore("audio", () => {
       await audioContext.resume()
     }
     const audioBufferSourceNode = createBufferSourceNode({
+      audioTrackId,
       id: noteId,
       pitchName,
       audioContext,
     })
+    if (!audioBufferSourceNode)
+      return Promise.reject("Failed to create the audioBufferSourceNode node")
     const velocityGainNode = createVelocityGainNode({
       id: noteId,
       audioContext,
@@ -296,10 +309,12 @@ export const useAudioStore = defineStore("audio", () => {
 
           if (audioControllerMap.has(id)) continue //避免这种情况：动态生成2秒内的音频，而有一段音频从1.5秒到2.5秒，这样在0-2秒会被生成一次，2-4秒又会生成
           const audioBufferSourceNode = createBufferSourceNode({
+            audioTrackId,
             id,
             pitchName,
             audioContext,
           })
+          if (!audioBufferSourceNode) continue
           const velocityGainNode = createVelocityGainNode({
             id,
             audioContext,
@@ -307,7 +322,6 @@ export const useAudioStore = defineStore("audio", () => {
           })
           const audioController = new AbortController()
           audioControllerMap.set(id, audioController)
-          console.log(audioControllerMap)
           audioBufferSourceNode.addEventListener(
             "ended",
             () => {

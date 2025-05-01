@@ -26,6 +26,8 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     audioTrackName,
     audioTrackType,
     audioTrackIcon,
+    channel,
+    instrument,
     mainColor = audioTrackMainColorStore.getRandomColor(),
     mainEditorZoomRatio = 1,
   }) {
@@ -37,6 +39,8 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       mainColor,
       audioTrackIcon,
       audioTrackType,
+      channel,
+      instrument,
       originalSerialNumbering: existedTracksSize,
       subTrackItemsMap: new Map(),
       mainEditorZoomRatio,
@@ -85,14 +89,19 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     audioTrackName,
     audioTrackType,
     audioTrackIcon,
+    channel,
+    instrument,
     mainColor = audioTrackMainColorStore.getRandomColor(),
     mainEditorZoomRatio,
     midiWorkspaceZoomRatio,
   }) {
+    audioTrackName = audioTrackName === "" ? audioTrackType : audioTrackName
     const newTrackId = createNewTrack({
       audioTrackName,
       audioTrackType,
       audioTrackIcon,
+      channel,
+      instrument,
       mainColor,
       mainEditorZoomRatio,
     })
@@ -104,6 +113,10 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       },
     })
     return newTrackId
+  }
+
+  function getAudioTrackInstrument({ audioTrackId }) {
+    return mixTracksMap.value.get(audioTrackId).instrument
   }
 
   function updateSubTrackItemInfo({
@@ -228,6 +241,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     mixTracksMap,
     generateSubTrackItemId,
     addAudioTrack,
+    getAudioTrackInstrument,
     updateMixTrackInfo,
     getSubTrackItem,
     getSubTrackItemsMap,
