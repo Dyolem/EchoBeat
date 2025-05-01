@@ -136,7 +136,7 @@ export const INIT_NOTE_VALUE_DENOMINATOR = 4
 
 export const AUDIO_TRACK_ENUM = {
   VOICE: "Voice/Audio",
-  VIRTUAL_INSTRUMENTS: "Virtual instruments",
+  VIRTUAL_INSTRUMENTS: "Virtual Instruments",
   DRUM_MACHINE: "Drum Machine",
   SAMPLE: "Sample",
   GUITAR: "Guitar",
@@ -270,7 +270,8 @@ export function noteToMidi(noteName) {
     "A#": 10,
     B: 11,
   }
-  const match = noteName.match(/^([A-Ga-g#b]+)(\d+)$/)
+
+  const match = noteName.replace("-", "").match(/^([A-Ga-g#b]+)(\d+)$/)
   if (!match) {
     throw new Error("Invalid note name")
   }
