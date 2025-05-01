@@ -208,7 +208,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
    * @param startPosition
    */
   function shallCreateWorkspace({ audioTrackId, startPosition }) {
-    const { workspaceBadgeName, workspaceMap, zoomRatio } =
+    const { workspaceBadgeName, workspaceMap } =
       trackFeatureMapStore.getSelectedTrackFeature({
         selectedAudioTrackId: audioTrackId,
         featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
@@ -229,7 +229,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
         noteItemsMap: noteItemsMap,
         width,
         startPosition,
-        zoomRatio,
         subTrackItemId: "",
       }
       workspaceMap.set(newId, workspaceContent)
@@ -250,7 +249,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
           width,
           noteItemsMap: workspace.noteItemsMap,
           workspaceBadgeName,
-          zoomRatio,
           subTrackItemId: workspace.subTrackItemId,
         },
       }
@@ -260,13 +258,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     return new Map()
   }
 
-  function addNewWorkspace({
-    audioTrackId,
-    badgeName,
-    width,
-    startPosition,
-    zoomRatio,
-  }) {
+  function addNewWorkspace({ audioTrackId, badgeName, width, startPosition }) {
     const { workspaceMap } = trackFeatureMapStore.getSelectedTrackFeature({
       selectedAudioTrackId: audioTrackId,
       featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
@@ -280,7 +272,6 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       noteItemsMap,
       width,
       startPosition,
-      zoomRatio,
       subTrackItemId: "",
     }
     workspaceMap.set(newId, workspaceContent)

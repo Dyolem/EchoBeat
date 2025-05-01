@@ -36,6 +36,14 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const bpm = ref(INIT_BPM) // 每分钟的四分音符个数
 
   const pixelsPerQuarter = ref(PIXELS_PER_QUARTER)
+
+  const choreBeatControllerParams = computed(() => {
+    return {
+      ppqn: ppqn.value,
+      bpm: bpm.value,
+      timeSignature: timeSignature.value,
+    }
+  })
   const pixelsPerTick = computed(() => {
     return (editorId) => {
       return (
@@ -52,7 +60,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   const gridType = ref(GRID_OPTIONS["1/4"])
 
   const timeSignature = computed(() => {
-    return beatsPerMeasure.value / noteValueDenominator.value
+    return `${beatsPerMeasure.value} / ${noteValueDenominator.value}`
   }) //节拍分式值
   const noteFraction = computed(() => {
     return 1 / noteValueDenominator.value
@@ -218,7 +226,13 @@ export const useBeatControllerStore = defineStore("beatController", () => {
       updatedValue.ppqn[0] = _ppqn
     }
     if (_timeSignature !== undefined) {
-      const [time_sig_n, time_sig_m] = _timeSignature.split("/")
+      if (typeof _timeSignature === "string") {
+        _timeSignature = _timeSignature.split("/").map((str) => str.trim())
+      }
+      if (!Array.isArray(_timeSignature)) {
+        throw new TypeError('Expect a "String" or "Array" type param')
+      }
+      const [time_sig_n, time_sig_m] = _timeSignature
       const new_time_sig_n = Number(time_sig_n)
       const new_time_sig_m = Number(time_sig_m)
       beatsPerMeasure.value = new_time_sig_n
@@ -245,6 +259,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     return updatedValue
   }
   return {
+    choreBeatControllerParams,
     currentMetronomeSoundType,
     bpm,
     editableTotalTime,
