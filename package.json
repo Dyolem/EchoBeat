@@ -12,11 +12,17 @@
     "@tonejs/midi": "^2.0.28",
     "axios": "^1.7.7",
     "element-plus": "^2.9.5",
+    "jszip": "^3.10.1",
     "midi-parser-js": "^4.0.4",
     "pinia": "^2.2.4",
     "pinia-plugin-persistedstate": "^4.1.1",
+    "pinia-plugin-yjs-enhanced": "^0.0.1",
     "vue": "^3.5.12",
-    "vue-router": "^4.4.5"
+    "vue-router": "^4.4.5",
+    "y-indexeddb": "^9.0.12",
+    "y-webrtc": "^10.3.0",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.24"
   },
   "devDependencies": {
     "@iconify/json": "^2.2.263",
