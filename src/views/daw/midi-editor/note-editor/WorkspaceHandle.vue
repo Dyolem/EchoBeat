@@ -7,6 +7,7 @@ import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { SUBORDINATE_EDITOR_ID } from "@/constants/daw/index.js"
 import { storeToRefs } from "pinia"
+import { snapshotYSharedData } from "@/core/history/index.js"
 const workspaceStore = useWorkspaceStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
 const beatControllerStore = useBeatControllerStore()
@@ -21,10 +22,6 @@ const props = defineProps({
   subTrackItemId: {
     type: String,
     required: true,
-  },
-  zoomRatio: {
-    type: Number,
-    default: 1,
   },
   noteEditorRegionRef: {
     type: [Object, null],
@@ -65,10 +62,11 @@ function workspaceGrabbingHandler(e) {
   const controller = new AbortController()
   const clearSelectionController = clearSelection()
   const scale = [0, props.notePadWidth - props.workspaceContainerWidth]
-
+  let hasMoved = false
   document.addEventListener(
     "mousemove",
     (event) => {
+      hasMoved = true
       const workspaceStartPosition =
         event.clientX -
         props.noteEditorRegionRef.getBoundingClientRect().left -
@@ -102,6 +100,10 @@ function workspaceGrabbingHandler(e) {
       isMovementHandleActive.value = false
       clearSelectionController.abort()
       controller.abort()
+      if (hasMoved) {
+        snapshotYSharedData()
+        hasMoved = false
+      }
     },
     {
       once: true,

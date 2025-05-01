@@ -9,6 +9,7 @@ import { storeToRefs } from "pinia"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useSelectionStore } from "@/store/daw/selection.js"
+import { snapshotYSharedData } from "@/core/history/index.js"
 
 const audioStore = useAudioStore()
 const beatControllerStore = useBeatControllerStore()
@@ -129,8 +130,11 @@ function getMovementInNoteEditorRegion(event) {
   }
 }
 
-function playNoteAudioSample(pitchName) {
-  const audioController = audioGenerator.generateAudio(pitchName)
+function playNoteAudioSample({ audioTrackId, pitchName }) {
+  const audioController = audioGenerator.generateAudio({
+    audioTrackId,
+    noteName: pitchName,
+  })
   setTimeout(() => {
     audioController?.abort()
   }, 100)
@@ -161,6 +165,7 @@ function draggableRegionHandler(event) {
    * const mousedownY = event.clientY - editorNoteRef.value.getBoundingClientRect().top
    * */
 
+  let hasMoved = false
   function mouseMoveHandler(event) {
     translateXDistance =
       event.clientX -
@@ -173,12 +178,14 @@ function draggableRegionHandler(event) {
       mousedownY
 
     if (isLegalTranslateDistance(translateXDistance, translateYDistance)) {
+      hasMoved = true
+      const audioTrackId = selectedAudioTrackId.value
       noteItemMap
         .updateNoteItemPosition({
           editorId: midiEditorId.value,
           id,
           selectedNoteIdSet: selectedNotesIdMap.value,
-          audioTrackId: selectedAudioTrackId.value,
+          audioTrackId,
           workspaceId: props.workspaceId,
           pitchName: belongedPitchName,
           x: translateXDistance / pixelsPerTick.value(midiEditorId.value),
@@ -187,7 +194,10 @@ function draggableRegionHandler(event) {
         .then(
           ({ newPitchName }) => {
             if (newPitchName !== lastPitchName) {
-              playNoteAudioSample(newPitchName)
+              playNoteAudioSample({
+                audioTrackId,
+                pitchName: newPitchName,
+              })
               noteItemMap.simulatePlaySpecifiedNote(newPitchName)
               lastPitchName = newPitchName
             }
@@ -205,6 +215,10 @@ function draggableRegionHandler(event) {
       e.stopPropagation()
       document.removeEventListener("mousemove", mouseMoveHandler)
       selectionController.abort()
+      if (hasMoved) {
+        snapshotYSharedData()
+        hasMoved = true
+      }
     },
     {
       once: true,
@@ -228,7 +242,10 @@ function stretchEditorNoteLength(event) {
   const { x: mousedownStartX } = getMovementInNoteEditorRegion(event)
   const initWidth = props.noteWidth
   const initX = props.x
+
+  let hasMoved = false
   function mousemoveHandler(event) {
+    hasMoved = true
     const { x: moveX } = getMovementInNoteEditorRegion(event)
     const deltaX = moveX - mousedownStartX
     const pixelsWorkspaceStartPosition =
@@ -272,6 +289,10 @@ function stretchEditorNoteLength(event) {
       e.stopPropagation()
       document.removeEventListener("mousemove", mousemoveHandler)
       selectionController.abort()
+      if (hasMoved) {
+        snapshotYSharedData()
+        hasMoved = false
+      }
     },
     {
       once: true,
@@ -306,11 +327,12 @@ function noteMainMousedownHandler(event) {
         pitchName: props.belongedPitchName,
       })
       updateNoteMainSelectedId("")
+      snapshotYSharedData()
     } else {
       /*
        * In selected mode, a single click will play the corresponding sound name
        * */
-
+      console.log(3333)
       audioStore
         .generateSingleAudioNode({
           noteId: props.id,
@@ -361,6 +383,7 @@ function noteMainMousedownHandler(event) {
             audioTrackId: selectedAudioTrackId.value,
             pitchName: props.belongedPitchName,
           })
+          snapshotYSharedData()
         } else {
           isMoved = false
         }

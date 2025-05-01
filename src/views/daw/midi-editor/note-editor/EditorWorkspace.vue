@@ -16,6 +16,7 @@ import { usePianoKeySizeStore } from "@/store/daw/pianoKeySize.js"
 import { storeToRefs } from "pinia"
 import { velocityToAlphaHex } from "@/core/audio/velocityToAlphaHex.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
+import { snapshotYSharedData } from "@/core/history/index.js"
 
 const zoomRatioStore = useZoomRatioStore()
 const workspaceStore = useWorkspaceStore()
@@ -49,10 +50,6 @@ const props = defineProps({
   workspaceHandleHeight: {
     type: Number,
     default: 20,
-  },
-  zoomRatio: {
-    type: Number,
-    default: 1,
   },
   currentWorkspaceZoomRatio: {
     type: Number,
@@ -218,9 +215,11 @@ function stretchWorkspaceWidth(event) {
     event.clientX -
     noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
 
+  let hasMoved = false
   document.addEventListener(
     "mousemove",
     (event) => {
+      hasMoved = true
       const { x: stretchEnd } = props.getCursorPositionInNoteEditorRegion(event)
 
       if (
@@ -277,6 +276,10 @@ function stretchWorkspaceWidth(event) {
       e.stopPropagation()
       controller.abort()
       selectionController.abort()
+      if (hasMoved) {
+        snapshotYSharedData()
+        hasMoved = false
+      }
     },
     {
       once: true,
@@ -295,7 +298,6 @@ function stretchWorkspaceWidth(event) {
       <WorkspaceHandle
         :id="id"
         :sub-track-item-id="subTrackItemId"
-        :zoom-ratio="zoomRatio"
         :noteEditorRegionRef="noteEditorRegionRef"
         :note-pad-width="editorCanvasWidth"
         :start-position="startPosition"

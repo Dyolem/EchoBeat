@@ -24,6 +24,7 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { resizeMixTrackItemThumbnailCanvas } from "@/views/daw/mix-track-editor/renderThumbnail.js"
+import { snapshotYSharedData } from "@/core/history/index.js"
 
 const workspaceStore = useWorkspaceStore()
 const mixTrackEditorStore = useMixTrackEditorStore()
@@ -104,6 +105,8 @@ onMounted(() => {
       const subTrackItem = subTrackItemsMap.get(trackItemId)
       const initSubTrackItemStartPosition = subTrackItem.startPosition
       const initSubTrackItemWidth = subTrackItem.trackItemWidth
+
+      let hasMoved = false
       if (trackItemTarget) {
         // const trackItemId = trackItemTarget.dataset["trackItemId"]
         const controller = new AbortController()
@@ -140,6 +143,7 @@ onMounted(() => {
         document.addEventListener(
           "mousemove",
           (event) => {
+            hasMoved = true
             isDragging = true
 
             const { cursorPosition } =
@@ -198,6 +202,10 @@ onMounted(() => {
               })
             }
             updateSelectedTrackItemId(trackItemId)
+            if (hasMoved) {
+              snapshotYSharedData()
+              hasMoved = false
+            }
           },
           {
             once: true,
@@ -222,6 +230,7 @@ onMounted(() => {
         document.addEventListener(
           "mousemove",
           (event) => {
+            hasMoved = true
             const { cursorPosition } =
               props.getGeometryInfoInParentElement(event)
             const [x, y] = cursorPosition
@@ -284,6 +293,10 @@ onMounted(() => {
             })
             selectionController.abort()
             controller.abort()
+            if (hasMoved) {
+              snapshotYSharedData()
+              hasMoved = false
+            }
           },
           {
             once: true,

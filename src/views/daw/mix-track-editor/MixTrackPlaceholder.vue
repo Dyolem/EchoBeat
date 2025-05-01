@@ -3,6 +3,10 @@ import { parseMidi } from "@/core/audio/parseMidi.js"
 import { generateAudioTrack } from "@/core/audio/generateAudioTrack.js"
 import { inject, computed, ref } from "vue"
 import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
+import {
+  snapshotYSharedData,
+  updateChoreBeatControllerParamsSharedData,
+} from "@/core/history/index.js"
 
 const props = defineProps({
   width: {
@@ -37,13 +41,12 @@ const fileTypeAudioTrackTypeMap = computed(() => {
 const parseProcessorMap = {
   [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS](arrayBuffer) {
     parseMidi(arrayBuffer)
-      .then(({ meta, tracks, version }) => {
-        const newSelectedAudioTrackId = generateAudioTrack({
-          meta,
-          tracks,
-          version,
+      .then((midiData) => {
+        generateAudioTrack({ midiData }).then((newSelectedAudioTrackId) => {
+          updateSelectedAudioTrackId(newSelectedAudioTrackId)
+          snapshotYSharedData()
+          updateChoreBeatControllerParamsSharedData()
         })
-        updateSelectedAudioTrackId(newSelectedAudioTrackId)
       })
       .catch((reason) => {
         const errorMessage = reason instanceof Error ? reason.message : reason

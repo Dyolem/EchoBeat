@@ -19,6 +19,7 @@ import { storeToRefs } from "pinia"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
 import { useSelectionStore } from "@/store/daw/selection.js"
+import { snapshotYSharedData } from "@/core/history/index.js"
 
 const zoomRatioStore = useZoomRatioStore()
 const trackFeatureMapStore = useTrackFeatureMapStore()
@@ -49,10 +50,6 @@ const props = defineProps({
   trackRulerHeight: {
     type: Number,
     default: 50,
-  },
-  workspaceBadgeName: {
-    type: String,
-    default: "Instruments",
   },
 })
 const editorId = inject("subordinateEditorId")
@@ -154,6 +151,7 @@ function insertNote({ x: insertX, y: insertY }) {
           insertedItemInfo.pitchName,
           controller.signal,
         )
+        snapshotYSharedData()
       },
       () => {},
     )
@@ -207,7 +205,6 @@ function noteEditorDblClickHandler(event) {
         :editor-canvas-height="notePadHeight"
         :editor-canvas-width="notePadWidth"
         :workspace-handle-height="workspacePlaceHolderHeight"
-        :zoom-ratio="workspace.zoomRatio"
         :current-workspace-zoom-ratio="zoomRatio"
         :noteEditorRegionRef="noteEditorRegionRef"
         :workspace-container-width="workspace.width"
