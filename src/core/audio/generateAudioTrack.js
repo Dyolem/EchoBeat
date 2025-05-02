@@ -65,7 +65,7 @@ import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 //  */
 export function generateAudioTrack({
   midiData,
-  generatedStartTick = 100,
+  generatedStartTick = 0,
   alignTracks = false,
 }) {
   const { header, tracks } = midiData
@@ -80,12 +80,9 @@ export function generateAudioTrack({
   const addSoundBufferWorkArr = []
   const parsedAudioTrackIdArr = []
   const bpm = tempos[0]?.bpm
-  const ppqn = ppq
+  const newPpqn = ppq
   const timeSignature = timeSignatures[0]?.timeSignature
-  beatControllerStore.updateChoreAudioParams({
-    ppqn,
-    timeSignature,
-  })
+  const ppqnCorrectionCoefficient = beatControllerStore.ppqn / newPpqn
 
   const midiTypeAudioTrackInfo = AUDIO_TRACK_TYPE_CONFIG.get(
     AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
@@ -101,6 +98,7 @@ export function generateAudioTrack({
   } of tracks) {
     if (notes.length === 0) continue
     else {
+      const firstNote = notes[0]
       let endTick = 0
       if (endOfTrackTicks === undefined) {
         endTick = durationTicks + generatedStartTick
@@ -109,13 +107,13 @@ export function generateAudioTrack({
       }
 
       beatControllerStore.updateChoreAudioParams({
-        editableTotalTick: endTick,
+        editableTotalTick: endTick * ppqnCorrectionCoefficient,
       })
       let startTick = 0
       if (alignTracks) {
         startTick = generatedStartTick
       } else {
-        startTick = endTick - durationTicks
+        startTick = Math.min(firstNote?.ticks ?? 0, endTick - durationTicks)
       }
 
       const audioTrackType = midiTypeAudioTrackInfo.type
@@ -139,8 +137,9 @@ export function generateAudioTrack({
         },
       })
       parsedAudioTrackIdArr.push(audioTrackId)
-      const newWorkspaceWidth = endTick - startTick
-      const newWorkspaceStartPosition = startTick
+      const newWorkspaceWidth =
+        (endTick - startTick) * ppqnCorrectionCoefficient
+      const newWorkspaceStartPosition = startTick * ppqnCorrectionCoefficient
       const newWorkspaceId = workspaceStore.addNewWorkspace({
         audioTrackId,
         badgeName: audioTrackName,
@@ -161,18 +160,12 @@ export function generateAudioTrack({
       })
       workspace.subTrackItemId = subTrackItemId
       const noteItemsMap = workspace.noteItemsMap
-      for (const {
-        durationTicks,
-        midi,
-        ticks: startTicks,
-        velocity,
-        name,
-      } of notes) {
+      for (const { durationTicks, midi, ticks, velocity, name } of notes) {
         const midiVelocity = velocity * 127
         const template = noteItemStore.getNoteItemTemplate({
-          x: startTicks,
+          x: (ticks + startTick) * ppqnCorrectionCoefficient,
           y: noteItemStore.noteHeight * (119 - midi),
-          noteItemWidth: durationTicks,
+          noteItemWidth: durationTicks * ppqnCorrectionCoefficient,
           insertToSpecifiedPitchName: name,
           workspaceId: newWorkspaceId,
           audioTrackId,
