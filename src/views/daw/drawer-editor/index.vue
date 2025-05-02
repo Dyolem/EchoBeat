@@ -184,6 +184,7 @@ onUnmounted(() => {
       :resizable-editor-height-range="heightRange"
       :resizable-editor-width-range="widthRange"
       :modify-timeline-by-click="false"
+      :throttle-scroll="true"
     >
       <template
         #default-interactable-layer="{

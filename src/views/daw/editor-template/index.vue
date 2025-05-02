@@ -94,6 +94,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  throttleScroll: {
+    type: Boolean,
+    default: false,
+  },
 })
 editorStore.initEditor(props.id)
 const trackRulerHeight = computed(() => {
@@ -317,7 +321,9 @@ onMounted(() => {
   )
 })
 
-const debouncedScrollHandler = throttle(scrollHandler, 50, true)
+const throttleScrollHandler = props.throttleScroll
+  ? throttle(scrollHandler, 50, true)
+  : scrollHandler
 function scrollHandler(event) {
   const editorScrollTop = event.target.scrollTop
   const editorScrollLeft = event.target.scrollLeft
@@ -345,7 +351,7 @@ onUnmounted(() => {
     <div
       class="editor-content-container beatified-scrollbar"
       ref="editorContentContainerRef"
-      @scroll="debouncedScrollHandler"
+      @scroll="throttleScrollHandler"
     >
       <HeadTools :editor-id="id"></HeadTools>
       <div class="track-ruler-container">
