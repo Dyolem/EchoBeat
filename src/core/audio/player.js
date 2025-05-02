@@ -136,7 +136,7 @@ export function pause(backPlayHead = false) {
       }, GAIN_NODE_PHYSICAL_WAIT_MS)
     }).then(() => {
       audioStore.audioContext.suspend()
-      if (backPlayHead) {
+      if (typeof backPlayHead === "boolean" && backPlayHead) {
         // 暂停音频并将时间线回退为上一次起始值
         updateCurrentTime(lastPlayHead)
       }
