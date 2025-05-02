@@ -39,8 +39,13 @@ function recoverMixTrackDataFromIndexeddb() {
   if (yChoreBeatControllerParams.size >= 0) {
     const params = yChoreBeatControllerParams.get("yChoreBeatControllerParams")
     if (!params) return
-    const { bpm, ppqn, timeSignature } = params
-    beatControllerStore.updateChoreAudioParams({ bpm, ppqn, timeSignature })
+    const { bpm, ppqn, timeSignature, editableTotalTick } = params
+    beatControllerStore.updateChoreAudioParams({
+      bpm,
+      ppqn,
+      timeSignature,
+      editableTotalTick,
+    })
   }
 }
 const undoManager = new Y.UndoManager(ydoc)

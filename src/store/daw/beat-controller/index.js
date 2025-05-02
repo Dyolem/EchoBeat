@@ -42,6 +42,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
       ppqn: ppqn.value,
       bpm: bpm.value,
       timeSignature: timeSignature.value,
+      editableTotalTick: totalTicks.value,
     }
   })
   const pixelsPerTick = computed(() => {
@@ -261,6 +262,7 @@ export const useBeatControllerStore = defineStore("beatController", () => {
   return {
     choreBeatControllerParams,
     currentMetronomeSoundType,
+    ppqn,
     bpm,
     editableTotalTime,
     baseGridWidth,
