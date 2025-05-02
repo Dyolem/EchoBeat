@@ -66,7 +66,7 @@ import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 export function generateAudioTrack({
   midiData,
   generatedStartTick = 0,
-  alignTracks = false,
+  alignTracks = true,
 }) {
   const { header, tracks } = midiData
   const { name: headerName, tempos, timeSignatures, ppq } = header
