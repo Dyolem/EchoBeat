@@ -24,9 +24,11 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { storeToRefs } from "pinia"
 import { throttle } from "@/utils/throttle.js"
 import HeadTools from "@/views/daw/editor-template/HeadTools.vue"
+import { useEditorStore } from "@/store/daw/editor.js"
 
 const beatControllerStore = useBeatControllerStore()
 const zoomRatioStore = useZoomRatioStore()
+const editorStore = useEditorStore()
 
 const TRACK_ZOOM_RATIO = DEFAULT_ZOOM_RATIO
 
@@ -93,6 +95,7 @@ const props = defineProps({
     default: true,
   },
 })
+editorStore.initEditor(props.id)
 const trackRulerHeight = computed(() => {
   return props.trackRulerHeight
 })
@@ -321,6 +324,10 @@ function scrollHandler(event) {
   updateScrollMovement({
     scrollTop: editorScrollTop,
     scrollLeft: editorScrollLeft,
+  })
+  editorStore.updateEditorParams(props.id, {
+    scrollLeft: editorScrollLeft,
+    scrollTop: editorScrollTop,
   })
 }
 

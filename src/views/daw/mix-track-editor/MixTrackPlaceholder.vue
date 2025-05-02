@@ -2,12 +2,16 @@
 import { parseMidi } from "@/core/audio/parseMidi.js"
 import { generateAudioTrack } from "@/core/audio/generateAudioTrack.js"
 import { inject, computed, ref } from "vue"
-import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { AUDIO_TRACK_ENUM, MAIN_EDITOR_ID } from "@/constants/daw/index.js"
 import {
   snapshotYSharedData,
   updateChoreBeatControllerParamsSharedData,
 } from "@/core/history/index.js"
+import { useEditorStore } from "@/store/daw/editor.js"
 
+const beatControllerStore = useBeatControllerStore()
+const editorStore = useEditorStore()
 const props = defineProps({
   width: {
     type: Number,
@@ -42,11 +46,20 @@ const parseProcessorMap = {
   [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS](arrayBuffer) {
     parseMidi(arrayBuffer)
       .then((midiData) => {
-        generateAudioTrack({ midiData }).then((newSelectedAudioTrackId) => {
-          updateSelectedAudioTrackId(newSelectedAudioTrackId)
-          snapshotYSharedData()
-          updateChoreBeatControllerParamsSharedData()
-        })
+        const _MAIN_EDITOR_ID = MAIN_EDITOR_ID
+        const marginLeftPixels = 20
+        const pixelsPerTick = beatControllerStore.pixelsPerTick(_MAIN_EDITOR_ID)
+        const generatedStartTick =
+          (marginLeftPixels +
+            editorStore.editorMap.get(_MAIN_EDITOR_ID).scrollLeft) /
+          pixelsPerTick
+        generateAudioTrack({ midiData, generatedStartTick }).then(
+          (newSelectedAudioTrackId) => {
+            updateSelectedAudioTrackId(newSelectedAudioTrackId)
+            snapshotYSharedData()
+            updateChoreBeatControllerParamsSharedData()
+          },
+        )
       })
       .catch((reason) => {
         const errorMessage = reason instanceof Error ? reason.message : reason

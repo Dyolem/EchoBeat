@@ -83,6 +83,7 @@ export function generateAudioTrack({
   const newPpqn = ppq
   const timeSignature = timeSignatures[0]?.timeSignature
   const ppqnCorrectionCoefficient = beatControllerStore.ppqn / newPpqn
+  generatedStartTick = generatedStartTick / ppqnCorrectionCoefficient
 
   const midiTypeAudioTrackInfo = AUDIO_TRACK_TYPE_CONFIG.get(
     AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS,
