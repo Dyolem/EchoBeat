@@ -10,7 +10,6 @@ import {
   DEFAULT_INIT_VELOCITY,
   VELOCITY_SCALE,
 } from "@/constants/daw/index.js"
-import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
@@ -28,10 +27,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   const workspaceStore = useWorkspaceStore()
   const beatControllerStore = useBeatControllerStore()
   const pianoKeySizeStore = usePianoKeySizeStore()
-
-  const absoluteTimePerTick = computed(() => {
-    return beatControllerStore.absoluteTimePerTick
-  })
 
   const nextInsertedNoteWidth = ref(0)
   const noteWidth = computed(() => {
@@ -89,20 +84,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
    * @property {number} relativeX - note 元素相对于工作区左上角原点的相对横坐标（基于绝对时间参考系，单位：tick）
    * @property {number} y - note 元素相对于 MIDI 编辑器左上角原点的绝对纵坐标
    * @property {PitchNameId} pitchName - 音高名称
-   * @property {number} startTime - 起始播放时刻（基于绝对时间参考系，单位：tick）
-   *    @readonly
-   *    @type {number}
-   *    @example this.x * absoluteTimePerTick.value
-   * @property {number} duration - 播放持续时间（基于绝对时间参考系，单位：tick）
-   *    @readonly
-   *    @type {number}
-   *    @example this.width * absoluteTimePerTick.value
    * @property {number} velocity - 音符力度（0-127）
-   * @property {number} workspaceStartPosition - 工作区起始位置（基于绝对时间参考系，单位：tick）
-   *    @readonly
-   *    @type {number}
-   *    @example workspaceStore.getWorkspace(...).startPosition
-   */
 
   /**
    * @returns {Map<NoteId, NoteItem>}
@@ -180,24 +162,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       audioTrackId,
       width: clamp(noteItemWidth, [minNoteWidth, maxNoteWidth]),
       height: noteHeight.value,
-      get x() {
-        return this.relativeX + this.workspaceStartPosition
-      },
       relativeX,
       y: computedY,
-      get workspaceStartPosition() {
-        return workspaceStore.getWorkspace({
-          audioTrackId: this.audioTrackId,
-          workspaceId: this.workspaceId,
-        }).startPosition
-      },
       pitchName: pitchName,
-      get startTime() {
-        return this.x * absoluteTimePerTick.value
-      },
-      get duration() {
-        return this.width * absoluteTimePerTick.value
-      },
       velocity,
     }
   }
@@ -369,7 +336,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       workspace.startPosition + workspace.width - updateMainNote.width,
     ]
     const scaleY = [0, maxY.value]
-    const oldAbsoluteX = updateMainNote.x
+    const oldAbsoluteX = updateMainNote.x + workspace.startPosition
     const oldAbsoluteY = updateMainNote.y
     const { alignedAbsolutePosition, alignedPitchName } =
       alignToOtherPitchNameTrack({
@@ -402,7 +369,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       const updatePositionWork = new Promise((resolve, reject) => {
         const [minX, maxX] = scaleX
         const [minY, maxY] = scaleY
-        const factualX = updateNoteTarget.x + incrementX
+        const factualX =
+          updateNoteTarget.x + workspace.startPosition + incrementX
         const factualY = updateNoteTarget.y + incrementY
         const horizontalJudgement = factualX >= minX && factualX <= maxX
         const verticalJudgement = factualY >= minY && factualY <= maxY
@@ -476,7 +444,8 @@ export const useNoteItemStore = defineStore("noteItem", () => {
 
     const scale = [initLeftEdgeX, workspace.width + workspace.startPosition]
     const oldNoteWidth = updateNoteTarget.width
-    const oldRightEdgeX = updateNoteTarget.x + oldNoteWidth
+    const oldRightEdgeX =
+      updateNoteTarget.x + workspace.startPosition + oldNoteWidth
     const newRightEdgeX = snapToTickUnitGrid({
       editorId,
       tickX: absoluteX,

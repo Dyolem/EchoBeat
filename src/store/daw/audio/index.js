@@ -8,6 +8,7 @@ import { clamp } from "@/utils/clamp.js"
 import { registerDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTrack.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
+import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 export const useAudioStore = defineStore("audio", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
@@ -19,6 +20,7 @@ export const useAudioStore = defineStore("audio", () => {
 
   const noteItemStore = useNoteItemStore()
   const audioGeneratorStore = useAudioGeneratorStore()
+  const beatControllerStore = useBeatControllerStore()
 
   const audioBufferSourceNodeMap = new Map() //根据note的id存储所有创建的对应的音频节点
   const velocityGainNodesMap = new Map() //用于处理单个音符起始音量（按压力度）的增益节点的映射表
@@ -198,7 +200,9 @@ export const useAudioStore = defineStore("audio", () => {
       workspaceId,
       noteId,
     })
-    const { pitchName, duration: _duration, velocity } = noteItem
+    const { width, pitchName, velocity } = noteItem
+    const _duration = width * beatControllerStore.absoluteTimePerTick
+
     if (audioContext.state === "suspended") {
       await audioContext.resume()
     }
@@ -279,19 +283,18 @@ export const useAudioStore = defineStore("audio", () => {
       })
       const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
       workspaceMap.forEach((workspace) => {
-        const { noteItemsMap } = workspace
+        const { noteItemsMap, startPosition: workspaceStartPosition } =
+          workspace
         for (const noteItem of noteItemsMap.values()) {
           let startTime = 0
           let duration = 0
           let offsetTime = 0
           let isPlayedInMiddle = false
-          const {
-            id,
-            pitchName,
-            startTime: _startTime,
-            duration: _duration,
-            velocity,
-          } = noteItem
+          const absoluteTimePerTick = beatControllerStore.absoluteTimePerTick
+          const { id, width, relativeX, pitchName, velocity } = noteItem
+          const _startTime =
+            (relativeX + workspaceStartPosition) * absoluteTimePerTick
+          const _duration = width * absoluteTimePerTick
           if (_startTime >= generableAudioTimeEnd) continue
           if (timelinePlayTime > _startTime + _duration) continue
           else if (

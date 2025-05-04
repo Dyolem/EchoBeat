@@ -4,7 +4,7 @@ import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 
 const beatControllerStore = useBeatControllerStore()
-const { bpm, beatsPerMeasure, noteValueDenominator } =
+const { bpm, beatsPerMeasure, noteValueDenominator, absoluteTimePerTick } =
   storeToRefs(beatControllerStore)
 
 const workspaceStore = useWorkspaceStore()
@@ -15,11 +15,16 @@ function transformNotesToMidiData(midi, { noteItemsArr, trackName }) {
   const track = midi.addTrack()
   track.name = trackName
   noteItemsArr.forEach((noteItem) => {
-    const { pitchName, startTime, duration, velocity } = noteItem
+    const { workspaceId, audioTrackId, pitchName, relativeX, width, velocity } =
+      noteItem
+    const workspace = getWorkspace({ audioTrackId, workspaceId })
+    const startTime =
+      (relativeX + workspace.startPosition) * absoluteTimePerTick.value
+    const duration = width * absoluteTimePerTick.value
     track.addNote({
       name: pitchName,
       time: startTime,
-      duration: duration,
+      duration,
       velocity: velocity / 127,
     })
   })
