@@ -68,7 +68,6 @@ const props = defineProps({
   },
 })
 const width = computed(() => {
-  console.log(props.width)
   return props.width * pixelsPerTick.value(editorId.value)
 })
 const headerHeight = ref(18)

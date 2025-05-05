@@ -332,7 +332,6 @@ function noteMainMousedownHandler(event) {
       /*
        * In selected mode, a single click will play the corresponding sound name
        * */
-      console.log(3333)
       audioStore
         .generateSingleAudioNode({
           noteId: props.id,
