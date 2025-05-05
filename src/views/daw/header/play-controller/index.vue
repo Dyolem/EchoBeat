@@ -4,12 +4,8 @@ import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import { storeToRefs } from "pinia"
-import {
-  pause,
-  playAudio,
-  registerVisibilityChangeEvent,
-} from "@/core/audio/player.js"
-registerVisibilityChangeEvent()
+import { pause, playAudio } from "@/core/audio/player.js"
+
 const trackRulerStore = useTrackRulerStore()
 const { updateCurrentTime } = trackRulerStore
 const { isPlaying, timelineCurrentTime } = storeToRefs(trackRulerStore)
