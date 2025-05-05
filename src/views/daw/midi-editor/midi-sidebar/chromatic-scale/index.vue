@@ -1,6 +1,13 @@
 <script setup>
 import Octave from "@/views/daw/midi-editor/midi-sidebar/chromatic-scale/octave/index.vue"
-import { computed, inject, onMounted, useTemplateRef, watch } from "vue"
+import {
+  computed,
+  inject,
+  onMounted,
+  onUnmounted,
+  useTemplateRef,
+  watch,
+} from "vue"
 import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 import { useNoteItemStore } from "@/store/daw/note-editor/noteItem.js"
 import { storeToRefs } from "pinia"
@@ -51,6 +58,7 @@ function scrollHandler(event) {
   emit("update:chromaticScaleScrollTop", scrollTop)
 }
 
+const playSampleController = new AbortController()
 onMounted(() => {
   octaveContainerRef.value.addEventListener("play-sample", (event) => {
     const pitchName = event.detail.pitchName
@@ -82,6 +90,9 @@ onMounted(() => {
     }
   })
   noteItemStore.octaveContainerInstance = octaveContainerRef.value
+})
+onUnmounted(() => {
+  playSampleController.abort()
 })
 function playNote(target) {
   target.style.backgroundColor = mainColor.value

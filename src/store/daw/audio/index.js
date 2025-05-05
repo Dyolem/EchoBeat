@@ -241,6 +241,7 @@ export const useAudioStore = defineStore("audio", () => {
       () => {
         controller.abort()
         controller = null
+        scheduler.cleanup()
         audioBufferSourceNode.disconnect()
         audioBufferSourceNodeMap.delete(noteId)
         fadeGainNode.disconnect()

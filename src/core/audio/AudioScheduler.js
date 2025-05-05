@@ -39,7 +39,21 @@ export class AudioScheduler {
   cleanup(sourceId) {
     const detectorNode = this.detectors.get(sourceId)
     if (detectorNode) {
+      // 明确移除消息监听器
+      detectorNode.port.onmessage = null
+
+      // 关闭端口通信
+      try {
+        detectorNode.port.close()
+      } catch (e) {
+        // 忽略可能的错误，有些浏览器可能不支持close方法
+        console.warn("Could not close detector port:", e)
+      }
+
+      // 断开节点连接
       detectorNode.disconnect()
+
+      // 从Map中删除引用
       this.detectors.delete(sourceId)
     }
   }
