@@ -8,14 +8,37 @@ import {
   metronomeEnabledState,
 } from "@/core/audio/playMetronome.js"
 
-let lastPlayHead = 0
-
 //所有源节点停止时，继续等待一段时间，因为增益节点是物理执行时间，可能还未结束,在增益结束前挂起音频上下文依然会导致咔哒声
 const GAIN_NODE_PHYSICAL_WAIT_MS = 300
 const dynamicGenerationTimeInterval = 4
 const GENERATE_AUDIO_POLLING_INTERVAL =
   (1000 * dynamicGenerationTimeInterval) / 2
 const UPDATE_TRACK_TIME_POLLING_INTERVAL = 16.7
+
+const audioStore = useAudioStore()
+const trackRulerStore = useTrackRulerStore()
+const {
+  isPlaying,
+  timelineCurrentTime,
+  maxTime: maxTrackTime,
+} = storeToRefs(trackRulerStore)
+const { changePlayState, updateCurrentTime } = trackRulerStore
+
+let lastPlayHead = 0
+let intervalTimerId = null
+let controller = null
+let initTime = 0
+let maxTime = 0
+let lastQueryTime = 0
+let currentQueryTime = 0
+let isFirstQuery = true
+let aggregateTime = 0
+function resetFlags() {
+  lastQueryTime = 0
+  currentQueryTime = 0
+  isFirstQuery = true
+  aggregateTime = 0
+}
 
 export function registerVisibilityChangeEvent() {
   const documentVisibilityController = new AbortController()
@@ -37,28 +60,25 @@ export function registerVisibilityChangeEvent() {
   })
 }
 
-const audioStore = useAudioStore()
-const trackRulerStore = useTrackRulerStore()
-const {
-  isPlaying,
-  timelineCurrentTime,
-  maxTime: maxTrackTime,
-} = storeToRefs(trackRulerStore)
-const { changePlayState, updateCurrentTime } = trackRulerStore
-
-let intervalTimerId = null
-let controller = null
-let initTime = 0
-let maxTime = 0
-let lastQueryTime = 0
-let currentQueryTime = 0
-let isFirstQuery = true
-let aggregateTime = 0
-function resetFlags() {
-  lastQueryTime = 0
-  currentQueryTime = 0
-  isFirstQuery = true
-  aggregateTime = 0
+function clearPlayerOnUnmounted() {
+  return pause().then(() => {
+    lastPlayHead = 0
+    intervalTimerId = null
+    controller = null
+    initTime = 0
+    maxTime = 0
+    lastQueryTime = 0
+    currentQueryTime = 0
+    isFirstQuery = true
+    aggregateTime = 0
+    updateCurrentTime(0)
+  })
+}
+export async function initPlayer() {
+  registerVisibilityChangeEvent()
+  onUnmounted(() => {
+    clearPlayerOnUnmounted()
+  })
 }
 
 function generateAudioHandler(
@@ -101,8 +121,7 @@ function queryCurrentTime({ audioContext, signal, maxTime, initTime } = {}) {
     })
   }
   if (document.visibilityState === "hidden") {
-    const timeoutId = setTimeout(() => {
-      clearTimeout(timeoutId)
+    setTimeout(() => {
       queryHandler()
     }, UPDATE_TRACK_TIME_POLLING_INTERVAL)
   } else {
@@ -112,27 +131,26 @@ function queryCurrentTime({ audioContext, signal, maxTime, initTime } = {}) {
   }
 }
 
-export function playAudio() {
+export async function playAudio() {
   if (!isPlaying.value) {
-    resume()
+    await resume()
   } else {
     if (audioStore.audioContext) {
-      pause()
+      await pause()
     }
   }
 }
 
-export function pause(backPlayHead = false) {
+export async function pause(backPlayHead = false) {
   if (!audioStore.audioContext || !controller) return
   controller.abort()
   clearInterval(intervalTimerId)
   changePlayState(false)
   stopMetronome()
-  audioStore.stopAllNodes().then(() => {
-    new Promise((resolve) => {
-      const suspendDelayTimer = setTimeout(() => {
+  return audioStore.stopAllNodes().then(() => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
         resolve()
-        clearTimeout(suspendDelayTimer)
       }, GAIN_NODE_PHYSICAL_WAIT_MS)
     }).then(() => {
       audioStore.audioContext.suspend()
@@ -143,10 +161,10 @@ export function pause(backPlayHead = false) {
     })
   })
 }
-export function resume() {
+export async function resume() {
   if (!audioStore.audioContext) return
   controller = new AbortController()
-  audioStore.audioContext.resume().then(() => {
+  return audioStore.audioContext.resume().then(() => {
     resetFlags()
     initTime = timelineCurrentTime.value
     lastPlayHead = initTime
@@ -166,6 +184,6 @@ export function resume() {
       maxTime,
       initTime,
     })
+    return controller
   })
-  return controller
 }
