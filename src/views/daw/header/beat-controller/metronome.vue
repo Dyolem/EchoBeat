@@ -15,14 +15,16 @@ import {
   metronomeEnabledState,
   toggleMetronomeState,
 } from "@/core/audio/playMetronome.js"
+import { snapshotBeatParams } from "@/core/history/index.js"
 const beatControllerStore = useBeatControllerStore()
 function validateBpm(event) {
-  const tobeValidatedBpm = event.target.value
+  const tobeValidatedBpm = Number(event.target.value)
   const { bpm } = beatControllerStore.updateChoreAudioParams({
     bpm: tobeValidatedBpm,
   })
   const [newBpm] = bpm
   event.target.value = newBpm
+  snapshotBeatParams()
 }
 function focusHandler() {
   pause()

@@ -1,19 +1,13 @@
 <script setup>
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import MixEditorButtonGroup from "@/views/daw/mix-editor-button/MixEditorButtonGroup.vue"
-import {
-  undo,
-  redo,
-  recoverMixTrackDataFromIndexeddb,
-} from "@/core/history/index.js"
+import { undo, redo } from "@/core/history/index.js"
 
 function undoHandler() {
   undo()
-  recoverMixTrackDataFromIndexeddb()
 }
 function redoHandler() {
   redo()
-  recoverMixTrackDataFromIndexeddb()
 }
 </script>
 

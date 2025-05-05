@@ -12,6 +12,7 @@ import {
   updateMetronomeVolumeGainValue,
 } from "@/core/audio/playMetronome.js"
 import { generateNormalBpm } from "@/core/audio/generateNormalBpm.js"
+import { snapshotBeatParams } from "@/core/history/index.js"
 
 const beatControllerStore = useBeatControllerStore()
 const { currentMetronomeSoundType, bpm } = storeToRefs(beatControllerStore)
@@ -32,10 +33,27 @@ function playMetronomeDemo() {
     startMetronome()
   }
 }
-
-function normalChangeBpm() {
-  const normalBpmValue = generateNormalBpm([MIN_BPM, MAX_BPM])
-  updateChoreAudioParams({ bpm: normalBpmValue })
+const changeBpmOptions = {
+  NORMAL: "normal",
+  BASE: "base",
+}
+const changeBpmFuncOptions = {
+  [changeBpmOptions.NORMAL]: () => {
+    const normalBpmValue = generateNormalBpm([MIN_BPM, MAX_BPM])
+    updateChoreAudioParams({ bpm: normalBpmValue })
+  },
+  [changeBpmOptions.BASE]: (sign) => {
+    updateChoreAudioParams({ bpm: bpm.value + Math.sign(sign) })
+  },
+}
+function changeBpm(type, sign) {
+  if (!(type in changeBpmFuncOptions)) return
+  if (type === changeBpmOptions.NORMAL) {
+    changeBpmFuncOptions[type]()
+  } else {
+    changeBpmFuncOptions[type](sign)
+  }
+  snapshotBeatParams()
 }
 </script>
 
@@ -47,17 +65,20 @@ function normalChangeBpm() {
         <div class="adjust-tempo">
           <div
             class="adjust-button"
-            @click="updateChoreAudioParams({ bpm: bpm - 1 })"
+            @click="() => changeBpm(changeBpmOptions.BASE, -1)"
           >
             -
           </div>
-          <div class="tap-tempo" @click="normalChangeBpm">
+          <div
+            class="tap-tempo"
+            @click="() => changeBpm(changeBpmOptions.NORMAL)"
+          >
             <span class="specify-tempo">{{ bpm }}</span>
             <span>tap</span>
           </div>
           <div
             class="adjust-button"
-            @click="updateChoreAudioParams({ bpm: bpm + 1 })"
+            @click="() => changeBpm(changeBpmOptions.BASE, 1)"
           >
             +
           </div>
