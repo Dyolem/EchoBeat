@@ -33,11 +33,14 @@ import { storeToRefs } from "pinia"
 import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { initAudioResource } from "@/core/audio/initAudioResource.js"
+import { snapshotYSharedData } from "@/core/history/index.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const audioStore = useAudioStore()
 const { initAudioTrackRelativeNode } = audioStore
 const { mutedAudioTrackIdSet, soloAudioTrackId } = storeToRefs(audioStore)
+const { activeMixTrackId } = storeToRefs(mixTrackEditorStore)
+const { updateSelectedActiveAudioTrackId } = mixTrackEditorStore
 const zoomRatioStore = useZoomRatioStore()
 
 const loading = ElLoading.service({
@@ -102,16 +105,38 @@ onUnmounted(() => {
   removeDeleteSubTrackEventListener()
 })
 
-const selectedAudioTrackId = ref("")
-function updateSelectedAudioTrackId(newId) {
-  if (newId === undefined || newId === null) return
-  selectedAudioTrackId.value = newId
-}
-registerDeleteAudioTrackEvent(() => updateSelectedAudioTrackId(""))
+watch(
+  () => mixTrackEditorStore.mixTracksMap.size,
+  () => {
+    const audioTrackIdsArr = Array.from(mixTrackEditorStore.mixTracksMap.keys())
+    if (!audioTrackIdsArr.includes(activeMixTrackId.value)) {
+      updateSelectedActiveAudioTrackId(
+        mixTrackEditorStore.mixTracksMap.keys().next().value,
+      )
+    }
+  },
+)
+registerDeleteAudioTrackEvent(({ audioTrackId }) => {
+  if (audioTrackId !== activeMixTrackId.value) return
+  const audioTrackIdsArr = Array.from(mixTrackEditorStore.mixTracksMap.keys())
+  const lastAudioTrackIdIndex = audioTrackIdsArr.findIndex(
+    (id) => id === audioTrackId,
+  )
+  if (lastAudioTrackIdIndex === -1 || lastAudioTrackIdIndex === 0) {
+    updateSelectedActiveAudioTrackId("")
+  } else {
+    updateSelectedActiveAudioTrackId(
+      audioTrackIdsArr[lastAudioTrackIdIndex - 1],
+    )
+  }
+}, false)
+registerDeleteAudioTrackEvent(() => {
+  snapshotYSharedData()
+})
 
 provide("selectedAudioTrackId", {
-  selectedAudioTrackId,
-  updateSelectedAudioTrackId,
+  selectedAudioTrackId: activeMixTrackId,
+  updateSelectedAudioTrackId: updateSelectedActiveAudioTrackId,
 })
 
 const selectedTrackItemId = ref("")
@@ -119,7 +144,10 @@ function updateSelectedTrackItemId(newId) {
   if (newId === undefined || newId === null) return
   selectedTrackItemId.value = newId
 }
-registerDeleteSubTrackEvent(() => updateSelectedTrackItemId(""))
+registerDeleteSubTrackEvent(() => {
+  updateSelectedTrackItemId("")
+  snapshotYSharedData()
+})
 provide("selectedTrackItemId", {
   selectedTrackItemId,
   updateSelectedTrackItemId,
