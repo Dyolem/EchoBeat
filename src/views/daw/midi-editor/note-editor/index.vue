@@ -67,8 +67,7 @@ const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", ref(20))
 const workspaceMap = computed(() => {
   return (
     trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: selectedAudioTrackId.value,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+      audioTrackId: selectedAudioTrackId.value,
     }) ?? []
   )
 })

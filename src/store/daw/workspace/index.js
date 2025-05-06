@@ -11,8 +11,10 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { computed } from "vue"
 import { snapToTickUnitGrid } from "@/core/grid-size/snapToTickUnitGrid.js"
 import { registerDeleteSubTrackEvent } from "@/core/custom-event/deleteSubTrack.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 
 export const useWorkspaceStore = defineStore("workspaceStore", () => {
+  const mixTrackEditorStore = useMixTrackEditorStore()
   const noteItemStore = useNoteItemStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const beatControllerStore = useBeatControllerStore()
@@ -208,12 +210,12 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
    * @param startPosition
    */
   function shallCreateWorkspace({ audioTrackId, startPosition }) {
-    const { workspaceBadgeName, workspaceMap } =
-      trackFeatureMapStore.getSelectedTrackFeature({
-        selectedAudioTrackId: audioTrackId,
-        featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
-      })
-
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
+      audioTrackId,
+    })
+    const { audioTrackName } = mixTrackEditorStore.getAudioTrack({
+      audioTrackId,
+    })
     const { isCreateNewWorkspace, workspaceInfo } = computedStartPosition(
       startPosition,
       workspaceMap,
@@ -225,7 +227,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
       const workspaceContent = {
         id: newId,
         audioTrackId,
-        workspaceBadgeName,
+        workspaceBadgeName: audioTrackName,
         noteItemsMap: noteItemsMap,
         width,
         startPosition,
@@ -248,7 +250,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
           startPosition,
           width,
           noteItemsMap: workspace.noteItemsMap,
-          workspaceBadgeName,
+          workspaceBadgeName: audioTrackName,
           subTrackItemId: workspace.subTrackItemId,
         },
       }
@@ -259,9 +261,8 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   }
 
   function addNewWorkspace({ audioTrackId, badgeName, width, startPosition }) {
-    const { workspaceMap } = trackFeatureMapStore.getSelectedTrackFeature({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+    const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
+      audioTrackId,
     })
     const newId = generateWorkspaceId()
     const noteItemsMap = noteItemStore.createNoteItemsMap()
@@ -372,8 +373,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
 
   function deleteWorkspace({ audioTrackId, workspaceId }) {
     const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+      audioTrackId,
     })
     workspaceMap?.delete(workspaceId)
   }
@@ -381,8 +381,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
 
   function getWorkspaceMap({ audioTrackId }) {
     return trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+      audioTrackId,
     })
   }
   function getWorkspace({ audioTrackId, workspaceId }) {

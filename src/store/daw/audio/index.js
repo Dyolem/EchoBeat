@@ -279,8 +279,7 @@ export const useAudioStore = defineStore("audio", () => {
       }
 
       const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-        selectedAudioTrackId: audioTrackId,
-        featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+        audioTrackId,
       })
       const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
       workspaceMap.forEach((workspace) => {

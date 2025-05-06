@@ -7,40 +7,22 @@ export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
    * @typedef {string} AudioTrackId
    * @typedef {import('../type.js').WorkspaceMap} WorkspaceMap
    * @typedef {Object} TrackFeatureMap
-   * @property {WorkspaceMap} midiWorkspace
-   * @property {any} instrument
-   * @property {any} effects
-   * @type {import('vue').Ref<Map<AudioTrackId,WorkspaceMap>>}
+   * @property {WorkspaceMap} workspaceMap
+   * @type {import('vue').Ref<Map<AudioTrackId,TrackFeatureMap>>}
    */
   const trackFeatureMap = ref(new Map())
-  const featureEnum = ref({
-    MIDI_WORKSPACE: "midiWorkspace",
-    INSTRUMENT: "instrument",
-    EFFECTS: "effect",
-  })
 
   /**
    * @param {AudioTrackId} audioTrackId
    * @param {import('../type.js').MidiWorkspace} midiWorkspace
-   * @param {any} instrument
-   * @param {any} effects
    */
-  function addTrackFeatureMap(
-    audioTrackId,
-    { midiWorkspace, instrument, effects },
-  ) {
+  function addTrackFeatureMap({ audioTrackId, midiWorkspace }) {
     trackFeatureMap.value.set(audioTrackId, {
-      [featureEnum.value.MIDI_WORKSPACE]: midiWorkspace,
-      [featureEnum.value.INSTRUMENT]: instrument,
-      [featureEnum.value.EFFECTS]: effects,
+      workspaceMap: midiWorkspace,
     })
   }
-  function getSelectedTrackFeature({ selectedAudioTrackId, featureType }) {
-    return trackFeatureMap.value.get(selectedAudioTrackId)?.[featureType]
-  }
-  function getSelectedTrackWorkspaceMap({ selectedAudioTrackId, featureType }) {
-    return getSelectedTrackFeature({ selectedAudioTrackId, featureType })
-      ?.workspaceMap
+  function getSelectedTrackWorkspaceMap({ audioTrackId }) {
+    return trackFeatureMap.value.get(audioTrackId).workspaceMap
   }
 
   function deleteDataRelativeToAudioTrack({ audioTrackId }) {
@@ -49,10 +31,8 @@ export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
   registerDeleteAudioTrackEvent(deleteDataRelativeToAudioTrack)
 
   return {
-    featureEnum,
     trackFeatureMap,
     addTrackFeatureMap,
-    getSelectedTrackFeature,
     getSelectedTrackWorkspaceMap,
     deleteDataRelativeToAudioTrack,
   }

@@ -435,8 +435,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     initLeftEdgeX,
   }) {
     const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+      audioTrackId,
     })
     const workspace = workspaceMap.get(workspaceId)
     const noteItemsMap = workspace.noteItemsMap
@@ -523,8 +522,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     initRightEdgeX,
   }) {
     const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-      selectedAudioTrackId: audioTrackId,
-      featureType: trackFeatureMapStore.featureEnum.MIDI_WORKSPACE,
+      audioTrackId,
     })
     const workspace = workspaceMap.get(workspaceId)
     const workspaceStartPosition = workspace.startPosition

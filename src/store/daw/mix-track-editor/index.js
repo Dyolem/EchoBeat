@@ -1,51 +1,91 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
-import { BASE_GRID_HEIGHT, ID_SET } from "@/constants/daw/index.js"
+import {
+  AUDIO_TRACK_ENUM,
+  BASE_GRID_HEIGHT,
+  ID_SET,
+} from "@/constants/daw/index.js"
 import { useAudioTrackMainColorStore } from "@/store/daw/audio-track-color/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import { useAudioStore } from "@/store/daw/audio/index.js"
 import { snapToTickUnitGrid } from "@/core/grid-size/snapToTickUnitGrid.js"
 import { registerDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTrack.js"
 import { registerDeleteSubTrackEvent } from "@/core/custom-event/deleteSubTrack.js"
+import { getInitInstrumentInfo } from "@/constants/daw/instruments.js"
 
 export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const audioTrackMainColorStore = useAudioTrackMainColorStore()
   const trackFeatureMapStore = useTrackFeatureMapStore()
   const workspaceStore = useWorkspaceStore()
   const beatControllerStore = useBeatControllerStore()
-  const audioStore = useAudioStore()
 
   /**
    * @typedef {import('../type.js').MixTracksMap} MixTracksMap
    * @typedef {import('vue').Ref<MixTracksMap>} mixTracksMap
    */
   const mixTracksMap = ref(new Map([]))
-  function createNewTrack({
-    audioTrackName,
-    audioTrackType,
-    audioTrackIcon,
-    channel,
-    instrument,
-    mainColor = audioTrackMainColorStore.getRandomColor(),
-    mainEditorZoomRatio = 1,
-  }) {
+  const activeMixTrackId = ref("")
+  const createNewTrackHandlers = {
+    [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS]: () => {
+      const defaultProgramNumber = 0
+      const channel = 0
+      const { customInstrumentType, family, sound, instrumentName } =
+        getInitInstrumentInfo({ programNumber: defaultProgramNumber, channel })
+      const instrument = {
+        number: defaultProgramNumber,
+        customInstrumentType,
+        channel,
+        family,
+        name: instrumentName,
+        sound,
+      }
+      return {
+        instrument,
+        channel,
+      }
+    },
+    [AUDIO_TRACK_ENUM.VOICE]: () => {
+      return {}
+    },
+    [AUDIO_TRACK_ENUM.DRUM_MACHINE]: () => {},
+    [AUDIO_TRACK_ENUM.BASS]: () => {},
+    [AUDIO_TRACK_ENUM.GUITAR]: () => {},
+    [AUDIO_TRACK_ENUM.SAMPLE]: () => {},
+  }
+  function createNewTrack({ audioTrackName, audioTrackType, audioTrackIcon }) {
+    const mainColor = audioTrackMainColorStore.getRandomColor()
     const newAudioTrackId = ID_SET.AUDIO_TRACK()
     const existedTracksSize = mixTracksMap.value.size
-    mixTracksMap.value.set(newAudioTrackId, {
+    const baseAudioTrackInfo = {
       id: newAudioTrackId,
       audioTrackName,
-      mainColor,
       audioTrackIcon,
       audioTrackType,
-      channel,
-      instrument,
-      originalSerialNumbering: existedTracksSize,
       subTrackItemsMap: new Map(),
-      mainEditorZoomRatio,
+      originalSerialNumbering: existedTracksSize,
+      mainColor,
+    }
+
+    mixTracksMap.value.set(newAudioTrackId, {
+      ...baseAudioTrackInfo,
+      ...createNewTrackHandlers[audioTrackType](),
     })
     return newAudioTrackId
+  }
+
+  function addAudioTrack({ audioTrackName, audioTrackType, audioTrackIcon }) {
+    audioTrackName = audioTrackName === "" ? audioTrackType : audioTrackName
+    const newTrackId = createNewTrack({
+      audioTrackName,
+      audioTrackType,
+      audioTrackIcon,
+    })
+    trackFeatureMapStore.addTrackFeatureMap({
+      audioTrackId: newTrackId,
+      midiWorkspace: workspaceStore.createNewWorkspaceMap(),
+    })
+    return newTrackId
   }
 
   function updateMixTrackInfo({ audioTrackId, trackName, color }) {
@@ -71,7 +111,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     const subTrackItemsMap = mixTrack.subTrackItemsMap
     const subTrackItemId = generateSubTrackItemId()
     const mainColor = mixTrack.mainColor
-    const trackZoomRatio = mixTrack.mainEditorZoomRatio
     subTrackItemsMap.set(subTrackItemId, {
       audioTrackId,
       workspaceId,
@@ -81,38 +120,8 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
       mainColor,
       startPosition,
       trackName,
-      trackZoomRatio,
     })
     return subTrackItemId
-  }
-  function addAudioTrack({
-    audioTrackName,
-    audioTrackType,
-    audioTrackIcon,
-    channel,
-    instrument,
-    mainColor = audioTrackMainColorStore.getRandomColor(),
-    mainEditorZoomRatio,
-    midiWorkspaceZoomRatio,
-  }) {
-    audioTrackName = audioTrackName === "" ? audioTrackType : audioTrackName
-    const newTrackId = createNewTrack({
-      audioTrackName,
-      audioTrackType,
-      audioTrackIcon,
-      channel,
-      instrument,
-      mainColor,
-      mainEditorZoomRatio,
-    })
-    trackFeatureMapStore.addTrackFeatureMap(newTrackId, {
-      midiWorkspace: {
-        workspaceBadgeName: audioTrackName,
-        workspaceMap: workspaceStore.createNewWorkspaceMap(),
-        zoomRatio: midiWorkspaceZoomRatio,
-      },
-    })
-    return newTrackId
   }
 
   function getAudioTrackInstrument({ audioTrackId }) {
@@ -237,8 +246,18 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   }
   registerDeleteAudioTrackEvent(deleteSpecifiedAudioTrack)
 
+  function getAudioTrack({ audioTrackId }) {
+    return mixTracksMap.value.get(audioTrackId)
+  }
+
+  function updateSelectedActiveAudioTrackId(newId) {
+    if (newId === undefined || newId === null) return
+    activeMixTrackId.value = newId
+  }
   return {
     mixTracksMap,
+    activeMixTrackId,
+    getAudioTrack,
     generateSubTrackItemId,
     addAudioTrack,
     getAudioTrackInstrument,
@@ -252,5 +271,6 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     updateSubTrackItemStartPosition,
     deleteSpecifiedSubTrackItem,
     deleteSpecifiedAudioTrack,
+    updateSelectedActiveAudioTrackId,
   }
 })

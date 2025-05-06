@@ -34,11 +34,8 @@ function openTrackMenu(event) {
 
 function addAudioTrackHandler({ type, icon, title }) {
   if (!type) return
-  const defaultProgramNumber = getDefaultProgramNumberByAudioTrackType(type)
-  let channel = 0
-  if (type === AUDIO_TRACK_ENUM.DRUM_MACHINE) {
-    channel = 9
-  }
+  const defaultProgramNumber = 0
+  const channel = 0
   const { customInstrumentType, family, sound, instrumentName } =
     getInitInstrumentInfo({ programNumber: defaultProgramNumber, channel })
 
