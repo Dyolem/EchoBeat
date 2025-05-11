@@ -1,6 +1,10 @@
 import { onUnmounted } from "vue"
 import { defineStore } from "pinia"
-import { NOTE_FREQUENCY_MAP, noteToMidi } from "@/constants/daw/index.js"
+import {
+  AUDIO_TRACK_ENUM,
+  NOTE_FREQUENCY_MAP,
+  noteToMidi,
+} from "@/constants/daw/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import JSZip from "jszip"
 import {
@@ -398,7 +402,9 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
     })
     await initDefaultSoundBuffer()
     // 遍历所有音轨，加载它们使用的音色
-    for (const { instrument } of mixTrackEditorStore.mixTracksMap.values()) {
+    for (const mixTrack of mixTrackEditorStore.mixTracksMap.values()) {
+      if (mixTrack.audioTrackType === AUDIO_TRACK_ENUM.VOICE) continue
+      const { instrument } = mixTrack
       const soundName = instrument.sound
 
       // 避免重复加载同一音色
@@ -415,7 +421,6 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
         // 提取文件
         const bufferMap = await extractSoundBankFiles(soundName, zip)
         allAudioTrackInstrumentBuffer.set(soundName, bufferMap)
-        console.log(allAudioTrackInstrumentBuffer)
         processedSounds.add(soundName)
       }
     }
