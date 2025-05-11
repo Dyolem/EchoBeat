@@ -93,9 +93,11 @@ const noteBgColor = computed(() => {
 const workspacePlaceHolderHeight = inject("workspacePlaceHolderHeight", ref(20))
 
 const workspaceMap = computed(() => {
-  return trackFeatureMapStore.getSelectedTrackWorkspaceMap({
-    audioTrackId: selectedAudioTrackId.value,
-  })
+  return (
+    trackFeatureMapStore.getSelectedTrackWorkspaceMap({
+      audioTrackId: selectedAudioTrackId.value,
+    }) ?? new Map()
+  )
 })
 const workspaceScrollContainerHeight = computed(() => {
   return props.editableViewHeight - props.workspaceHandleHeight
@@ -183,6 +185,7 @@ function stretchableJudgement(event) {
   // 鼠标触发区域的边缘宽度
   const edgeWidth = 10
   const workspace = workspaceMap.value.get(props.id)
+  if (!workspace) return
   let mousemoveXInWorkspace =
     event.clientX -
     noteEditorWorkspaceContainerRef.value.getBoundingClientRect().left
@@ -206,6 +209,7 @@ function stretchWorkspaceWidth(event) {
   const controller = new AbortController()
   const selectionController = clearSelection()
   const workspace = workspaceMap.value.get(props.id)
+  if (!workspace) return
   const initWorkspaceStartPosition = workspace.startPosition
   const initWorkspaceWidth = workspace.width
   const initRightEdgeX = initWorkspaceStartPosition + initWorkspaceWidth
