@@ -143,6 +143,7 @@ export function generateAudioTrack({
       const newWorkspaceStartPosition = startTick * ppqnCorrectionCoefficient
       const newWorkspaceId = workspaceStore.addNewWorkspace({
         audioTrackId,
+        audioTrackType,
         badgeName: audioTrackName,
         width: newWorkspaceWidth,
         startPosition: newWorkspaceStartPosition,

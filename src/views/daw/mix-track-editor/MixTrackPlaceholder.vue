@@ -3,13 +3,30 @@ import { parseMidi } from "@/core/audio/parseMidi.js"
 import { generateAudioTrack } from "@/core/audio/generateAudioTrack.js"
 import { inject, computed, ref } from "vue"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import { AUDIO_TRACK_ENUM, MAIN_EDITOR_ID } from "@/constants/daw/index.js"
+import {
+  AUDIO_TRACK_ENUM,
+  AUDIO_TRACK_TYPE_CONFIG,
+  BASE_GRID_HEIGHT,
+  LIGHTEN_COLOR,
+  MAIN_EDITOR_ID,
+} from "@/constants/daw/index.js"
 import {
   snapshotYSharedData,
   updateChoreBeatControllerParamsSharedData,
 } from "@/core/history/index.js"
 import { useEditorStore } from "@/store/daw/editor.js"
+import {
+  calculateAudioDuration,
+  generateWaveformDiagram,
+} from "@/core/audio/generateWaveformDiagram.js"
+import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
+import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
+import { colorMix } from "@/utils/colorMix.js"
+import { handleAudioUpload } from "@/store/daw/audio-binary-data/index.js"
+import { cloneArrayBuffer } from "@/utils/cloneArrayBuffer.js"
 
+const workspaceStore = useWorkspaceStore()
+const mixTrackEditorStore = useMixTrackEditorStore()
 const beatControllerStore = useBeatControllerStore()
 const editorStore = useEditorStore()
 const props = defineProps({
@@ -22,8 +39,9 @@ const { updateSelectedAudioTrackId } = inject("selectedAudioTrackId")
 
 const audioTrackFileTypeMap = ref(
   new Map([
-    [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, ["audio/mid"]],
-    [AUDIO_TRACK_ENUM.SAMPLE, ["audio/wav", "audio/mp3"]],
+    [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS, ["audio/mid", "audio/midi"]],
+    [AUDIO_TRACK_ENUM.SAMPLE, ["audio/wav", "audio/mp3", "audio/mpeg"]],
+    [AUDIO_TRACK_ENUM.VOICE, ["audio/wav", "audio/mp3", "audio/mpeg"]],
   ]),
 )
 const acceptFileTypeString = computed(() => {
@@ -43,31 +61,89 @@ const fileTypeAudioTrackTypeMap = computed(() => {
 })
 
 const parseProcessorMap = {
-  [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS](arrayBuffer) {
-    parseMidi(arrayBuffer)
-      .then((midiData) => {
-        const _MAIN_EDITOR_ID = MAIN_EDITOR_ID
-        const marginLeftPixels = 20
-        const pixelsPerTick = beatControllerStore.pixelsPerTick(_MAIN_EDITOR_ID)
-        const generatedStartTick =
-          (marginLeftPixels +
-            editorStore.editorMap.get(_MAIN_EDITOR_ID).scrollLeft) /
-          pixelsPerTick
-        generateAudioTrack({ midiData, generatedStartTick }).then(
-          (newSelectedAudioTrackId) => {
-            updateSelectedAudioTrackId(newSelectedAudioTrackId)
-            snapshotYSharedData()
-            updateChoreBeatControllerParamsSharedData()
-          },
-        )
+  get _generatedStartTick() {
+    const _MAIN_EDITOR_ID = MAIN_EDITOR_ID
+    const marginLeftPixels = 20
+    const pixelsPerTick = beatControllerStore.pixelsPerTick(_MAIN_EDITOR_ID)
+    return (
+      (marginLeftPixels +
+        editorStore.editorMap.get(_MAIN_EDITOR_ID).scrollLeft) /
+      pixelsPerTick
+    )
+  },
+  async [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS](arrayBuffer) {
+    parseMidi(arrayBuffer).then((midiData) => {
+      generateAudioTrack({
+        midiData,
+        generatedStartTick: this._generatedStartTick,
+      }).then((newSelectedAudioTrackId) => {
+        updateSelectedAudioTrackId(newSelectedAudioTrackId)
+        snapshotYSharedData()
+        updateChoreBeatControllerParamsSharedData()
       })
-      .catch((reason) => {
-        const errorMessage = reason instanceof Error ? reason.message : reason
-        ElNotification({
-          title: "Error",
-          message: errorMessage,
-          type: "error",
+    })
+  },
+  async [AUDIO_TRACK_ENUM.VOICE](arrayBuffer) {
+    const audioDataCopy = cloneArrayBuffer(arrayBuffer)
+    calculateAudioDuration(arrayBuffer)
+      .then(async (totalAudioTime) => {
+        const ticks = totalAudioTime / beatControllerStore.absoluteTimePerTick
+
+        const { type: audioTrackType, icon: audioTrackIcon } =
+          AUDIO_TRACK_TYPE_CONFIG.get(AUDIO_TRACK_ENUM.VOICE)
+        const audioTrackId = mixTrackEditorStore.addAudioTrack({
+          audioTrackType,
+          audioTrackName: audioTrackType,
+          audioTrackIcon,
         })
+        const audioClipWidth = ticks
+        const startPosition = this._generatedStartTick
+        const newWorkspaceId = workspaceStore.addNewWorkspace({
+          audioTrackId,
+          audioTrackType: AUDIO_TRACK_ENUM.VOICE,
+          width: audioClipWidth,
+          startPosition,
+        })
+        const subTrackItemId = mixTrackEditorStore.createSubTrackItem({
+          audioTrackId,
+          workspaceId: newWorkspaceId,
+          trackItemWidth: audioClipWidth,
+          startPosition,
+        })
+
+        const workspace = workspaceStore.getWorkspace({
+          audioTrackId,
+          workspaceId: newWorkspaceId,
+        })
+        workspace.subTrackItemId = subTrackItemId
+        await handleAudioUpload({
+          id: newWorkspaceId,
+          audioBlob: audioDataCopy,
+        })
+        const waveformWidth =
+          ticks * beatControllerStore.pixelsPerTick(MAIN_EDITOR_ID)
+
+        const mountedElementInfo = {
+          target: `#${subTrackItemId}`,
+          width: waveformWidth,
+          height: 72,
+        }
+        const mixTrackMainColor = mixTrackEditorStore.getAudioTrack({
+          audioTrackId,
+        }).mainColor
+        const waveformColor = colorMix(
+          "srgb",
+          mixTrackMainColor,
+          `${LIGHTEN_COLOR} 10%`,
+        )
+        const options = { height: 72, waveColor: waveformColor }
+
+        updateSelectedAudioTrackId(audioTrackId)
+        return { arrayBuffer: audioDataCopy, mountedElementInfo, options }
+      })
+      .then(({ arrayBuffer, mountedElementInfo, options }) => {
+        generateWaveformDiagram(arrayBuffer, mountedElementInfo, options)
+        snapshotYSharedData()
       })
   },
 }
@@ -76,7 +152,16 @@ function parseSpecifiedFileToAudioTrack({ rawFile, audioTrackType }) {
   const reader = new FileReader()
   reader.onload = (evt) => {
     const arrayBuffer = evt.target.result
-    parseProcessorMap[audioTrackType](arrayBuffer)
+    parseProcessorMap[audioTrackType](new Uint8Array(arrayBuffer)).catch(
+      (reason) => {
+        const errorMessage = reason instanceof Error ? reason.message : reason
+        ElNotification({
+          title: "Error",
+          message: errorMessage,
+          type: "error",
+        })
+      },
+    )
   }
   reader.readAsArrayBuffer(rawFile)
 }

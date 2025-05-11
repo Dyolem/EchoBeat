@@ -13,6 +13,7 @@ export const ID_PREFIX_ENUM = {
   AUDIO_TRACK: "audio_track",
   SUB_TRACK_ITEM: "sub_track_item",
   WORKSPACE: "workspace",
+  AUDIO_BUFFER_FILE_ID: "audio_buffer_file_id",
 }
 export const ID_SET = {
   AUDIO_TRACK: (prefix = ID_PREFIX_ENUM.AUDIO_TRACK) =>
@@ -20,6 +21,8 @@ export const ID_SET = {
   SUB_TRACK_ITEM: (prefix = ID_PREFIX_ENUM.SUB_TRACK_ITEM) =>
     generateUniqueId(prefix),
   WORKSPACE: (prefix = ID_PREFIX_ENUM.WORKSPACE) => generateUniqueId(prefix),
+  AUDIO_BUFFER_FILE_ID: (prefix = ID_PREFIX_ENUM.AUDIO_BUFFER_FILE_ID) =>
+    generateUniqueId(prefix),
 }
 export const MAIN_EDITOR_ID = generateUniqueId(EDITOR_TYPE_ENUM.MAIN_EDITOR)
 export const SUBORDINATE_EDITOR_ID = generateUniqueId(
