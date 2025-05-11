@@ -9,6 +9,8 @@ import { registerDeleteAudioTrackEvent } from "@/core/custom-event/deleteAudioTr
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
+import { AUDIO_TRACK_ENUM } from "@/constants/daw/index.js"
+import { getAudioForPlayback } from "@/store/daw/audio-binary-data/index.js"
 
 export const useAudioStore = defineStore("audio", () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext
@@ -124,6 +126,23 @@ export const useAudioStore = defineStore("audio", () => {
     AUDIO_CONTROLLER_MAP: "audioControllerMap",
   }
 
+  async function createVoiceAudioBufferSourceNode({
+    id,
+    audioTrackId,
+    audioContext,
+  }) {
+    const { audioDecodedBuffer } = (await getAudioForPlayback(id)) ?? {}
+    if (!audioDecodedBuffer) return null
+    const audioBufferSourceNode = audioContext.createBufferSource()
+    audioBufferSourceNode.buffer = audioDecodedBuffer
+
+    audioBufferSourceNodeMap.set(id, {
+      audioBufferSourceNode,
+      audioTrackId,
+      id,
+    })
+    return audioBufferSourceNode
+  }
   function createBufferSourceNode({
     audioTrackId,
     id,
@@ -149,7 +168,11 @@ export const useAudioStore = defineStore("audio", () => {
       midiNumber,
       soundName,
     })
-    audioBufferSourceNodeMap.set(id, audioBufferSourceNode)
+    audioBufferSourceNodeMap.set(id, {
+      audioBufferSourceNode,
+      audioTrackId,
+      id,
+    })
     return audioBufferSourceNode
   }
 
@@ -266,120 +289,221 @@ export const useAudioStore = defineStore("audio", () => {
     return controller
   }
 
-  function generateAudioNode({
+  function playbackTiming({
+    startPosition,
+    durationTicks,
+    generableAudioTimeEnd,
+    timelinePlayTime,
+  }) {
+    const absoluteTimePerTick = beatControllerStore.absoluteTimePerTick
+    let startTime = 0
+    let duration = 0
+    let offsetTime = 0
+    let isPlayedInMiddle = false
+
+    const _startTime = startPosition * absoluteTimePerTick
+    const _duration = durationTicks * absoluteTimePerTick
+    if (_startTime >= generableAudioTimeEnd) return false
+    if (timelinePlayTime > _startTime + _duration) return false
+    else if (
+      timelinePlayTime >= _startTime &&
+      timelinePlayTime <= _startTime + _duration
+    ) {
+      startTime = 0
+      offsetTime = timelinePlayTime - _startTime
+      duration = _duration - offsetTime
+      isPlayedInMiddle = true
+    } else if (timelinePlayTime < _startTime) {
+      startTime = _startTime - timelinePlayTime
+      duration = _duration
+    }
+    return {
+      startTime,
+      duration,
+      offsetTime,
+      isPlayedInMiddle,
+    }
+  }
+  async function generateAudioNode({
     timelinePlayTime,
     generableAudioTimeEnd,
     audioContext,
   }) {
     if (audioContext.state === "suspended") return
 
-    for (const audioTrackId of mixTrackEditorStore.mixTracksMap.keys()) {
-      if (soloAudioTrackId.value && soloAudioTrackId.value !== audioTrackId) {
+    for (const {
+      id: audioTrackId,
+      audioTrackType,
+    } of mixTrackEditorStore.mixTracksMap.values()) {
+      const _soloAudioTrackId = soloAudioTrackId.value
+      if (_soloAudioTrackId && _soloAudioTrackId !== audioTrackId) {
+        const allWaitedForStopAudioBufferSourceNodeIds = [
+          ...audioBufferSourceNodeMap.values(),
+        ]
+          .filter(({ audioTrackId }) => {
+            return _soloAudioTrackId !== audioTrackId
+          })
+          .map(({ id }) => id)
+        await stopSpecifiedAudioBufferSourceNode(
+          allWaitedForStopAudioBufferSourceNodeIds,
+        )
+
         continue
       }
-
       const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
         audioTrackId,
       })
       const stereoPannerNode = audioTrackStereoMap.get(audioTrackId)
       workspaceMap.forEach((workspace) => {
-        const { noteItemsMap, startPosition: workspaceStartPosition } =
-          workspace
-        for (const noteItem of noteItemsMap.values()) {
-          let startTime = 0
-          let duration = 0
-          let offsetTime = 0
-          let isPlayedInMiddle = false
-          const absoluteTimePerTick = beatControllerStore.absoluteTimePerTick
-          const { id, width, relativeX, pitchName, velocity } = noteItem
-          const _startTime =
-            (relativeX + workspaceStartPosition) * absoluteTimePerTick
-          const _duration = width * absoluteTimePerTick
-          if (_startTime >= generableAudioTimeEnd) continue
-          if (timelinePlayTime > _startTime + _duration) continue
-          else if (
-            timelinePlayTime >= _startTime &&
-            timelinePlayTime <= _startTime + _duration
-          ) {
-            startTime = 0
-            offsetTime = timelinePlayTime - _startTime
-            duration = _duration - offsetTime
-            isPlayedInMiddle = true
-          } else if (timelinePlayTime < _startTime) {
-            startTime = _startTime - timelinePlayTime
-            duration = _duration
-          }
-
-          if (audioControllerMap.has(id)) continue //避免这种情况：动态生成2秒内的音频，而有一段音频从1.5秒到2.5秒，这样在0-2秒会被生成一次，2-4秒又会生成
-          const audioBufferSourceNode = createBufferSourceNode({
-            audioTrackId,
-            id,
-            pitchName,
-            audioContext,
-          })
-          if (!audioBufferSourceNode) continue
-          const velocityGainNode = createVelocityGainNode({
-            id,
-            audioContext,
-            velocity,
-          })
-          const audioController = new AbortController()
-          audioControllerMap.set(id, audioController)
-          audioBufferSourceNode.addEventListener(
-            "ended",
-            () => {
-              audioControllerMap.get(id).abort()
-              audioControllerMap.delete(id)
-              audioBufferSourceNode.disconnect()
-              audioBufferSourceNodeMap.delete(id)
-              scheduler.cleanup()
-              fadeGainNodeMap.get(id)?.disconnect()
-              fadeGainNodeMap.delete(id)
-              velocityGainNodesMap.get(id)?.disconnect()
-              velocityGainNodesMap.delete(id)
-            },
-            {
-              signal: audioController.signal,
-            },
-          )
-          const fadeGainNode = createFadeGainNode({
-            id,
-            audioContext,
-          })
-          const audioStartTime = audioContext.currentTime + startTime
-
-          if (isPlayedInMiddle) {
-            const fadeInStartTime = audioStartTime // 淡入开始时间
-            const fadeInDuration = 0.01 // 淡入效果持续时间（秒）
-            gainNodeFadeIn(fadeGainNode, {
-              startTime: fadeInStartTime,
-              duration,
-              fadeInDuration,
+        if (audioTrackType === AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS) {
+          const { noteItemsMap, startPosition: workspaceStartPosition } =
+            workspace
+          for (const noteItem of noteItemsMap.values()) {
+            const { id, width, relativeX, pitchName, velocity } = noteItem
+            const timing = playbackTiming({
+              startPosition: relativeX + workspaceStartPosition,
+              durationTicks: width,
+              generableAudioTimeEnd,
+              timelinePlayTime,
             })
-          }
-          const fadeOutDuration = 0.8
-          gainNodeFadeOut(fadeGainNode, {
-            startTime: audioStartTime,
-            duration,
-            fadeOutDuration,
-          })
-          // velocityGainNode 和fadeGainNode的连接顺序是有讲究的
+            if (typeof timing === "boolean" && !timing) continue
+            const { startTime, duration, offsetTime, isPlayedInMiddle } = timing
 
-          scheduler
-            .schedule(audioBufferSourceNode, id, () =>
-              noteItemStore.simulatePlaySpecifiedNote(
-                pitchName,
-                audioController.signal,
-              ),
+            if (audioControllerMap.has(id)) continue //避免这种情况：动态生成2秒内的音频，而有一段音频从1.5秒到2.5秒，这样在0-2秒会被生成一次，2-4秒又会生成
+            const audioBufferSourceNode = createBufferSourceNode({
+              audioTrackId,
+              id,
+              pitchName,
+              audioContext,
+            })
+            if (!audioBufferSourceNode) continue
+            const velocityGainNode = createVelocityGainNode({
+              id,
+              audioContext,
+              velocity,
+            })
+            const audioController = new AbortController()
+            audioControllerMap.set(id, audioController)
+            audioBufferSourceNode.addEventListener(
+              "ended",
+              () => {
+                audioControllerMap.get(id).abort()
+                audioControllerMap.delete(id)
+                audioBufferSourceNode.disconnect()
+                audioBufferSourceNodeMap.delete(id)
+                scheduler.cleanup()
+                fadeGainNodeMap.get(id)?.disconnect()
+                fadeGainNodeMap.delete(id)
+                velocityGainNodesMap.get(id)?.disconnect()
+                velocityGainNodesMap.delete(id)
+              },
+              {
+                signal: audioController.signal,
+              },
             )
-            .connect(fadeGainNode)
-            .connect(velocityGainNode)
-            .connect(stereoPannerNode)
-          audioBufferSourceNode.start(
-            audioStartTime,
-            offsetTime,
-            duration + fadeOutDuration,
-          )
+            const fadeGainNode = createFadeGainNode({
+              id,
+              audioContext,
+            })
+            const audioStartTime = audioContext.currentTime + startTime
+
+            if (isPlayedInMiddle) {
+              const fadeInStartTime = audioStartTime // 淡入开始时间
+              const fadeInDuration = 0.01 // 淡入效果持续时间（秒）
+              gainNodeFadeIn(fadeGainNode, {
+                startTime: fadeInStartTime,
+                duration,
+                fadeInDuration,
+              })
+            }
+            const fadeOutDuration = 0.8
+            gainNodeFadeOut(fadeGainNode, {
+              startTime: audioStartTime,
+              duration,
+              fadeOutDuration,
+            })
+            // velocityGainNode 和fadeGainNode的连接顺序是有讲究的
+
+            scheduler
+              .schedule(audioBufferSourceNode, id, () =>
+                noteItemStore.simulatePlaySpecifiedNote(
+                  pitchName,
+                  audioController.signal,
+                ),
+              )
+              .connect(fadeGainNode)
+              .connect(velocityGainNode)
+              .connect(stereoPannerNode)
+            audioBufferSourceNode.start(
+              audioStartTime,
+              offsetTime,
+              duration + fadeOutDuration,
+            )
+          }
+        } else if (audioTrackType === AUDIO_TRACK_ENUM.VOICE) {
+          const { startPosition, id, width } = workspace
+          const timing = playbackTiming({
+            startPosition,
+            durationTicks: width,
+            generableAudioTimeEnd,
+            timelinePlayTime,
+          })
+          if (typeof timing === "boolean" && !timing) return
+          const { startTime, duration, offsetTime, isPlayedInMiddle } = timing
+          if (audioControllerMap.has(id)) return //避免这种情况：动态生成2秒内的音频，而有一段音频从1.5秒到2.5秒，这样在0-2秒会被生成一次，2-4秒又会生成
+          createVoiceAudioBufferSourceNode({
+            id,
+            audioTrackId,
+            audioContext,
+          }).then((audioBufferSourceNode) => {
+            if (!audioBufferSourceNode) return
+            const audioController = new AbortController()
+            audioControllerMap.set(id, audioController)
+            audioBufferSourceNode.addEventListener(
+              "ended",
+              () => {
+                audioControllerMap.get(id).abort()
+                audioControllerMap.delete(id)
+                audioBufferSourceNode.disconnect()
+                audioBufferSourceNodeMap.delete(id)
+                fadeGainNodeMap.get(id)?.disconnect()
+                fadeGainNodeMap.delete(id)
+              },
+              {
+                signal: audioController.signal,
+              },
+            )
+            const fadeGainNode = createFadeGainNode({
+              id,
+              audioContext,
+            })
+            const audioStartTime = audioContext.currentTime + startTime
+
+            if (isPlayedInMiddle) {
+              const fadeInStartTime = audioStartTime // 淡入开始时间
+              const fadeInDuration = 0.01 // 淡入效果持续时间（秒）
+              gainNodeFadeIn(fadeGainNode, {
+                startTime: fadeInStartTime,
+                duration,
+                fadeInDuration,
+              })
+            }
+            const fadeOutDuration = 0.8
+            gainNodeFadeOut(fadeGainNode, {
+              startTime: audioStartTime,
+              duration,
+              fadeOutDuration,
+            })
+
+            audioBufferSourceNode
+              .connect(fadeGainNode)
+              .connect(stereoPannerNode)
+            audioBufferSourceNode.start(
+              audioStartTime,
+              offsetTime,
+              duration + fadeOutDuration,
+            )
+          })
         }
       })
     }
@@ -406,12 +530,16 @@ export const useAudioStore = defineStore("audio", () => {
     fadeGainNode.gain.exponentialRampToValueAtTime(0.01, fadeOutStopTime) // 淡出至 0
   }
 
-  function stopAllNodes() {
+  /**
+   * @param {string[]} idsSet
+   * @returns {Promise<Awaited<unknown>[]>}
+   */
+  function stopSpecifiedAudioBufferSourceNode(idsSet) {
     const FADE_TIME = 0.05 // 50ms 淡出
     const VOLUME_EPSILON = 0.0001 // 接近零的最小值
     const promises = []
-
-    audioBufferSourceNodeMap.forEach((audioBufferSourceNode, id) => {
+    idsSet.forEach((id) => {
+      const { audioBufferSourceNode } = audioBufferSourceNodeMap.get(id)
       const fadeGainNode = fadeGainNodeMap.get(id)
       if (!fadeGainNode) return
       const currentTime = audioBufferSourceNode.context.currentTime
@@ -441,6 +569,11 @@ export const useAudioStore = defineStore("audio", () => {
     })
 
     return Promise.all(promises)
+  }
+  function stopAllNodes() {
+    return stopSpecifiedAudioBufferSourceNode([
+      ...audioBufferSourceNodeMap.keys(),
+    ])
   }
 
   function createStereoPannerNode({ audioTrackId, stereoValue = 0 }) {
