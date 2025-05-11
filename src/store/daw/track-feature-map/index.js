@@ -16,13 +16,13 @@ export const useTrackFeatureMapStore = defineStore("trackFeatureMap", () => {
    * @param {AudioTrackId} audioTrackId
    * @param {import('../type.js').MidiWorkspace} midiWorkspace
    */
-  function addTrackFeatureMap({ audioTrackId, midiWorkspace }) {
+  function addTrackFeatureMap({ audioTrackId, workspaceMap }) {
     trackFeatureMap.value.set(audioTrackId, {
-      workspaceMap: midiWorkspace,
+      workspaceMap,
     })
   }
   function getSelectedTrackWorkspaceMap({ audioTrackId }) {
-    return trackFeatureMap.value.get(audioTrackId).workspaceMap
+    return trackFeatureMap.value.get(audioTrackId)?.workspaceMap
   }
 
   function deleteDataRelativeToAudioTrack({ audioTrackId }) {

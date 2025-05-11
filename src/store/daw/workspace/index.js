@@ -4,6 +4,7 @@ import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { alignToGrid } from "@/utils/alignToGrid.js"
 import {
   ALIGN_TYPE_ENUM,
+  AUDIO_TRACK_ENUM,
   ID_SET,
   SUBORDINATE_EDITOR_ID,
 } from "@/constants/daw/index.js"
@@ -29,6 +30,8 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   })
 
   const generateWorkspaceId = (prefix) => ID_SET.WORKSPACE(prefix)
+  const generateAudioFileClipId = (prefix) =>
+    ID_SET.AUDIO_BUFFER_FILE_ID(prefix)
 
   /**
    * 传入参数与返回值均为tick单位
@@ -260,21 +263,46 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
     return new Map()
   }
 
-  function addNewWorkspace({ audioTrackId, badgeName, width, startPosition }) {
+  const addNewWorkspaceHandlers = {
+    [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS]: () => {
+      const newId = generateWorkspaceId()
+      const noteItemsMap = noteItemStore.createNoteItemsMap()
+      return { id: newId, noteItemsMap }
+    },
+    [AUDIO_TRACK_ENUM.VOICE]: () => {
+      const newId = generateAudioFileClipId()
+      return { id: newId }
+    },
+    [AUDIO_TRACK_ENUM.DRUM_MACHINE]: () => {},
+    [AUDIO_TRACK_ENUM.BASS]: () => {},
+    [AUDIO_TRACK_ENUM.GUITAR]: () => {},
+    [AUDIO_TRACK_ENUM.SAMPLE]: () => {},
+  }
+  function addNewWorkspace({
+    audioTrackId,
+    audioTrackType,
+    width,
+    startPosition,
+  }) {
     const workspaceMap = trackFeatureMapStore.getSelectedTrackWorkspaceMap({
       audioTrackId,
     })
-    const newId = generateWorkspaceId()
-    const noteItemsMap = noteItemStore.createNoteItemsMap()
-    const workspaceContent = {
-      id: newId,
+    const audioTrack = mixTrackEditorStore.getAudioTrack({ audioTrackId })
+    const workspaceBadgeName = audioTrack.audioTrackName
+    const baseWorkspaceProperty = {
       audioTrackId,
-      workspaceBadgeName: badgeName,
-      noteItemsMap,
+      audioTrackType,
+      workspaceBadgeName,
       width,
       startPosition,
       subTrackItemId: "",
     }
+    const specialProperties = addNewWorkspaceHandlers[audioTrackType]()
+    const workspaceContent = {
+      ...baseWorkspaceProperty,
+      ...specialProperties,
+    }
+    const newId = specialProperties.id
     workspaceMap.set(newId, workspaceContent)
     return newId
   }
@@ -389,6 +417,7 @@ export const useWorkspaceStore = defineStore("workspaceStore", () => {
   }
   return {
     generateWorkspaceId,
+    generateAudioFileClipId,
     shallCreateWorkspace,
     createNewWorkspaceMap,
     addNewWorkspace,

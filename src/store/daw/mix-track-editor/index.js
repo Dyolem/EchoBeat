@@ -53,9 +53,10 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     [AUDIO_TRACK_ENUM.GUITAR]: () => {},
     [AUDIO_TRACK_ENUM.SAMPLE]: () => {},
   }
+  const generateAudioTrackId = (prefix) => ID_SET.AUDIO_TRACK(prefix)
   function createNewTrack({ audioTrackName, audioTrackType, audioTrackIcon }) {
     const mainColor = audioTrackMainColorStore.getRandomColor()
-    const newAudioTrackId = ID_SET.AUDIO_TRACK()
+    const newAudioTrackId = generateAudioTrackId()
     const existedTracksSize = mixTracksMap.value.size
     const baseAudioTrackInfo = {
       id: newAudioTrackId,
@@ -83,7 +84,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     })
     trackFeatureMapStore.addTrackFeatureMap({
       audioTrackId: newTrackId,
-      midiWorkspace: workspaceStore.createNewWorkspaceMap(),
+      workspaceMap: workspaceStore.createNewWorkspaceMap(),
     })
     return newTrackId
   }
@@ -103,7 +104,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     audioTrackId,
     workspaceId,
     trackItemWidth,
-    trackItemHeight = BASE_GRID_HEIGHT,
+    trackItemHeight = BASE_GRID_HEIGHT - 18,
     startPosition,
     trackName,
   }) {
@@ -111,6 +112,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     const subTrackItemsMap = mixTrack.subTrackItemsMap
     const subTrackItemId = generateSubTrackItemId()
     const mainColor = mixTrack.mainColor
+    trackName = mixTrack.audioTrackName
     subTrackItemsMap.set(subTrackItemId, {
       audioTrackId,
       workspaceId,
@@ -258,6 +260,7 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     mixTracksMap,
     activeMixTrackId,
     getAudioTrack,
+    generateAudioTrackId,
     generateSubTrackItemId,
     addAudioTrack,
     getAudioTrackInstrument,

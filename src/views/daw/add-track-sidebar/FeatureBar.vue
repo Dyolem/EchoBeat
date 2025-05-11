@@ -1,21 +1,11 @@
 <script setup>
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { inject, ref } from "vue"
-import { useZoomRatioStore } from "@/store/daw/zoomRatio.js"
-import {
-  AUDIO_TRACK_ENUM,
-  MAIN_EDITOR_ID,
-  SUBORDINATE_EDITOR_ID,
-} from "@/constants/daw/index.js"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
 import AudioTrackTypeMenu from "@/views/daw/add-track-sidebar/AudioTrackTypeMenu.vue"
 import { snapshotYSharedData } from "@/core/history/index.js"
-import {
-  getDefaultProgramNumberByAudioTrackType,
-  getInitInstrumentInfo,
-} from "@/constants/daw/instruments.js"
+
 const mixTrackEditorStore = useMixTrackEditorStore()
-const zoomRatioStore = useZoomRatioStore()
 
 const { updateSelectedAudioTrackId } = inject("selectedAudioTrackId")
 
@@ -34,28 +24,10 @@ function openTrackMenu(event) {
 
 function addAudioTrackHandler({ type, icon, title }) {
   if (!type) return
-  const defaultProgramNumber = 0
-  const channel = 0
-  const { customInstrumentType, family, sound, instrumentName } =
-    getInitInstrumentInfo({ programNumber: defaultProgramNumber, channel })
-
   const newTrackId = mixTrackEditorStore.addAudioTrack({
     audioTrackName: title,
     audioTrackType: type,
     audioTrackIcon: icon,
-    instrument: {
-      number: defaultProgramNumber,
-      customInstrumentType,
-      channel,
-      family,
-      name: instrumentName,
-      sound,
-    },
-    mainEditorZoomRatio:
-      zoomRatioStore.getSpecifiedEditorZoomRatio(MAIN_EDITOR_ID),
-    midiWorkspaceZoomRatio: zoomRatioStore.getSpecifiedEditorZoomRatio(
-      SUBORDINATE_EDITOR_ID,
-    ),
   })
   updateSelectedAudioTrackId(newTrackId)
   snapshotYSharedData()
