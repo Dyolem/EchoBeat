@@ -51,9 +51,9 @@ const loading = ElLoading.service({
 
 zoomRatioStore.initZoomRatioMap()
 watch(
-  () => mixTrackEditorStore.mixTracksMap.keys(),
-  (newMixTrackIdsArray) => {
-    initAudioTrackRelativeNode(new Set(newMixTrackIdsArray))
+  () => mixTrackEditorStore.mixTracksMap.size,
+  () => {
+    initAudioTrackRelativeNode(new Set(mixTrackEditorStore.mixTracksMap.keys()))
   },
   { immediate: true },
 )
