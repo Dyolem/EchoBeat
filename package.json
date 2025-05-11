@@ -11,6 +11,7 @@
   "dependencies": {
     "@tonejs/midi": "^2.0.28",
     "axios": "^1.7.7",
+    "dexie": "^4.0.11",
     "element-plus": "^2.9.5",
     "jszip": "^3.10.1",
     "midi-parser-js": "^4.0.4",
@@ -19,6 +20,7 @@
     "pinia-plugin-yjs-enhanced": "^0.0.1",
     "vue": "^3.5.12",
     "vue-router": "^4.4.5",
+    "wavesurfer.js": "^7.9.5",
     "y-indexeddb": "^9.0.12",
     "y-webrtc": "^10.3.0",
     "y-websocket": "^3.0.0",

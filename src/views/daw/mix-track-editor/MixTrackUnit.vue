@@ -9,6 +9,7 @@ import {
 } from "vue"
 import TrackItem from "@/views/daw/mix-track-editor/TrackItem.vue"
 import {
+  AUDIO_TRACK_ENUM,
   BASE_GRID_WIDTH,
   BEAT_GRID_RATIO,
   BEATS_COUNT,
@@ -38,6 +39,10 @@ const props = defineProps({
   id: {
     type: String,
     required: true,
+  },
+  audioTrackType: {
+    type: String,
+    default: "",
   },
   subTrackItemsMap: {
     type: Map,
@@ -285,12 +290,15 @@ onMounted(() => {
         document.addEventListener(
           "mouseup",
           () => {
-            resizeMixTrackItemThumbnailCanvas({
-              id: trackItemId,
-              width:
-                subTrackItem.trackItemWidth *
-                pixelsPerTick.value(MAIN_EDITOR_ID),
-            })
+            if (props.audioTrackType === AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS) {
+              resizeMixTrackItemThumbnailCanvas({
+                id: trackItemId,
+                width:
+                  subTrackItem.trackItemWidth *
+                  pixelsPerTick.value(MAIN_EDITOR_ID),
+              })
+            }
+
             selectionController.abort()
             controller.abort()
             if (hasMoved) {
@@ -336,6 +344,7 @@ onUnmounted(() => {
         :id="subTrackItemId"
         :audio-track-id="id"
         :workspace-id="subTrackItem.workspaceId"
+        :audio-track-type="audioTrackType"
         :note-items-map="
           getSpecifiedNoteItemsMap({
             audioTrackId: id,

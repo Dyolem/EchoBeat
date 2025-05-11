@@ -77,6 +77,7 @@ const { isFolded, totalAudioTracksHeight, unfoldHeight, foldHeight } =
       v-for="[id, trackUnit] in mixTrackEditorStore.mixTracksMap"
       :key="id"
       :id="id"
+      :audio-track-type="trackUnit.audioTrackType"
       :track-width="width"
       :track-height="isFolded(id) ? foldHeight : unfoldHeight"
       :main-color="trackUnit.mainColor"

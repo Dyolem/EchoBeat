@@ -1,6 +1,7 @@
 <script setup>
 import { computed, inject, onMounted, useTemplateRef, ref } from "vue"
 import {
+  AUDIO_TRACK_ENUM,
   BASE_GRID_HEIGHT,
   DARKEN_COLOR,
   FALLBACK_THEME_COLOR,
@@ -16,6 +17,7 @@ import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { debounce } from "@/utils/debounce.js"
 import { sanitizeInput } from "@/utils/sanitizeInput.js"
 import { useWorkspaceStore } from "@/store/daw/workspace/index.js"
+import WaveformDiagram from "@/views/daw/mix-track-editor/WaveformDiagram.vue"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const { updateSubTrackItemInfo } = mixTrackEditorStore
@@ -37,6 +39,10 @@ const props = defineProps({
   workspaceId: {
     type: String,
     required: true,
+  },
+  audioTrackType: {
+    type: String,
+    default: "",
   },
   noteItemsMap: {
     type: Object,
@@ -179,11 +185,16 @@ const debouncedModifySubTrackName = debounce(modifySubTrackName, 100)
         </p>
         <div class="mix-content-thumbnail">
           <MixTrackItemThumbnail
+            v-if="audioTrackType === AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS"
             :id="id"
             :width="width"
             :height="height - headerHeight"
             :note-items-map="noteItemsMap"
           ></MixTrackItemThumbnail>
+          <WaveformDiagram
+            v-else-if="audioTrackType === AUDIO_TRACK_ENUM.VOICE"
+            :id="id"
+          ></WaveformDiagram>
         </div>
       </div>
       <div
@@ -227,6 +238,7 @@ const debouncedModifySubTrackName = debounce(modifySubTrackName, 100)
   flex-shrink: 0;
   width: 5px;
   height: 100%;
+  z-index: 10;
 }
 .copy {
   width: 100%;
