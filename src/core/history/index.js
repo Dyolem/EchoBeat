@@ -1,83 +1,329 @@
 import * as Y from "yjs"
 import { IndexeddbPersistence } from "y-indexeddb"
+import { ref, computed } from "vue"
 import { mapToSerializable, serializableToMap } from "@/core/mapping/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
-import { pause, resume } from "@/core/audio/player.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
-import { onUnmounted } from "vue"
+import { pause, resume } from "@/core/audio/player.js"
+import { ID_SET } from "@/constants/daw/index.js"
+import { initWaveformDiagramOnMounted } from "@/core/audio/generateWaveformDiagram.js"
+import { useAudioStore } from "@/store/daw/audio/index.js"
+import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
 
+// 全局项目管理
+const PROJECTS_STORAGE_KEY = "seele-daw-projects"
+const PROJECT_LIST_DOC = "project-list"
+
+// 项目内容类型
 const SHARED_DATA_TYPE_ENUM = {
+  yProjectVersion: "yProjectVersion",
   yMixTracksMap: "yMixTracksMap",
   yTrackFeatureMap: "yTrackFeatureMap",
   yChoreBeatControllerParams: "yChoreBeatControllerParams",
 }
+
 const OPERATION_TYPE_ENUM = {
   undo: "undo",
   redo: "redo",
   userModification: "userModification",
 }
 
-let ydoc = null
+// 状态管理
+const hasSavedCurrentProject = ref(false)
+const activeProjectId = ref(null)
+const projectList = ref([])
+const isLoading = ref(false)
+
+// 当前项目文档和提供者
+let currentYDoc = null
+let currentIndexeddbProvider = null
+let currentUndoManager = null
+let currentClearObservers = null
+
+// 共享数据引用
+let yProjectVersion = null
 let yMixTracksMap = null
 let yTrackFeatureMap = null
 let yChoreBeatControllerParams = null
-let indexeddbProvider = null
-let clearObservers = null
 
-// 初始化 UndoManager
-let undoManager = null
-const undo = () => undoManager.undo()
-const redo = () => undoManager.redo()
+// 项目列表管理
+let projectListDoc = null
+let projectListProvider = null
 
-// 初始化
-async function initYDoc() {
-  ydoc = new Y.Doc()
-  indexeddbProvider = new IndexeddbPersistence("seele-daw", ydoc)
-  yMixTracksMap = ydoc.getMap(SHARED_DATA_TYPE_ENUM.yMixTracksMap)
-  yTrackFeatureMap = ydoc.getMap(SHARED_DATA_TYPE_ENUM.yTrackFeatureMap)
-  yChoreBeatControllerParams = ydoc.getMap(
-    SHARED_DATA_TYPE_ENUM.yChoreBeatControllerParams,
+/**
+ * 初始化项目列表管理器
+ */
+async function initProjectManager() {
+  // 初始化项目列表文档
+  projectListDoc = new Y.Doc()
+  projectListProvider = new IndexeddbPersistence(
+    PROJECT_LIST_DOC,
+    projectListDoc,
   )
-  undoManager = new Y.UndoManager(ydoc, {
-    trackedOrigins: new Set([
-      OPERATION_TYPE_ENUM.userModification,
-      OPERATION_TYPE_ENUM.redo,
-      OPERATION_TYPE_ENUM.undo,
-    ]), // 跟踪用户操作
-    // 可选：跟踪其他来源
-  })
-  clearObservers = setupObservers()
-  onUnmounted(() => {
-    clearYDocOnUnmounted()
-  })
-  return initDataFromIndexeddb()
-}
 
-function initDataFromIndexeddb() {
-  return new Promise((resolve, reject) => {
-    indexeddbProvider.whenSynced.then((data) => {
-      recoverMixTrackDataFromIndexeddb({ recoverAll: true })
-      resolve()
+  // 等待项目列表加载完成
+  await new Promise((resolve) => {
+    projectListProvider.whenSynced.then(async () => {
+      const projectsMap = projectListDoc.getMap(PROJECTS_STORAGE_KEY)
+
+      // 从存储中加载项目列表
+      const storedProjects = projectsMap.get("projects") || []
+      projectList.value = storedProjects
+
+      // 获取最后一次打开的项目ID
+      const lastOpenedProjectId = projectsMap.get("lastOpenedProjectId")
+      let currentProjectId = ""
+      // 如果有项目，加载最后打开的项目，否则创建一个默认项目
+      if (
+        lastOpenedProjectId &&
+        projectList.value.some((p) => p.id === lastOpenedProjectId)
+      ) {
+        console.log("load last")
+        await loadProject(lastOpenedProjectId)
+        currentProjectId = lastOpenedProjectId
+      } else if (projectList.value.length > 0) {
+        console.log("load first")
+        currentProjectId = projectList.value[0].id
+        await loadProject(currentProjectId)
+      } else {
+        console.log("create default project")
+        const { id } = await createNewProject({ projectName: "New Project" })
+        currentProjectId = id
+      }
+      resolve(currentProjectId)
     })
   })
+
+  // 监听项目列表变化
+  const projectsMap = projectListDoc.getMap(PROJECTS_STORAGE_KEY)
+  projectsMap.observe((event) => {
+    if (event.path[0] === "projects") {
+      projectList.value = event.newValue || []
+    }
+  })
+
+  return { projectList, activeProjectId, isLoading }
 }
 
-// 统一处理所有共享数据的观察
-function setupObservers() {
-  console.log("init observe")
-  const clearObserveHandlers = []
-  for (const observeKey in observesSet) {
-    clearObserveHandlers.push(observesSet[observeKey]())
+/**
+ * 保存项目列表到存储
+ */
+function saveProjectList() {
+  const projectsMap = projectListDoc.getMap(PROJECTS_STORAGE_KEY)
+  projectsMap.set("projects", projectList.value)
+  projectsMap.set("lastOpenedProjectId", activeProjectId.value)
+}
+
+const defaultProjectTemplate = ({ projectName = "New Project" } = {}) => {
+  return {
+    id: ID_SET.PROJECT_ID("project_id"),
+    name: projectName,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    genre: "",
+    description: "",
+    explicitContent: false,
+    forkable: false,
   }
-  return () => clearObserveHandlers.forEach((handler) => handler())
+}
+/**
+ * 创建新项目
+ * @param {string} projectName - 项目名称
+ * @returns {string} - 新项目的ID
+ */
+async function createNewProject({ projectName = "New Project" } = {}) {
+  isLoading.value = true
+
+  // 创建新项目对象
+  const newProject = defaultProjectTemplate({ projectName })
+  // 添加到项目列表
+  projectList.value.push(newProject)
+  saveProjectList()
+
+  // 加载新项目
+  await loadProject(newProject.id)
+  isLoading.value = false
+  return newProject
 }
 
-function clearYDocOnUnmounted() {
-  clearObservers?.()
-  ydoc.destroy()
+/**
+ * 加载指定项目
+ * @param {string} projectId - 要加载的项目ID
+ */
+async function loadProject(projectId) {
+  if (activeProjectId.value === projectId) return
+  const audioStore = useAudioStore()
+  const mixTrackEditorStore = useMixTrackEditorStore()
+  const audioGeneratorStore = useAudioGeneratorStore()
+  const { initAudioTrackSoundBuffer } = audioGeneratorStore
+  isLoading.value = true
+
+  try {
+    // 如果有当前项目，保存当前项目状态并清理
+    if (currentYDoc) {
+      saveCurrentProject()
+      clearCurrentProject()
+    }
+
+    // 初始化新项目文档
+    currentYDoc = new Y.Doc()
+    currentIndexeddbProvider = new IndexeddbPersistence(
+      `seele-daw-${projectId}`,
+      currentYDoc,
+    )
+
+    // 初始化共享数据引用
+    yProjectVersion = currentYDoc.getMap(SHARED_DATA_TYPE_ENUM.yProjectVersion)
+    yMixTracksMap = currentYDoc.getMap(SHARED_DATA_TYPE_ENUM.yMixTracksMap)
+    yTrackFeatureMap = currentYDoc.getMap(
+      SHARED_DATA_TYPE_ENUM.yTrackFeatureMap,
+    )
+    yChoreBeatControllerParams = currentYDoc.getMap(
+      SHARED_DATA_TYPE_ENUM.yChoreBeatControllerParams,
+    )
+
+    // 初始化撤销管理器
+    currentUndoManager = new Y.UndoManager(currentYDoc, {
+      trackedOrigins: new Set([
+        OPERATION_TYPE_ENUM.userModification,
+        OPERATION_TYPE_ENUM.redo,
+        OPERATION_TYPE_ENUM.undo,
+      ]),
+    })
+
+    // 设置监听器
+    currentClearObservers = setupObservers()
+
+    // 等待数据加载完成
+    await new Promise((resolve) => {
+      currentIndexeddbProvider.whenSynced.then(() => {
+        // 从IndexedDB恢复数据
+        recoverMixTrackDataFromIndexeddb({ recoverAll: true })
+        audioStore.initAudioTrackRelativeNode(
+          new Set([...mixTrackEditorStore.mixTracksMap.keys()]),
+        )
+        // 更新活动项目ID
+        activeProjectId.value = projectId
+
+        // 更新项目的最后修改时间
+        const projectIndex = projectList.value.findIndex(
+          (p) => p.id === projectId,
+        )
+        if (projectIndex !== -1) {
+          projectList.value[projectIndex].updatedAt = new Date().toISOString()
+          saveProjectList()
+        }
+        resolve()
+      })
+    })
+    await initAudioTrackSoundBuffer()
+    await initWaveformDiagramOnMounted()
+  } finally {
+    isLoading.value = false
+  }
 }
+
+/**
+ * 保存当前项目状态
+ */
+function saveCurrentProject() {
+  if (!currentYDoc) return
+
+  // 保存所有共享数据
+  currentYDoc.transact(() => {
+    updateMixTrackSharedTypeData()
+    updateTrackFeatureSharedTypeData()
+    updateChoreBeatControllerParamsSharedData()
+    updateProjectVersionSharedData()
+  }, OPERATION_TYPE_ENUM.userModification)
+
+  // 更新项目的最后修改时间
+  const projectIndex = projectList.value.findIndex(
+    (p) => p.id === activeProjectId.value,
+  )
+  if (projectIndex !== -1) {
+    projectList.value[projectIndex].updatedAt = new Date().toISOString()
+    saveProjectList()
+    hasSavedCurrentProject.value = true
+  }
+}
+
+/**
+ * 清理当前项目资源
+ */
+function clearCurrentProject() {
+  if (!currentYDoc) return
+  const beatControllerStore = useBeatControllerStore()
+  const audioStore = useAudioStore()
+  beatControllerStore.resetChoreAudioParams()
+  audioStore.resetAudioState()
+  // 清理观察者
+  if (currentClearObservers) {
+    currentClearObservers()
+    currentClearObservers = null
+  }
+
+  // 销毁文档
+  currentYDoc.destroy()
+  currentYDoc = null
+  currentIndexeddbProvider = null
+  currentUndoManager = null
+
+  // 清空共享数据引用
+  yProjectVersion = null
+  yMixTracksMap = null
+  yTrackFeatureMap = null
+  yChoreBeatControllerParams = null
+}
+
+/**
+ * 删除项目
+ * @param {string} projectId - 要删除的项目ID
+ */
+async function deleteProject(projectId) {
+  // 不允许删除当前打开的项目
+  if (activeProjectId.value === projectId) {
+    throw new Error("不能删除当前打开的项目，请先切换到其他项目")
+  }
+
+  // 从项目列表中移除
+  const projectIndex = projectList.value.findIndex((p) => p.id === projectId)
+  if (projectIndex !== -1) {
+    projectList.value.splice(projectIndex, 1)
+    saveProjectList()
+  }
+
+  // 可选：从IndexedDB中删除项目数据
+  try {
+    await window.indexedDB.deleteDatabase(`seele-daw-${projectId}`)
+  } catch (error) {
+    console.error("删除项目数据失败:", error)
+  }
+}
+
+/**
+ * 重命名项目
+ * @param {Object} projectDetails - 项目属性对象
+ */
+function updateProjectDetails(projectDetails) {
+  const projectIndex = projectList.value.findIndex(
+    (p) => p.id === activeProjectId.value,
+  )
+  if (projectIndex !== -1) {
+    const project = projectList.value[projectIndex]
+    Object.keys(projectDetails).forEach((key) => {
+      if (projectDetails[key] !== undefined) {
+        project[key] = projectDetails[key]
+      }
+    })
+    projectList.value[projectIndex].updatedAt = new Date().toISOString()
+    saveProjectList()
+  }
+}
+
+// 以下是从原代码复制修改的功能函数
 
 function recoverMixTrackDataFromIndexeddb({
   sharedDataType,
@@ -133,6 +379,12 @@ function recoverMixTrackDataFromIndexeddb({
         }
       }
     },
+    [SHARED_DATA_TYPE_ENUM.yProjectVersion]() {
+      if (yProjectVersion.size >= 0) {
+        const newProjectDetailsInfo = yProjectVersion.get("yProjectVersion")
+        updateProjectDetails(activeProjectId.value, newProjectDetailsInfo)
+      }
+    },
   }
   if (recoverAll) {
     for (const handlersKey in handlers) {
@@ -165,25 +417,19 @@ function updateChoreBeatControllerParamsSharedData() {
     beatControllerStore.choreBeatControllerParams,
   )
 }
-
-function transact(transactionFn, origin) {
-  let transactionRes = null
-  ydoc.transact(() => {
-    transactionRes = transactionFn()
-  }, origin)
-  return transactionRes
+function updateProjectVersionSharedData() {
+  yProjectVersion.set("yProjectVersion", currentProject.value)
+  console.log(yProjectVersion.get("yProjectVersion"))
 }
 
-function snapshotBeatParams() {
-  ydoc.transact(() => {
-    updateChoreBeatControllerParamsSharedData()
-  }, OPERATION_TYPE_ENUM.userModification)
-}
-function snapshotYSharedData() {
-  ydoc.transact(() => {
-    updateMixTrackSharedTypeData()
-    updateTrackFeatureSharedTypeData()
-  }, OPERATION_TYPE_ENUM.userModification)
+// 观察者设置
+function setupObservers() {
+  console.log("init observe for project:", activeProjectId.value)
+  const clearObserveHandlers = []
+  for (const observeKey in observesSet) {
+    clearObserveHandlers.push(observesSet[observeKey]())
+  }
+  return () => clearObserveHandlers.forEach((handler) => handler())
 }
 
 function createObserveCallbackHandler(historyFn, otherOriginFn) {
@@ -193,7 +439,6 @@ function createObserveCallbackHandler(historyFn, otherOriginFn) {
       // 其他操作（如用户编辑）导致的变更
       otherOriginFn?.()
     } else if (origin instanceof Y.UndoManager) {
-      // 不同与自定义的origin值，对于UndoManager，IndexeddbPersistence等官方提供的API，origin都是对应实例
       // 撤销/重做操作导致的变更
       historyFn?.()
     }
@@ -228,30 +473,99 @@ const observesSet = {
     yChoreBeatControllerParams.observeDeep(handler)
     return () => yChoreBeatControllerParams.unobserveDeep(handler)
   },
+  [SHARED_DATA_TYPE_ENUM.yProjectVersion]: () => {
+    const handler = createObserveCallbackHandler(() =>
+      recoverMixTrackDataFromIndexeddb({
+        sharedDataType: SHARED_DATA_TYPE_ENUM.yProjectVersion,
+      }),
+    )
+    yProjectVersion.observeDeep(handler)
+    return () => yProjectVersion.unobserveDeep(handler)
+  },
 }
 
-// 用户操作时，使用特定的 origin
-function userModification() {
-  ydoc.transact(() => {
-    // 用户的修改操作
-    // ...
+// 撤销/重做操作
+function undo() {
+  if (currentUndoManager) {
+    currentUndoManager.undo()
+  }
+}
+
+function redo() {
+  if (currentUndoManager) {
+    currentUndoManager.redo()
+  }
+}
+
+// 快照函数
+function snapshotProjectDetails() {
+  if (!currentYDoc) return
+
+  currentYDoc.transact(() => {
+    updateProjectVersionSharedData()
+  }, OPERATION_TYPE_ENUM.userModification)
+}
+function snapshotBeatParams() {
+  if (!currentYDoc) return
+
+  currentYDoc.transact(() => {
+    updateChoreBeatControllerParamsSharedData()
   }, OPERATION_TYPE_ENUM.userModification)
 }
 
+function snapshotYSharedData() {
+  if (!currentYDoc) return
+
+  currentYDoc.transact(() => {
+    updateMixTrackSharedTypeData()
+    updateTrackFeatureSharedTypeData()
+  }, OPERATION_TYPE_ENUM.userModification)
+}
+
+async function initYDoc() {
+  try {
+    const { projectList, activeProjectId, isLoading } =
+      await initProjectManager()
+    console.log(projectList.value, activeProjectId.value, isLoading.value)
+  } catch (e) {
+    throw e
+  }
+}
+const currentProject = computed(() => {
+  return (
+    projectList.value.filter(({ id }) => id === activeProjectId.value)?.[0] ??
+    {}
+  )
+})
 export {
-  ydoc,
-  undoManager,
+  // 项目管理API
+  initProjectManager,
+  defaultProjectTemplate,
+  createNewProject,
+  loadProject,
+  saveCurrentProject,
+  deleteProject,
+  updateProjectDetails,
+  currentProject,
+  projectList,
+  activeProjectId,
+  isLoading,
+  hasSavedCurrentProject,
+
+  // 原始API的替代品
+  currentYDoc as ydoc,
+  currentUndoManager as undoManager,
+  initYDoc,
   yMixTracksMap,
   yTrackFeatureMap,
-  initYDoc,
-  clearYDocOnUnmounted,
   recoverMixTrackDataFromIndexeddb,
   updateMixTrackSharedTypeData,
   updateTrackFeatureSharedTypeData,
   updateChoreBeatControllerParamsSharedData,
-  transact,
+  updateProjectVersionSharedData,
   snapshotYSharedData,
   snapshotBeatParams,
+  snapshotProjectDetails,
   undo,
   redo,
 }

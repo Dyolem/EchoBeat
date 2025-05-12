@@ -1,6 +1,19 @@
 <script setup>
+import { ref, computed, onUnmounted, watchEffect } from "vue"
+
 import Menu from "@/views/daw/components/context-menu/Menu.vue"
-import { ref, onUnmounted } from "vue"
+import {
+  createNewProject,
+  loadProject,
+  projectList,
+  hasSavedCurrentProject,
+  isLoading,
+} from "@/core/history/index.js"
+import { switchProjectAudio } from "@/store/daw/audio-binary-data/index.js"
+
+function switchProject(projectId) {
+  return Promise.all([loadProject(projectId), switchProjectAudio(projectId)])
+}
 const globalMenuIconsSet = {
   GLOBAL_MENU: "material-symbols:menu-rounded",
   PROJECT_SUB_MENU: "ph:music-note-light",
@@ -19,6 +32,36 @@ const globalMenuIconsSet = {
   GLOBAL_SETTINGS: "tdesign:setting",
   SNAP_MAGNET: "bxs:magnet",
 }
+const getRecentProjects = computed(() => {
+  return projectList.value.map(({ id, name }) => ({
+    value: id,
+    label: name,
+    async clickHandler() {
+      new Promise((resolve, reject) => {
+        _resolve = resolve
+        _reject = reject
+        if (!hasSavedCurrentProject.value) {
+          dialogVisible.value = true
+        } else {
+          resolve()
+        }
+      }).finally(() => {
+        switchProject(this.value)
+          .catch((reason) => {
+            ElNotification({
+              title: "Error",
+              message: reason,
+              type: "error",
+            })
+          })
+          .finally(() => {
+            _resolve = null
+            _reject = null
+          })
+      })
+    },
+  }))
+})
 const fullScreenController = new AbortController()
 const globalMenuData = ref([
   {
@@ -44,6 +87,9 @@ const globalMenuData = ref([
             icon: {
               name: globalMenuIconsSet.NEW_PROJECT,
             },
+            async clickHandler() {
+              await createNewProject()
+            },
           },
           {
             value: "Recent Projects",
@@ -51,6 +97,7 @@ const globalMenuData = ref([
             icon: {
               name: globalMenuIconsSet.RECENT_PROJECT,
             },
+            children: () => getRecentProjects.value,
           },
           {
             value: "Download",
@@ -196,7 +243,34 @@ const globalMenuData = ref([
     ],
   },
 ])
+const dialogVisible = ref(false)
 
+const handleClose = (done) => {
+  done()
+  _resolve?.()
+}
+let _resolve = null
+let _reject = null
+function saveProjectHandler(isSave) {
+  if (isSave) {
+    _resolve?.()
+  } else {
+    _reject?.()
+  }
+  dialogVisible.value = false
+}
+let loading = null
+watchEffect(() => {
+  if (isLoading.value) {
+    loading = ElLoading.service({
+      lock: true,
+      text: "Loading",
+      background: "rgba(0, 0, 0, 0.7)",
+    })
+  } else {
+    loading?.close()
+  }
+})
 onUnmounted(() => {
   fullScreenController.abort()
 })
@@ -205,6 +279,40 @@ onUnmounted(() => {
 <template>
   <div class="global-menu-container">
     <Menu :menu-data="globalMenuData"></Menu>
+  </div>
+  <div class="save-state-dialog">
+    <el-dialog
+      v-model="dialogVisible"
+      title="Save Tips"
+      width="500"
+      :center="true"
+      :align-center="true"
+      :before-close="handleClose"
+    >
+      <span
+        >Your edited content has not been saved yet. Do you want to save
+        it</span
+      >
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button
+            round
+            color="#343940"
+            @click="() => saveProjectHandler(false)"
+            ><span class="dialog-button">Don't Save</span></el-button
+          >
+          <el-button
+            round
+            :dark="true"
+            color="#ffffff"
+            type="primary"
+            @click="() => saveProjectHandler(true)"
+          >
+            <span class="dialog-button">Save</span>
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -215,5 +323,24 @@ onUnmounted(() => {
   --el-menu-hover-text-color: none;
   --el-menu-hover-bg-color: none;
   border: none;
+}
+.dialog-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+.save-state-dialog :deep(.el-dialog) {
+  font-weight: 500;
+  border: 1px solid #282e33;
+  --el-dialog-bg-color: #101214;
+  --el-text-color-primary: #ffffff;
+  --el-text-color-regular: #ffffff;
+  --el-color-primary: #ffffff;
+}
+.dialog-button {
+  width: 150px;
+  text-align: center;
+  font-weight: 600;
 }
 </style>

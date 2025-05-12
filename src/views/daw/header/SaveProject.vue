@@ -1,7 +1,12 @@
 <script setup>
 import { ref } from "vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
+import { saveCurrentProject } from "@/core/history/index.js"
+
 const lastSavedDate = ref("Oct 19, 2024")
+function saveProjectHandler() {
+  saveCurrentProject()
+}
 </script>
 
 <template>
@@ -10,7 +15,7 @@ const lastSavedDate = ref("Oct 19, 2024")
       <span>Last Saved</span>
       <span>{{ lastSavedDate }}</span>
     </div>
-    <MixEditorButton circle size="large">
+    <MixEditorButton circle size="large" @click="saveProjectHandler">
       <div class="icon">
         <echo-icon-park-outline:save></echo-icon-park-outline:save>
         <span>Save</span>

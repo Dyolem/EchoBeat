@@ -11,6 +11,7 @@ import {
   MAIN_EDITOR_ID,
 } from "@/constants/daw/index.js"
 import {
+  activeProjectId,
   snapshotYSharedData,
   updateChoreBeatControllerParamsSharedData,
 } from "@/core/history/index.js"
@@ -117,6 +118,7 @@ const parseProcessorMap = {
         })
         workspace.subTrackItemId = subTrackItemId
         await handleAudioUpload({
+          projectId: activeProjectId.value,
           id: newWorkspaceId,
           audioBlob: audioDataCopy,
         })

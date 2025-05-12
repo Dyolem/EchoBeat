@@ -1,15 +1,11 @@
 <script setup>
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
-import { useProjectStore } from "@/store/daw/project-details/index.js"
-import { storeToRefs } from "pinia"
 import { sanitizeInput } from "@/utils/sanitizeInput.js"
+import { currentProject, updateProjectDetails } from "@/core/history/index.js"
 
-const projectStore = useProjectStore()
-const { updateProjectDetails } = projectStore
-const { projectDetailsInfo } = storeToRefs(projectStore)
 function modifyProjectName(event) {
   const newName = sanitizeInput(event.target.value)
-  updateProjectDetails({ projectName: newName })
+  updateProjectDetails({ name: newName })
 }
 </script>
 
@@ -18,7 +14,7 @@ function modifyProjectName(event) {
     <div class="input-box">
       <input
         type="text"
-        :value="projectDetailsInfo.projectName"
+        :value="currentProject.name"
         @change="modifyProjectName"
         placeholder="New Project"
       />
