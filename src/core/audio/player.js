@@ -60,7 +60,7 @@ export function registerVisibilityChangeEvent() {
   })
 }
 
-function clearPlayerOnUnmounted() {
+export function clearPlayerOnUnmounted() {
   return pause().then(() => {
     lastPlayHead = 0
     intervalTimerId = null

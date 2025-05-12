@@ -34,6 +34,11 @@ import { useAudioStore } from "@/store/daw/audio/index.js"
 import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { initAudioResource } from "@/core/audio/initAudioResource.js"
 import { snapshotYSharedData } from "@/core/history/index.js"
+import {
+  dispatchDestroyProjectEvent,
+  removeAllProjectEvent,
+} from "@/core/custom-event/projectManager.js"
+import { removeAllRenderWaveDiagramEventListeners } from "@/core/custom-event/rerenderWaveDiagram.js"
 
 const mixTrackEditorStore = useMixTrackEditorStore()
 const audioStore = useAudioStore()
@@ -101,8 +106,11 @@ onMounted(() => {
 })
 onUnmounted(() => {
   controller.abort()
+  dispatchDestroyProjectEvent()
   removeDeleteAudioTrackEventListener()
   removeDeleteSubTrackEventListener()
+  removeAllProjectEvent()
+  removeAllRenderWaveDiagramEventListeners()
 })
 
 watch(

@@ -6,11 +6,11 @@ import { useMixTrackEditorStore } from "@/store/daw/mix-track-editor/index.js"
 import { useTrackFeatureMapStore } from "@/store/daw/track-feature-map/index.js"
 import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { useTrackRulerStore } from "@/store/daw/trackRuler/timeLine.js"
-import { pause, resume } from "@/core/audio/player.js"
+import { clearPlayerOnUnmounted, pause, resume } from "@/core/audio/player.js"
 import { ID_SET } from "@/constants/daw/index.js"
 import { initWaveformDiagramOnMounted } from "@/core/audio/generateWaveformDiagram.js"
-import { useAudioStore } from "@/store/daw/audio/index.js"
-import { useAudioGeneratorStore } from "@/store/daw/audio/audioGenerator.js"
+import { dispatchProjectChangedEvent } from "@/core/custom-event/projectManager.js"
+import { removeAllRenderWaveDiagramEventListeners } from "@/core/custom-event/rerenderWaveDiagram.js"
 
 // 全局项目管理
 const PROJECTS_STORAGE_KEY = "seele-daw-projects"
@@ -154,17 +154,14 @@ async function createNewProject({ projectName = "New Project" } = {}) {
  */
 async function loadProject(projectId) {
   if (activeProjectId.value === projectId) return
-  const audioStore = useAudioStore()
-  const mixTrackEditorStore = useMixTrackEditorStore()
-  const audioGeneratorStore = useAudioGeneratorStore()
-  const { initAudioTrackSoundBuffer } = audioGeneratorStore
+
   isLoading.value = true
 
   try {
     // 如果有当前项目，保存当前项目状态并清理
     if (currentYDoc) {
       saveCurrentProject()
-      clearCurrentProject()
+      await clearCurrentProject()
     }
 
     // 初始化新项目文档
@@ -201,9 +198,6 @@ async function loadProject(projectId) {
       currentIndexeddbProvider.whenSynced.then(() => {
         // 从IndexedDB恢复数据
         recoverMixTrackDataFromIndexeddb({ recoverAll: true })
-        audioStore.initAudioTrackRelativeNode(
-          new Set([...mixTrackEditorStore.mixTracksMap.keys()]),
-        )
         // 更新活动项目ID
         activeProjectId.value = projectId
 
@@ -218,7 +212,7 @@ async function loadProject(projectId) {
         resolve()
       })
     })
-    await initAudioTrackSoundBuffer()
+    await dispatchProjectChangedEvent()
     await initWaveformDiagramOnMounted()
   } finally {
     isLoading.value = false
@@ -253,12 +247,11 @@ function saveCurrentProject() {
 /**
  * 清理当前项目资源
  */
-function clearCurrentProject() {
+async function clearCurrentProject() {
   if (!currentYDoc) return
-  const beatControllerStore = useBeatControllerStore()
-  const audioStore = useAudioStore()
-  beatControllerStore.resetChoreAudioParams()
-  audioStore.resetAudioState()
+  await clearPlayerOnUnmounted()
+  await dispatchProjectChangedEvent(true)
+  removeAllRenderWaveDiagramEventListeners()
   // 清理观察者
   if (currentClearObservers) {
     currentClearObservers()
@@ -322,8 +315,6 @@ function updateProjectDetails(projectDetails) {
     saveProjectList()
   }
 }
-
-// 以下是从原代码复制修改的功能函数
 
 function recoverMixTrackDataFromIndexeddb({
   sharedDataType,
@@ -546,6 +537,7 @@ export {
   saveCurrentProject,
   deleteProject,
   updateProjectDetails,
+  clearCurrentProject,
   currentProject,
   projectList,
   activeProjectId,

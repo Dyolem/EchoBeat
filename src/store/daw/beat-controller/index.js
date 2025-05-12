@@ -259,6 +259,18 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     }
     return updatedValue
   }
+  function resetChoreAudioParams() {
+    currentMetronomeSoundType.value = METRONOME_TYPE_LIST
+    ppqn.value = PPQ //一个四分音符的tick数
+    bpm.value = INIT_BPM // 每分钟的四分
+    pixelsPerQuarter.value = PIXELS_PER_QUARTER
+    minGridWidth.value = MIN_GRID_WIDTH //网格最小宽度
+    editableTotalBeats.value = EDITABlE_TOTAL_BEATS //可编辑的总拍子数，以拍子为基准是因为bpm会影响一个拍子的时长，以总时长为基准不够灵活
+    beatsPerMeasure.value = INIT_BEATS_PER_MEASURE //节拍分式分子
+    noteValueDenominator.value = INIT_NOTE_VALUE_DENOMINATOR //音符分式分母
+    gridType.value = GRID_OPTIONS["1/4"]
+  }
+
   return {
     choreBeatControllerParams,
     currentMetronomeSoundType,
@@ -292,5 +304,6 @@ export const useBeatControllerStore = defineStore("beatController", () => {
     isDisplayBeatLine,
     updateGridType,
     updateChoreAudioParams,
+    resetChoreAudioParams,
   }
 })

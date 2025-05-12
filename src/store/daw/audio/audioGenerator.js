@@ -1,4 +1,3 @@
-import { onUnmounted } from "vue"
 import { defineStore } from "pinia"
 import {
   AUDIO_TRACK_ENUM,
@@ -24,6 +23,11 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
   const soundToMidiMap = new Map() // 存储每种音色实际可用的MIDI编号映射
   const allAudioTrackInstrumentBuffer = new Map() // 存储每种音色的音频缓冲区
 
+  function resetSoundAudioBuffer() {
+    soundToMidiMap.clear()
+    soundBankCache.clear()
+    allAudioTrackInstrumentBuffer.clear()
+  }
   // 获取ZIP包的URL
   function getSoundBankZipUrl(soundName) {
     return `${baseURL}soundbanks/${soundName}/${soundName}-wav.zip`
@@ -395,11 +399,6 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
   // 初始化所有音轨的音频缓冲区
   async function initAudioTrackSoundBuffer() {
     const processedSounds = new Set()
-    onUnmounted(() => {
-      soundToMidiMap.clear()
-      soundBankCache.clear()
-      allAudioTrackInstrumentBuffer.clear()
-    })
     await initDefaultSoundBuffer()
     // 遍历所有音轨，加载它们使用的音色
     for (const mixTrack of mixTrackEditorStore.mixTracksMap.values()) {
@@ -460,6 +459,7 @@ export const useAudioGeneratorStore = defineStore("audioGenerator", () => {
   }
 
   return {
+    resetSoundAudioBuffer,
     addSoundBuffer,
     noteToMidi,
     generateAudio,

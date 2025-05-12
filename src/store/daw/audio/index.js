@@ -53,6 +53,18 @@ export const useAudioStore = defineStore("audio", () => {
     soloAudioTrackId.value = ""
   }
 
+  function resetAudioState() {
+    audioBufferSourceNodeMap.clear()
+    velocityGainNodesMap.clear()
+    fadeGainNodeMap.clear()
+    audioControllerMap.clear()
+    audioTrackStereoMap.clear()
+    audioTrackVolumeGainNodeMap.clear()
+    audioTrackMutedGainNodeMap.clear()
+    mutedAudioTrackIdSet.value.clear()
+    soloAudioTrackId.value = ""
+  }
+
   //全局音量总控制
   const globalGainNode = audioContext.value.createGain()
 
@@ -425,12 +437,14 @@ export const useAudioStore = defineStore("audio", () => {
             // velocityGainNode 和fadeGainNode的连接顺序是有讲究的
 
             scheduler
-              .schedule(audioBufferSourceNode, id, () =>
-                noteItemStore.simulatePlaySpecifiedNote(
-                  pitchName,
-                  audioController.signal,
-                ),
-              )
+              .schedule(audioBufferSourceNode, id, () => {
+                if (!mutedAudioTrackIdSet.value.has(audioTrackId)) {
+                  noteItemStore.simulatePlaySpecifiedNote(
+                    pitchName,
+                    audioController.signal,
+                  )
+                }
+              })
               .connect(fadeGainNode)
               .connect(velocityGainNode)
               .connect(stereoPannerNode)
@@ -768,5 +782,6 @@ export const useAudioStore = defineStore("audio", () => {
     connectMixGainNode,
     updateGlobalGainNodeValue,
     updateMeter,
+    resetAudioState,
   }
 })
