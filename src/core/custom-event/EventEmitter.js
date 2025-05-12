@@ -85,6 +85,31 @@ export class EventEmitter {
 
     return executeQueue !== undefined && executeQueue.length !== 0
   }
+  async emitAsync(eventName, ...params) {
+    function isAsyncFunction(fn) {
+      // 检查是否是通过 async 关键字声明的异步函数
+      return fn.constructor.name === "AsyncFunction"
+    }
+    async function returnAsyncFunction(fn) {
+      return isAsyncFunction(fn) ? fn : Promise.resolve(fn)
+    }
+    const executeQueue = this.rawListeners(eventName) || []
+    for (const fn of executeQueue) {
+      let executeFunc = fn
+      if (typeof executeFunc.listener === "function") {
+        await (
+          await returnAsyncFunction(executeFunc.listener)
+        )(...params)
+        this.removeListener(eventName, executeFunc.listener)
+      } else {
+        await (
+          await returnAsyncFunction(executeFunc)
+        )?.(...params)
+      }
+    }
+
+    return executeQueue !== undefined && executeQueue.length !== 0
+  }
   listeners(eventName) {
     if (!eventName) throw new Error("Registering the event name is required")
     const rawListenerArr = []
