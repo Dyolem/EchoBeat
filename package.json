@@ -11,6 +11,7 @@
   "dependencies": {
     "@tonejs/midi": "^2.0.28",
     "axios": "^1.7.7",
+    "dayjs": "^1.11.13",
     "dexie": "^4.0.11",
     "element-plus": "^2.9.5",
     "jszip": "^3.10.1",
