@@ -129,13 +129,7 @@ export function generateAudioTrack({
         audioTrackType,
         audioTrackIcon: midiTypeAudioTrackInfo.icon,
         channel,
-        instrument: {
-          number,
-          customInstrumentType,
-          family,
-          name: instrumentName,
-          sound,
-        },
+        programNumber: number,
       })
       parsedAudioTrackIdArr.push(audioTrackId)
       const newWorkspaceWidth =
