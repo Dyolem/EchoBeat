@@ -1,9 +1,12 @@
 <script setup>
-import { ref } from "vue"
+import { computed } from "vue"
 import MixEditorButton from "@/views/daw/mix-editor-button/MixEditorButton.vue"
-import { saveCurrentProject } from "@/core/history/index.js"
+import { currentProject, saveCurrentProject } from "@/core/history/index.js"
+import { formatISODateWithDayjs } from "@/utils/formatISODateWithDayjs.js"
 
-const lastSavedDate = ref("Oct 19, 2024")
+const lastSavedDate = computed(() => {
+  return formatISODateWithDayjs(currentProject.updatedAt)
+})
 function saveProjectHandler() {
   saveCurrentProject()
 }
