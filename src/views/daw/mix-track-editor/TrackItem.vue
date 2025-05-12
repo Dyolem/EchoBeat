@@ -194,6 +194,7 @@ const debouncedModifySubTrackName = debounce(modifySubTrackName, 100)
           <WaveformDiagram
             v-else-if="audioTrackType === AUDIO_TRACK_ENUM.VOICE"
             :id="id"
+            :width="width"
           ></WaveformDiagram>
         </div>
       </div>

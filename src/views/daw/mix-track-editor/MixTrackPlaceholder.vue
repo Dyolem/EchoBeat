@@ -141,10 +141,20 @@ const parseProcessorMap = {
         const options = { height: 72, waveColor: waveformColor }
 
         updateSelectedAudioTrackId(audioTrackId)
-        return { arrayBuffer: audioDataCopy, mountedElementInfo, options }
+        return {
+          audioClipId: subTrackItemId,
+          arrayBuffer: audioDataCopy,
+          mountedElementInfo,
+          options,
+        }
       })
-      .then(({ arrayBuffer, mountedElementInfo, options }) => {
-        generateWaveformDiagram(arrayBuffer, mountedElementInfo, options)
+      .then(({ audioClipId, arrayBuffer, mountedElementInfo, options }) => {
+        generateWaveformDiagram(
+          audioClipId,
+          arrayBuffer,
+          mountedElementInfo,
+          options,
+        )
         snapshotYSharedData()
       })
   },

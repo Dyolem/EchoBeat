@@ -7,6 +7,7 @@ import {
 } from "@/constants/daw/index.js"
 import { computed, ref } from "vue"
 import { clamp } from "@/utils/clamp.js"
+import { dispatchRenderWaveDiagramEvent } from "@/core/custom-event/rerenderWaveDiagram.js"
 
 export const useZoomRatioStore = defineStore("zoomRatio", () => {
   const isSnappedToHorizontalGrid = ref(true)
@@ -41,6 +42,7 @@ export const useZoomRatioStore = defineStore("zoomRatio", () => {
       oldZoomRatio = zoomRatioMap.value.get(editorId)
       zoomRatioMap.value.set(editorId, newZoomRatio)
     }
+    dispatchRenderWaveDiagramEvent([newZoomRatio, oldZoomRatio])
     return [newZoomRatio, oldZoomRatio]
   }
 

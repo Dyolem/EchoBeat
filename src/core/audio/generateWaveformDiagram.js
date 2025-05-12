@@ -4,9 +4,17 @@ import { useBeatControllerStore } from "@/store/daw/beat-controller/index.js"
 import { AUDIO_TRACK_ENUM, MAIN_EDITOR_ID } from "@/constants/daw/index.js"
 import { getOriginAudioBufferFromDatabase } from "@/store/daw/audio-binary-data/index.js"
 import { cloneArrayBuffer } from "@/utils/cloneArrayBuffer.js"
+import { registerProjectChangedEvent } from "@/core/custom-event/projectManager.js"
+import { registerRenderWaveDiagramEvent } from "@/core/custom-event/rerenderWaveDiagram.js"
+
+const waveSurferMap = new Map()
+function resetWaveSurferMap() {
+  waveSurferMap.clear()
+}
 
 export async function initWaveformDiagramOnMounted() {
   console.log("init wave")
+  registerProjectChangedEvent(resetWaveSurferMap, true)
   const mixTrackEditorStore = useMixTrackEditorStore()
   const beatControllerStore = useBeatControllerStore()
   for (const {
@@ -27,6 +35,7 @@ export async function initWaveformDiagramOnMounted() {
         width:
           trackItemWidth * beatControllerStore.pixelsPerTick(MAIN_EDITOR_ID),
         height: trackItemHeight,
+        originWidth: trackItemWidth,
       }
 
       const { audioBlob: audioArrayBuffer } =
@@ -36,6 +45,7 @@ export async function initWaveformDiagramOnMounted() {
         height: trackItemHeight,
       }
       await generateWaveformDiagram(
+        workspaceId,
         audioArrayBuffer,
         mountedElementInfo,
         options,
@@ -45,6 +55,7 @@ export async function initWaveformDiagramOnMounted() {
 }
 
 /**
+ * @param {string} audioClipId -音频片段ID
  * @param {ArrayBuffer|Uint8Array} audioData - 音频数据
  * @param {Object} mountedElementInfo - 挂载元素信息
  * @param {HTMLElement|string} mountedElementInfo.target - 波形图挂载的DOM元素或其选择器
@@ -54,10 +65,13 @@ export async function initWaveformDiagramOnMounted() {
  * @returns {Promise<Object>} WaveSurfer 实例
  */
 export async function generateWaveformDiagram(
+  audioClipId,
   audioData,
   mountedElementInfo,
   options = {},
 ) {
+  const beatControllerStore = useBeatControllerStore()
+
   // 检查参数类型
   if (!audioData) {
     throw new TypeError("请提供有效的音频数据")
@@ -67,7 +81,7 @@ export async function generateWaveformDiagram(
     throw new Error("缺少必要的挂载元素信息")
   }
 
-  const { target, width, height } = mountedElementInfo
+  const { target, width, height, originWidth } = mountedElementInfo
 
   // 获取DOM元素
   const container =
@@ -129,9 +143,7 @@ export async function generateWaveformDiagram(
       partialRender: true,
       backend: "WebAudio", // 明确使用 WebAudio 后端
     }
-    console.log(options)
     const wavesurferOptions = { ...defaultOptions, ...options }
-    console.log(wavesurferOptions)
 
     // 创建 WaveSurfer 实例 (适用于 7.x 版本)
     const wavesurfer = WaveSurfer.create(wavesurferOptions)
@@ -179,7 +191,12 @@ export async function generateWaveformDiagram(
         throw new Error("无法加载音频数据: " + urlLoadError.message)
       }
     }
-
+    waveSurferMap.set(audioClipId, { wavesurfer, id: audioClipId })
+    registerRenderWaveDiagramEvent(() => {
+      const newWidth =
+        originWidth * beatControllerStore.pixelsPerTick(MAIN_EDITOR_ID)
+      updateWaveform(audioClipId, { width: newWidth })
+    })
     return wavesurfer
   } catch (error) {
     console.error("生成波形图失败:", error)
@@ -189,35 +206,15 @@ export async function generateWaveformDiagram(
 
 /**
  * 更新已存在的波形图
- * @param {Object} wavesurfer - WaveSurfer实例
+ * @param {string} audioClipId - WaveSurfer实例
  * @param {Object} updateOptions - 要更新的选项
  */
-export function updateWaveform(wavesurfer, updateOptions = {}) {
+export function updateWaveform(audioClipId, updateOptions = {}) {
+  const { wavesurfer } = waveSurferMap.get(audioClipId) ?? {}
   if (!wavesurfer) {
     throw new Error("需要有效的WaveSurfer实例")
   }
-
-  const {
-    waveColor,
-    progressColor,
-    cursorColor,
-    height,
-    barWidth,
-    barRadius,
-    zoom, // 缩放级别
-  } = updateOptions
-
-  // 更新可视属性
-  if (waveColor !== undefined) wavesurfer.setWaveColor(waveColor)
-  if (progressColor !== undefined) wavesurfer.setProgressColor(progressColor)
-  if (cursorColor !== undefined) wavesurfer.setCursorColor(cursorColor)
-  if (height !== undefined) wavesurfer.setHeight(height)
-  if (barWidth !== undefined || barRadius !== undefined) {
-    wavesurfer.params.barWidth = barWidth ?? wavesurfer.params.barWidth
-    wavesurfer.params.barRadius = barRadius ?? wavesurfer.params.barRadius
-    wavesurfer.drawBuffer()
-  }
-  if (zoom !== undefined) wavesurfer.zoom(zoom)
+  wavesurfer.setOptions({ ...updateOptions })
 
   return wavesurfer
 }
