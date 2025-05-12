@@ -27,13 +27,14 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
   const mixTracksMap = ref(new Map([]))
   const activeMixTrackId = ref("")
   const createNewTrackHandlers = {
-    [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS]: () => {
-      const defaultProgramNumber = 0
-      const channel = 0
+    [AUDIO_TRACK_ENUM.VIRTUAL_INSTRUMENTS]: ({
+      channel = 0,
+      programNumber = 0,
+    } = {}) => {
       const { customInstrumentType, family, sound, instrumentName } =
-        getInitInstrumentInfo({ programNumber: defaultProgramNumber, channel })
+        getInitInstrumentInfo({ programNumber: programNumber, channel })
       const instrument = {
-        number: defaultProgramNumber,
+        number: programNumber,
         customInstrumentType,
         channel,
         family,
@@ -54,7 +55,13 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
     [AUDIO_TRACK_ENUM.SAMPLE]: () => {},
   }
   const generateAudioTrackId = (prefix) => ID_SET.AUDIO_TRACK(prefix)
-  function createNewTrack({ audioTrackName, audioTrackType, audioTrackIcon }) {
+  function createNewTrack({
+    audioTrackName,
+    audioTrackType,
+    audioTrackIcon,
+    channel,
+    programNumber,
+  }) {
     const mainColor = audioTrackMainColorStore.getRandomColor()
     const newAudioTrackId = generateAudioTrackId()
     const existedTracksSize = mixTracksMap.value.size
@@ -70,17 +77,25 @@ export const useMixTrackEditorStore = defineStore("mixTrackEditorStore", () => {
 
     mixTracksMap.value.set(newAudioTrackId, {
       ...baseAudioTrackInfo,
-      ...createNewTrackHandlers[audioTrackType](),
+      ...createNewTrackHandlers[audioTrackType]({ channel, programNumber }),
     })
     return newAudioTrackId
   }
 
-  function addAudioTrack({ audioTrackName, audioTrackType, audioTrackIcon }) {
+  function addAudioTrack({
+    audioTrackName,
+    audioTrackType,
+    audioTrackIcon,
+    channel,
+    programNumber,
+  }) {
     audioTrackName = audioTrackName === "" ? audioTrackType : audioTrackName
     const newTrackId = createNewTrack({
       audioTrackName,
       audioTrackType,
       audioTrackIcon,
+      channel,
+      programNumber,
     })
     trackFeatureMapStore.addTrackFeatureMap({
       audioTrackId: newTrackId,
