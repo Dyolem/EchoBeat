@@ -17,7 +17,27 @@ defineProps({
 
 <!-- MenuItem.vue 子组件 -->
 <template>
-  <template v-if="item.children?.length">
+  <template v-if="typeof item.children === 'function'">
+    <el-sub-menu :index="item.value" :disabled="item.disable">
+      <template #title>
+        <div class="title">
+          <Icon
+            v-if="item.icon"
+            :icon="item.icon.name"
+            :style="item.icon.style ?? {}"
+            class="icon"
+          ></Icon>
+          <span>{{ item.label }}</span>
+        </div>
+      </template>
+      <MenuItem
+        v-for="child in item.children()"
+        :key="child.index"
+        :item="child"
+      />
+    </el-sub-menu>
+  </template>
+  <template v-else-if="item.children?.length">
     <el-sub-menu :index="item.value" :disabled="item.disable">
       <template #title>
         <div class="title">
