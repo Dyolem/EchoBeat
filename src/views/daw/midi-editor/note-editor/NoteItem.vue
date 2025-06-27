@@ -184,7 +184,7 @@ function draggableRegionHandler(event) {
         .updateNoteItemPosition({
           editorId: midiEditorId.value,
           id,
-          selectedNoteIdSet: selectedNotesIdMap.value,
+          selectedNotesIdMap: selectedNotesIdMap.value,
           audioTrackId,
           workspaceId: props.workspaceId,
           pitchName: belongedPitchName,

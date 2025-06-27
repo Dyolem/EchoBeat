@@ -77,10 +77,6 @@ export const useNoteItemStore = defineStore("noteItem", () => {
    * @property {string} audioTrackId - 关联的音频轨道 ID
    * @property {number} width - note 元素的宽度（基于绝对时间参考系，单位：tick）
    * @property {number} height - note 元素的高度（单位：像素值）
-   * @property {number} x - note 元素相对于 MIDI 编辑器左上角原点的绝对横坐标（基于绝对时间参考系，单位：tick）
-   *    @readonly
-   *    @type {number}
-   *    @example this.relativeX + this.workspaceStartPosition
    * @property {number} relativeX - note 元素相对于工作区左上角原点的相对横坐标（基于绝对时间参考系，单位：tick）
    * @property {number} y - note 元素相对于 MIDI 编辑器左上角原点的绝对纵坐标
    * @property {PitchNameId} pitchName - 音高名称
@@ -308,7 +304,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
    */
   function updateNoteItemPosition({
     id,
-    selectedNoteIdSet,
+    selectedNotesIdMap,
     audioTrackId,
     workspaceId,
     pitchName,
@@ -317,7 +313,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
   }) {
     if (
       id === undefined ||
-      selectedNoteIdSet === undefined ||
+      selectedNotesIdMap === undefined ||
       audioTrackId === undefined ||
       workspaceId === undefined ||
       pitchName === undefined ||
@@ -336,7 +332,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
       workspace.startPosition + workspace.width - updateMainNote.width,
     ]
     const scaleY = [0, maxY.value]
-    const oldAbsoluteX = updateMainNote.x + workspace.startPosition
+    const oldAbsoluteX = updateMainNote.relativeX + workspace.startPosition
     const oldAbsoluteY = updateMainNote.y
     const { alignedAbsolutePosition, alignedPitchName } =
       alignToOtherPitchNameTrack({
@@ -350,8 +346,9 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const incrementY = alignedAbsoluteY - oldAbsoluteY
 
     const waitedUpdatePositionArr = []
-    for (const selectedNoteId of selectedNoteIdSet.keys()) {
+    for (const [selectedNoteId, idsGroup] of selectedNotesIdMap) {
       if (selectedNoteId === id) continue
+      const { audioTrackId, workspaceId } = idsGroup
       const updateNoteTarget = getSpecifiedNoteItem({
         audioTrackId,
         workspaceId,
@@ -370,7 +367,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
         const [minX, maxX] = scaleX
         const [minY, maxY] = scaleY
         const factualX =
-          updateNoteTarget.x + workspace.startPosition + incrementX
+          updateNoteTarget.relativeX + workspace.startPosition + incrementX
         const factualY = updateNoteTarget.y + incrementY
         const horizontalJudgement = factualX >= minX && factualX <= maxX
         const verticalJudgement = factualY >= minY && factualY <= maxY
@@ -444,7 +441,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
     const scale = [initLeftEdgeX, workspace.width + workspace.startPosition]
     const oldNoteWidth = updateNoteTarget.width
     const oldRightEdgeX =
-      updateNoteTarget.x + workspace.startPosition + oldNoteWidth
+      updateNoteTarget.relativeX + workspace.startPosition + oldNoteWidth
     const newRightEdgeX = snapToTickUnitGrid({
       editorId,
       tickX: absoluteX,
@@ -697,7 +694,7 @@ export const useNoteItemStore = defineStore("noteItem", () => {
           noteItem.pitchName = newPitchName
         }
       },
-      () => {},
+      () => { },
     )
   }
 
